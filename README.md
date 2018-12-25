@@ -2,7 +2,7 @@
 =========================
 > pronounce kami-shi-bye shin
 
-Written in Go lang, and portable, without any external libraries (plan).
+Written in Go lang, and portable.
 
 ## License:
 --------------------------
