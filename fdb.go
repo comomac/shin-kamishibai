@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -58,7 +59,7 @@ type Author struct {
 type FlatDB struct {
 	IBooks  []*IBook
 	Authors []*Author
-	Mapper  map[string]*Book
+	IMapper map[string]*IBook
 	Path    string // where the database is stored
 }
 
@@ -93,7 +94,7 @@ func NewFlatDB(params ...string) *FlatDB {
 
 	db := &FlatDB{}
 	db.Path = dbPath
-	db.Mapper = make(map[string]*Book)
+	db.IMapper = make(map[string]*IBook)
 
 	return db
 }
@@ -102,7 +103,7 @@ func NewFlatDB(params ...string) *FlatDB {
 func (db *FlatDB) Clear() {
 	db.IBooks = nil
 	db.Authors = nil
-	db.Mapper = make(map[string]*Book)
+	db.IMapper = make(map[string]*IBook)
 }
 
 // Load data using default file path
@@ -112,6 +113,10 @@ func (db *FlatDB) Load() {
 
 // Import data from alternative path
 func (db *FlatDB) Import(dbPath string) {
+	// make sure db exists
+	_, err := os.Stat(db.Path)
+	check(err)
+
 	dat, err := ioutil.ReadFile(dbPath)
 	check(err)
 	strs := string(dat)
@@ -140,7 +145,7 @@ func (db *FlatDB) Import(dbPath string) {
 
 		db.IBooks = append(db.IBooks, ibook)
 
-		db.Mapper[book.ID] = book
+		db.IMapper[book.ID] = ibook
 
 		prevLen += uint64(len(line) + 1)
 	}
@@ -163,11 +168,41 @@ func (db *FlatDB) Export(dbPath string) {
 	}
 }
 
-// UpdatePage change database record on page read
-func (db *FlatDB) UpdatePage(id string, page int) {
-	book := db.Mapper[id]
-	book.Page = uint64(page)
+// UpdatePage change database record on page read, returns written byte size
+func (db *FlatDB) UpdatePage(id string, page int) (int, error) {
+	ibook := db.IMapper[id]
+	if ibook == nil {
+		err := errors.New("ibook is nil")
+		return 0, err
+	}
+	ibook.Page = uint64(page)
 
+	// read out from db
+	b := make([]byte, ibook.Length)
+
+	f, err := os.OpenFile(db.Path, os.O_RDWR, 0644)
+	if err != nil {
+		return 0, err
+	}
+	defer f.Close()
+
+	f.ReadAt(b, int64(ibook.Address))
+	strs := string(b)
+
+	// make sure the column spacing is still the same. ascii 44 is comma
+	if strs[3] != 44 || strs[5] != 44 || strs[10] != 44 || strs[15] != 44 {
+		err := errors.New("db column has changed")
+		return 0, err
+	}
+
+	// page with extended chars
+	strPage := fmt.Sprintf(FlatDBCharsPage, ibook.Page)
+	b2 := bytes.NewBufferString(strPage)
+	// absolute position for the page
+	posPage := int64(ibook.Address + 11)
+	b2len, err := f.WriteAt(b2.Bytes(), posPage)
+
+	return b2len, err
 }
 
 // csvToBook convert string to book

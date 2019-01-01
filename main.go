@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -47,12 +48,15 @@ func main() {
 	// convJtoF()
 	// convFtoJ()
 
-	db := NewFlatDB()
-	db.Export(userHome("etc/shin-kamishibai/db2.txt"))
+	db := NewFlatDB(userHome("etc/shin-kamishibai/db2.txt"))
+	db.Load()
+	// db.Export(userHome("etc/shin-kamishibai/db2.txt"))
 	// ibook := db.IBooks[100]
 	// fmt.Printf("%+v %+v\n", ibook, ibook.Book)
 
-	db.UpdatePage("7IL", 9876)
+	x, err := db.UpdatePage("7IL", 9876)
+	check(err)
+	fmt.Println(x)
 
 	// db.Export(userHome("etc/shin-kamishibai/db2.txt"))
 
