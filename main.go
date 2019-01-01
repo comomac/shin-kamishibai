@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -10,8 +9,10 @@ import (
 	"github.com/go-chi/chi/middleware"
 )
 
-func main() {
+func startServer() {
 	r := chi.NewRouter()
+
+	k := &KRoute{}
 
 	// A good base middleware stack
 	r.Use(middleware.RequestID)
@@ -22,41 +23,40 @@ func main() {
 	// Set a timeout value on the request context (ctx), that will signal
 	// through ctx.Done() that the request has timed out and further
 	// processing should be stopped.
-	r.Use(middleware.Timeout(60 * time.Second))
+	r.Use(middleware.Timeout(10 * time.Second))
 
 	fs := http.FileServer(http.Dir("public/"))
 	http.Handle("/public/", http.StripPrefix("/public/", fs))
 
-	r.Get("/thumbnail/{bookID}", renderThumbnail)
-	r.Get("/cbz/{bookID}/{page}", getPage)
-	r.Post("/list_dir", listDir)
-	r.Get("/bookinfo/{bookID}", bookInfo)
-	r.Get("/setbookmark/{bookID}/{page}", setBookmark)
-	r.Post("/delete_book", deleteBook)
+	// test codes
+	r.Get("/cbz/{bookPath}/{page}", k.getPage)
+	r.Get("/thumbnail/{bookPath}", k.renderThumbnail)
+
+	// TODO not yet coded
+	// r.Get("/thumbnail/{bookID}", renderThumbnail)
+	// r.Get("/cbz/{bookID}/{page}", getPage)
+	// r.Post("/list_dir", listDir)
+	// r.Get("/bookinfo/{bookID}", bookInfo)
+	// r.Get("/setbookmark/{bookID}/{page}", setBookmark)
+	// r.Post("/delete_book", deleteBook)
 
 	log.Fatal(http.ListenAndServe(":8086", r))
 }
 
-func bookInfo(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "{}")
+func main() {
+	// convJtoF()
+	// convFtoJ()
+
+	db := NewFlatDB()
+	db.Export(userHome("etc/shin-kamishibai/db2.txt"))
+	// ibook := db.IBooks[100]
+	// fmt.Printf("%+v %+v\n", ibook, ibook.Book)
+
+	db.UpdatePage("7IL", 9876)
+
+	// db.Export(userHome("etc/shin-kamishibai/db2.txt"))
+
+	// startServer()
 }
 
-func setBookmark(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "done")
-}
-
-func renderThumbnail(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "bytes")
-}
-
-func getPage(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "bytes")
-}
-
-func listDir(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "{}")
-}
-
-func deleteBook(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "deleted")
-}
+// 22849

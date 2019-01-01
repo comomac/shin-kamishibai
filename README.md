@@ -4,6 +4,8 @@
 
 Written in Go lang, and portable.
 
+Code incomplete!!
+
 ## License:
 --------------------------
 BSD 3-clause
