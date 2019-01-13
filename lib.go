@@ -24,3 +24,15 @@ func userHome(s ...string) string {
 
 	return dir + s[0]
 }
+
+// BookInfoBasic contains basic book information
+type BookInfoBasic struct {
+	Title  string
+	Author string
+	Volume int
+	Images int
+}
+
+func getBookInfoBasic(filepath string) {
+
+}

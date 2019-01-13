@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -45,20 +44,27 @@ func startServer() {
 }
 
 func main() {
+	// fmt.Println(genChar(3))
+
 	// convJtoF()
 	// convFtoJ()
 
+	// # test load db
 	db := NewFlatDB(userHome("etc/shin-kamishibai/db2.txt"))
 	db.Load()
+
+	// fmt.Println(db.BookIDs())
+	// fmt.Println(db.GetBookByID("7IL"))
+
+	// # export database, check if it goes generate proper flat db
 	// db.Export(userHome("etc/shin-kamishibai/db2.txt"))
 	// ibook := db.IBooks[100]
 	// fmt.Printf("%+v %+v\n", ibook, ibook.Book)
 
-	x, err := db.UpdatePage("7IL", 9876)
-	check(err)
-	fmt.Println(x)
-
-	// db.Export(userHome("etc/shin-kamishibai/db2.txt"))
+	// # test if page update works and only update 4 bytes instead of everything
+	// x, err := db.UpdatePage("7IL", 9876)
+	// check(err)
+	// fmt.Println(x)
 
 	// startServer()
 }

@@ -62,7 +62,7 @@ func (k KRoute) renderThumbnail(w http.ResponseWriter, r *http.Request) {
 				k.responseError(w, err)
 				return
 			}
-			imgDat, err = mkThumb(rc)
+			imgDat, err = imgThumb(rc)
 			if err != nil {
 				k.responseError(w, err)
 				return

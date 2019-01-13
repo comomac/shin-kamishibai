@@ -10,9 +10,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"os"
 	"strconv"
 	"strings"
+	"syscall"
+	"time"
 )
 
 // FlatDBCharsPage is number of characters reserved for the pages/page
@@ -57,10 +60,12 @@ type Author struct {
 
 // FlatDB is flat text file database struct
 type FlatDB struct {
-	IBooks  []*IBook
-	Authors []*Author
-	IMapper map[string]*IBook
-	Path    string // where the database is stored
+	IBooks      []*IBook
+	Authors     []*Author
+	IMapper     map[string]*IBook // map books by id
+	FMapper     map[string]*IBook // map books by file path
+	Path        string            // where the database is stored
+	FileModDate int64             // file last modified date
 }
 
 // convert string to uint64
@@ -70,6 +75,25 @@ func mustUint64(s string) uint64 {
 	return uint64(i)
 }
 
+// generate random characters for the unique book ID, argument needs length
+func genChar(minLen int) string {
+	rand.Seed(time.Now().UnixNano())
+
+	validChars := []byte("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") // 62 uniq chars
+	var chars []byte
+
+	ttlValidChars := len(validChars)
+
+	for len(chars) < minLen {
+		rnum := rand.Intn(ttlValidChars)
+
+		chars = append(chars, validChars[rnum])
+	}
+
+	return string(chars)
+}
+
+// bookCond gives a numeric representation of the state of book file
 func bookCond(fp string) uint64 {
 	_, err := os.Stat(fp)
 	if err == nil {
@@ -95,6 +119,7 @@ func NewFlatDB(params ...string) *FlatDB {
 	db := &FlatDB{}
 	db.Path = dbPath
 	db.IMapper = make(map[string]*IBook)
+	db.FMapper = make(map[string]*IBook)
 
 	return db
 }
@@ -104,6 +129,7 @@ func (db *FlatDB) Clear() {
 	db.IBooks = nil
 	db.Authors = nil
 	db.IMapper = make(map[string]*IBook)
+	db.FMapper = make(map[string]*IBook)
 }
 
 // Load data using default file path
@@ -111,11 +137,20 @@ func (db *FlatDB) Load() {
 	db.Import(db.Path)
 }
 
+// Reload data using default file path
+func (db *FlatDB) Reload() {
+	db.Clear()
+	db.Import(db.Path)
+}
+
 // Import data from alternative path
 func (db *FlatDB) Import(dbPath string) {
 	// make sure db exists
-	_, err := os.Stat(db.Path)
+	fstat, err := os.Stat(db.Path)
 	check(err)
+
+	// remember file last modified time, will use it later for checking
+	db.FileModDate = fstat.ModTime().Unix()
 
 	dat, err := ioutil.ReadFile(dbPath)
 	check(err)
@@ -146,6 +181,7 @@ func (db *FlatDB) Import(dbPath string) {
 		db.IBooks = append(db.IBooks, ibook)
 
 		db.IMapper[book.ID] = ibook
+		db.IMapper[book.Fullpath] = ibook
 
 		prevLen += uint64(len(line) + 1)
 	}
@@ -203,6 +239,72 @@ func (db *FlatDB) UpdatePage(id string, page int) (int, error) {
 	b2len, err := f.WriteAt(b2.Bytes(), posPage)
 
 	return b2len, err
+}
+
+// BookIDs gives list of all the book ids in the db
+func (db *FlatDB) BookIDs() []string {
+	ids := make([]string, len(db.IBooks))
+
+	for _, ibook := range db.IBooks {
+		ids = append(ids, ibook.ID)
+	}
+
+	return ids
+}
+
+// AddBook by file path, returns generated book id
+func (db *FlatDB) AddBook(bookPath string) error {
+	// generate unique book id
+	id := genChar(3)
+	for db.GetBookByID(id) != nil {
+		id = genChar(3)
+	}
+
+	fstat, err := os.Stat(db.Path)
+	check(err)
+
+	// get file inode
+	fstat2, ok := fstat.Sys().(*syscall.Stat_t)
+	if !ok {
+		return errors.New("Not a syscall.Stat_t")
+	}
+
+	book := &Book{
+		ID: id,
+		// Title:    records[11],
+		// Author:   records[12],
+		// Fullpath: records[13],
+		Cond: bookCond(bookPath),
+		// Pages: mustUint64(records[2]),
+		Size:  uint64(fstat.Size()),
+		Inode: fstat2.Ino,
+		Mtime: uint64(fstat.ModTime().Unix()),
+		Itime: uint64(time.Now().Unix()),
+	}
+
+	f, err := os.OpenFile(db.Path, os.O_APPEND, 0644)
+	if err != nil {
+		return errors.New("Unable to add book to db")
+	}
+	defer f.Close()
+
+	f.Write(bookToCSV(book))
+
+	db.Reload()
+
+	return nil
+}
+
+// GetBookByID get Book object by book id
+func (db *FlatDB) GetBookByID(bookID string) *Book {
+
+	return db.IMapper[bookID].Book
+}
+
+// GetBookByPath get Book object by file path
+func (db *FlatDB) GetBookByPath(fpath string) *Book {
+
+	return db.FMapper[fpath].Book
 }
 
 // csvToBook convert string to book
