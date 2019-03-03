@@ -12,6 +12,8 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"path"
+	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -32,6 +34,7 @@ type Book struct {
 	ID       string `json:"id,omitempty"`   // unique id for indexing
 	Title    string `json:"title"`          // book title
 	Author   string `json:"author"`         // book author, seperated by comma
+	Order    string `json:"order"`          // volume, chapter
 	Fullpath string `json:"fullpath"`       // book file path
 	Ranking  uint64 `json:"ranking"`        // 1-5 ranking, least to most liked
 	Fav      uint64 `json:"fav"`            // favourite, 0 false, 1 true
@@ -256,6 +259,7 @@ func (db *FlatDB) BookIDs() []string {
 func (db *FlatDB) AddBook(bookPath string) error {
 	// generate unique book id
 	id := genChar(3)
+	// make sure book id is unique
 	for db.GetBookByID(id) != nil {
 		id = genChar(3)
 	}
@@ -293,6 +297,117 @@ func (db *FlatDB) AddBook(bookPath string) error {
 	db.Reload()
 
 	return nil
+}
+
+func getAuthor(str string) string {
+	// get first [...]
+	result := regexp.MustCompile(`\[(.+?)\]`).FindStringSubmatch(str)
+	if result != nil {
+		return result[1]
+	}
+
+	// no author found
+	return ""
+}
+
+func getTitle(str string) string {
+	s := str
+	// get rid of extension, case insensitive
+	s = regexp.MustCompile(`(?i).cbz`).ReplaceAllString(s, ``)
+	// get rid of english
+	s = regexp.MustCompile(` - [ \?\!\-\+\.\~\(\)\[\]A-Za-z0-9]+`).ReplaceAllString(s, ``)
+	// underline to space
+	s = regexp.MustCompile(`_`).ReplaceAllString(s, ` `)
+	// change unicode wide space to narrow(ascii) space
+	s = regexp.MustCompile(`　`).ReplaceAllString(s, ` `)
+	// get rid of (...)
+	s = regexp.MustCompile(`\(.+?\)`).ReplaceAllString(s, ``)
+	// get rid of [...]
+	s = regexp.MustCompile(`\[.+?\]`).ReplaceAllString(s, ``)
+	//s.gsub!(/ \S\d+.*/,'')
+
+	// get rid of vol or chapter
+	s = strings.Replace(s, getVolumeOrChapter(str), ``, -1)
+
+	// change multi-spaces to single space
+	s = regexp.MustCompile(` +`).ReplaceAllString(s, ` `)
+	// trim leading and trailing space
+	s = strings.TrimSpace(s)
+
+	return s
+}
+
+func getVolumeOrChapter(str string) string {
+	var result []string
+
+	// remove extension
+	s := regexp.MustCompile(`\.cbz`).ReplaceAllString(str, ``)
+
+	// change unicode wide space to narrow(ascii) space
+	s = regexp.MustCompile(`　`).ReplaceAllString(s, ` `)
+
+	// e.g.  第01巻   第1-3話
+	result = regexp.MustCompile(`(?i) (第[\d\-\~]+)(巻|部|話)`).FindStringSubmatch(s)
+	if result != nil {
+		return result[1] + result[2]
+	}
+
+	// e.g.  1巻   1-3話
+	result = regexp.MustCompile(`(?i) ([\d\-\~]+)(巻|部|話)`).FindStringSubmatch(s)
+	if result != nil {
+		return result[1] + result[2]
+	}
+
+	// e.g.  上巻
+	result = regexp.MustCompile(`(?i) (上|中|下)(巻|部|話)`).FindStringSubmatch(s)
+	if result != nil {
+		return result[1] + result[2]
+	}
+
+	// e.g.  vol.01.cbz
+	result = regexp.MustCompile(`(?i) (vol.{0,2}\d+)$`).FindStringSubmatch(s)
+	if result != nil {
+		return result[1]
+	}
+
+	// e.g.  ch.01.cbz
+	result = regexp.MustCompile(`(?i) (ch.{0,2}\d+)$`).FindStringSubmatch(s)
+	if result != nil {
+		return result[1]
+	}
+
+	// e.g.  上.cbz
+	result = regexp.MustCompile(`(?i) (上|中|下)$`).FindStringSubmatch(s)
+	if result != nil {
+		return result[1]
+	}
+
+	// e.g.  v01.cbz
+	result = regexp.MustCompile(`(?i) (v\d+\.)$`).FindStringSubmatch(s)
+	if result != nil {
+		return result[1]
+	}
+
+	// e.g.  c01.cbz
+	result = regexp.MustCompile(`(?i) (c\d+\.)$`).FindStringSubmatch(s)
+	if result != nil {
+		return result[1]
+	}
+
+	// 2018年10月号
+	result = regexp.MustCompile(`(?i) (\d{4}年\d{2}月号)`).FindStringSubmatch(s)
+	if result != nil {
+		return result[1]
+	}
+
+	// commented out. because some book title could have number
+	// // e.g.  01.cbz
+	// result = regexp.MustCompile(`(?i) (\d+)$`).FindStringSubmatch(s)
+	// if result != nil {
+	// 	return result[1]
+	// }
+
+	return ""
 }
 
 // GetBookByID get Book object by book id
@@ -339,6 +454,8 @@ func csvToBook(line string) *Book {
 
 // bookToCSV convert Book to csv bytes
 func bookToCSV(book *Book) []byte {
+	fname := path.Base(book.Fullpath) // delete me
+
 	// DO NOT change ordering, can only append in future
 	// use this a reference
 	records := []string{
@@ -353,9 +470,10 @@ func bookToCSV(book *Book) []byte {
 		fmt.Sprintf(FlatDBCharsEpoch, book.Mtime), //  8
 		fmt.Sprintf(FlatDBCharsEpoch, book.Itime), //  9
 		fmt.Sprintf(FlatDBCharsEpoch, book.Rtime), //  10
-		book.Title,    // 11
-		book.Author,   // 12
-		book.Fullpath, // 13
+		getTitle(fname),                           // book.Title,    // 11
+		getAuthor(fname),                          // book.Author,   // 12
+		getVolumeOrChapter(fname),                 // TODO delete me
+		book.Fullpath,                             // 13
 	}
 
 	var b bytes.Buffer

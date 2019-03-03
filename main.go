@@ -50,14 +50,14 @@ func main() {
 	// convFtoJ()
 
 	// # test load db
-	db := NewFlatDB(userHome("etc/shin-kamishibai/db2.txt"))
+	db := NewFlatDB(userHome("etc/shin-kamishibai/db.txt"))
 	db.Load()
 
 	// fmt.Println(db.BookIDs())
 	// fmt.Println(db.GetBookByID("7IL"))
 
-	// # export database, check if it goes generate proper flat db
-	// db.Export(userHome("etc/shin-kamishibai/db2.txt"))
+	// export database, check if it goes generate proper flat db
+	db.Export(userHome("etc/shin-kamishibai/db2.txt"))
 	// ibook := db.IBooks[100]
 	// fmt.Printf("%+v %+v\n", ibook, ibook.Book)
 
