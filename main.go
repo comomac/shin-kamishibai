@@ -35,9 +35,9 @@ func main() {
 	// convJtoF(jfile, tfile) // json to txt
 	// convFtoJ(tfile, jfile) // txt to json
 
-	// load db
-	db := NewFlatDB(userHome("etc/shin-kamishibai/db.txt"))
-	db.Load()
+	// // load db
+	// db := NewFlatDB(userHome("etc/shin-kamishibai/db.txt"))
+	// db.Load()
 
 	// fmt.Println(db.BookIDs())
 	// fmt.Println(db.GetBookByID("7IL"))
@@ -51,6 +51,11 @@ func main() {
 	// x, err := db.UpdatePage("7IL", 9876)
 	// check(err)
 	// fmt.Println(x)
+
+	// new db
+	db := NewFlatDB(userHome("etc/shin-kamishibai/db.txt"))
+	db.Load()
+	addBooksDir(db, userHome("tmp/mangas"))
 
 	startServer(db)
 }

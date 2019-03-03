@@ -55,13 +55,11 @@ func getBookInfo(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 
 		bookID := path.Base(r.RequestURI)
 
-		ibook := db.IMapper[bookID]
-		if ibook == nil {
+		book := db.GetBookByID(bookID)
+		if book == nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-
-		book := ibook.Book
 
 		b, err := json.Marshal(&BookInfoResponse{Book: book})
 		if err != nil {
@@ -85,10 +83,11 @@ func getBooks(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 
 		books := BooksResponse{}
 
-		for i, ibook := range db.IBooks {
-			if i > 3 {
-				break
-			}
+		for _, ibook := range db.IBooks {
+			// TODO do pageination?
+			// if i > 3 {
+			// 	break
+			// }
 			books = append(books, &BookInfoResponse{Book: ibook.Book})
 		}
 
@@ -105,7 +104,7 @@ func getBooks(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 }
 
 // setBookmark remember where the book is read upto
-func setBookmark(db *FlatDB) func(w http.ResponseWriter, r *http.Request) {
+func setBookmark(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -129,15 +128,14 @@ func setBookmark(db *FlatDB) func(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		ibook.Page = uint64(page)
-		db.Dirty = true
+		db.UpdatePage(bookID, page)
 
 		w.WriteHeader(http.StatusOK)
 	}
 }
 
 // renderThumbnail gives thumbnail on the book
-func renderThumbnail(db *FlatDB) func(w http.ResponseWriter, r *http.Request) {
+func renderThumbnail(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -190,14 +188,14 @@ func renderThumbnail(db *FlatDB) func(w http.ResponseWriter, r *http.Request) {
 }
 
 // getPage gives the page of the book
-func getPage(db *FlatDB) func(w http.ResponseWriter, r *http.Request) {
+func getPage(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 
-		bookID, page, err := parseURIBookIDandPage(w, r, "/setbookmark/")
+		bookID, page, err := parseURIBookIDandPage(w, r, "/cbz/")
 		if err != nil {
 			return
 		}

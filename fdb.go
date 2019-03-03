@@ -14,6 +14,7 @@ import (
 	"math/rand"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -70,7 +71,6 @@ type FlatDB struct {
 	FMapper     map[string]*IBook // map books by file path
 	Path        string            // where the database is stored
 	FileModDate int64             // file last modified date
-	Dirty       bool              // true if db is modified and not yet saved
 }
 
 // convert string to uint64
@@ -152,6 +152,13 @@ func (db *FlatDB) Reload() {
 func (db *FlatDB) Import(dbPath string) {
 	// make sure db exists
 	fstat, err := os.Stat(db.Path)
+	if os.IsNotExist(err) {
+		// create blank not exist
+		f, err := os.OpenFile(db.Path, os.O_CREATE, 0644)
+		check(err)
+		f.Close()
+		return
+	}
 	check(err)
 
 	// remember file last modified time, will use it later for checking
@@ -266,7 +273,7 @@ func (db *FlatDB) AddBook(bookPath string) error {
 		id = genChar(3)
 	}
 
-	fstat, err := os.Stat(db.Path)
+	fstat, err := os.Stat(bookPath)
 	check(err)
 
 	// get file inode
@@ -292,17 +299,56 @@ func (db *FlatDB) AddBook(bookPath string) error {
 		Itime:    uint64(time.Now().Unix()),
 	}
 
-	f, err := os.OpenFile(db.Path, os.O_APPEND, 0644)
+	f, err := os.OpenFile(db.Path, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
 	if err != nil {
 		return errors.New("Unable to add book to db")
 	}
 	defer f.Close()
 
-	f.Write(bookToCSV(book))
+	// save to db file
+	b := bookToCSV(book)
+	f.Write(b)
+	f.Close()
 
+	// reload from db file
 	db.Reload()
 
 	return nil
+}
+
+func visit(db *FlatDB) func(string, os.FileInfo, error) error {
+	return func(fpath string, f os.FileInfo, err error) error {
+		re := regexp.MustCompile(".cbz$")
+
+		// skip non cbz extension
+		if !re.MatchString(fpath) {
+			return nil
+		}
+
+		// get file state, e.g. size
+		fstat, err := os.Stat(fpath)
+		check(err)
+
+		// make sure books are unique so no duplicate db record
+		fname := path.Base(fpath)
+		books := db.SearchBookByNameAndSize(fname, uint64(fstat.Size()))
+		if len(*books) > 0 {
+			// skip
+			return nil
+		}
+
+		err = db.AddBook(fpath)
+		check(err)
+		fmt.Println("Added book", fpath)
+
+		return nil
+	}
+}
+
+// addBooksDir recursively add books from directory
+func addBooksDir(db *FlatDB, dir string) {
+	err := filepath.Walk(dir, visit(db))
+	check(err)
 }
 
 func getAuthor(str string) string {
@@ -418,9 +464,7 @@ func getNumber(str string) string {
 
 func mustGetPages(fp string) int {
 	zr, err := zip.OpenReader(fp)
-	if err != nil {
-		panic(err)
-	}
+	check(err)
 
 	regexImageType := regexp.MustCompile(`(?i)\.(jpg|jpeg|gif|png)$`)
 	i := 0
@@ -436,13 +480,37 @@ func mustGetPages(fp string) int {
 // GetBookByID get Book object by book id
 func (db *FlatDB) GetBookByID(bookID string) *Book {
 
-	return db.IMapper[bookID].Book
+	ibook := db.IMapper[bookID]
+	if ibook == nil {
+		return nil
+	}
+
+	return ibook.Book
 }
 
 // GetBookByPath get Book object by file path
 func (db *FlatDB) GetBookByPath(fpath string) *Book {
 
+	ibook := db.FMapper[fpath]
+	if ibook == nil {
+		return nil
+	}
+
 	return db.FMapper[fpath].Book
+}
+
+// SearchBookByNameAndSize get Books object by filename and size
+func (db *FlatDB) SearchBookByNameAndSize(fname string, size uint64) *[]*Book {
+
+	var books []*Book
+
+	for _, ibook := range db.IBooks {
+		if ibook.Size == size && path.Base(ibook.Fullpath) == fname {
+			books = append(books, ibook.Book)
+		}
+	}
+
+	return &books
 }
 
 // csvToBook convert string to book
