@@ -3,6 +3,7 @@ package main
 // flat file db
 
 import (
+	"archive/zip"
 	"bytes"
 	"encoding/csv"
 	"encoding/json"
@@ -69,6 +70,7 @@ type FlatDB struct {
 	FMapper     map[string]*IBook // map books by file path
 	Path        string            // where the database is stored
 	FileModDate int64             // file last modified date
+	Dirty       bool              // true if db is modified and not yet saved
 }
 
 // convert string to uint64
@@ -273,18 +275,21 @@ func (db *FlatDB) AddBook(bookPath string) error {
 		return errors.New("Not a syscall.Stat_t")
 	}
 
+	// filename
+	fname := path.Base(bookPath)
+
 	book := &Book{
-		ID: id,
-		// Title:    records[11],
-		// Author:   records[12],
-		// Number:   records[13],
-		// Fullpath: records[14],
-		Cond: bookCond(bookPath),
-		// Pages: mustUint64(records[2]),
-		Size:  uint64(fstat.Size()),
-		Inode: fstat2.Ino,
-		Mtime: uint64(fstat.ModTime().Unix()),
-		Itime: uint64(time.Now().Unix()),
+		ID:       id,
+		Title:    getTitle(fname),
+		Author:   getAuthor(fname),
+		Number:   getNumber(fname),
+		Fullpath: bookPath,
+		Cond:     bookCond(bookPath),
+		Pages:    uint64(mustGetPages(bookPath)),
+		Size:     uint64(fstat.Size()),
+		Inode:    fstat2.Ino,
+		Mtime:    uint64(fstat.ModTime().Unix()),
+		Itime:    uint64(time.Now().Unix()),
 	}
 
 	f, err := os.OpenFile(db.Path, os.O_APPEND, 0644)
@@ -328,7 +333,7 @@ func getTitle(str string) string {
 	//s.gsub!(/ \S\d+.*/,'')
 
 	// get rid of vol or chapter
-	s = strings.Replace(s, getVolumeOrChapter(str), ``, -1)
+	s = strings.Replace(s, getNumber(str), ``, -1)
 
 	// change multi-spaces to single space
 	s = regexp.MustCompile(` +`).ReplaceAllString(s, ` `)
@@ -338,7 +343,7 @@ func getTitle(str string) string {
 	return s
 }
 
-func getVolumeOrChapter(str string) string {
+func getNumber(str string) string {
 	var result []string
 
 	// remove extension
@@ -411,6 +416,23 @@ func getVolumeOrChapter(str string) string {
 	return ""
 }
 
+func mustGetPages(fp string) int {
+	zr, err := zip.OpenReader(fp)
+	if err != nil {
+		panic(err)
+	}
+
+	regexImageType := regexp.MustCompile(`(?i)\.(jpg|jpeg|gif|png)$`)
+	i := 0
+	for _, f := range zr.File {
+		if regexImageType.MatchString(f.Name) {
+			i++
+		}
+	}
+
+	return i
+}
+
 // GetBookByID get Book object by book id
 func (db *FlatDB) GetBookByID(bookID string) *Book {
 
@@ -473,9 +495,9 @@ func bookToCSV(book *Book) []byte {
 		fmt.Sprintf(FlatDBCharsEpoch, book.Mtime), //  8
 		fmt.Sprintf(FlatDBCharsEpoch, book.Itime), //  9
 		fmt.Sprintf(FlatDBCharsEpoch, book.Rtime), // 10
-		getTitle(fname),                           // book.Title,    // 11
-		getAuthor(fname),                          // book.Author,   // 12
-		getVolumeOrChapter(fname),                 // book.Number,   // 13
+		getTitle(fname),                           // book.Title,   // 11
+		getAuthor(fname),                          // book.Author,  // 12
+		getNumber(fname),                          // book.Number,  // 13
 		book.Fullpath,                             // 14
 	}
 

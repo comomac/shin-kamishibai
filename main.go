@@ -1,46 +1,29 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
-	"time"
-
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
 )
 
-func startServer() {
-	r := chi.NewRouter()
-
-	k := &KRoute{}
-
-	// A good base middleware stack
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-
-	// Set a timeout value on the request context (ctx), that will signal
-	// through ctx.Done() that the request has timed out and further
-	// processing should be stopped.
-	r.Use(middleware.Timeout(10 * time.Second))
-
+func startServer(db *FlatDB) {
 	fs := http.FileServer(http.Dir("public/"))
 	http.Handle("/public/", http.StripPrefix("/public/", fs))
 
 	// test codes
-	r.Get("/cbz/{bookPath}/{page}", k.getPage)
-	r.Get("/thumbnail/{bookPath}", k.renderThumbnail)
 
 	// TODO not yet coded
-	// r.Get("/thumbnail/{bookID}", renderThumbnail)
-	// r.Get("/cbz/{bookID}/{page}", getPage)
+	http.HandleFunc("/thumbnail/", renderThumbnail(db)) // /thumbnail/{bookID}
+	http.HandleFunc("/cbz/", getPage(db))               // /cbz/{bookID}/{page}
+	http.HandleFunc("/bookinfo/", getBookInfo(db))      // /bookinfo/{bookID}
+	http.HandleFunc("/setbookmark/", setBookmark(db))   // /setbookmark/{bookID}/{page}
+	http.HandleFunc("/books", getBooks(db))
 	// r.Post("/list_dir", listDir)
-	// r.Get("/bookinfo/{bookID}", bookInfo)
-	// r.Get("/setbookmark/{bookID}/{page}", setBookmark)
 	// r.Post("/delete_book", deleteBook)
 
-	log.Fatal(http.ListenAndServe(":8086", r))
+	port := ":8086"
+	fmt.Println("listening on", port)
+	log.Fatal(http.ListenAndServe(port, nil))
 }
 
 func main() {
@@ -52,15 +35,15 @@ func main() {
 	// convJtoF(jfile, tfile) // json to txt
 	// convFtoJ(tfile, jfile) // txt to json
 
-	// test load db
+	// load db
 	db := NewFlatDB(userHome("etc/shin-kamishibai/db.txt"))
 	db.Load()
 
 	// fmt.Println(db.BookIDs())
 	// fmt.Println(db.GetBookByID("7IL"))
 
-	// export database, check if it goes generate proper flat db
-	db.Export(userHome("etc/shin-kamishibai/db2.txt"))
+	// // export database, check if it goes generate proper flat db
+	// db.Export(userHome("etc/shin-kamishibai/db2.txt"))
 	// ibook := db.IBooks[100]
 	// fmt.Printf("%+v %+v\n", ibook, ibook.Book)
 
@@ -69,7 +52,7 @@ func main() {
 	// check(err)
 	// fmt.Println(x)
 
-	// startServer()
+	startServer(db)
 }
 
 // 22849
