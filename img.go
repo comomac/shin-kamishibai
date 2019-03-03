@@ -9,10 +9,51 @@ import (
 	"io"
 )
 
+// imgThumb create thumbnail while maintaining ratio
 func imgThumb(reader io.Reader) ([]byte, error) {
-	return imgResize(reader, 320, 320)
+	// clone so can use again
+	var b bytes.Buffer
+	reader2 := io.TeeReader(reader, &b)
+	reader3 := bufio.NewReader(&b)
+
+	maxW, maxH := float64(320), float64(320) // maximum allowed thumbnail dimension
+	var imgW, imgH float64                   // original image width, height
+	var thmW, thmH int                       // thumbnail width, height
+	var ratio float64                        // image w/h ratio
+
+	// get image dimension
+	m, _, err := image.Decode(reader2)
+	if err != nil {
+		return nil, err
+	}
+	bounds := m.Bounds()
+	imgW, imgH = float64(bounds.Max.X), float64(bounds.Max.Y)
+	fmt.Println(imgW, imgH)
+	// image ratio
+	ratio = float64(imgW) / float64(imgH)
+
+	if maxW >= maxH {
+		if imgW > imgH {
+			thmW = int(maxW)
+			thmH = int(float64(thmW) * ratio)
+		} else {
+			thmH = int(maxH)
+			thmW = int(float64(thmH) * ratio)
+		}
+	} else {
+		if imgW < imgH {
+			thmW = int(maxW)
+			thmH = int(float64(thmW) * ratio)
+		} else {
+			thmH = int(maxH)
+			thmW = int(float64(thmH) * ratio)
+		}
+	}
+
+	return imgResize(reader3, thmW, thmH)
 }
 
+// imgResize resize image to width, height
 func imgResize(reader io.Reader, owidth int, oheight int) ([]byte, error) {
 	m, _, err := image.Decode(reader)
 	if err != nil {
