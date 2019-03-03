@@ -34,7 +34,7 @@ type Book struct {
 	ID       string `json:"id,omitempty"`   // unique id for indexing
 	Title    string `json:"title"`          // book title
 	Author   string `json:"author"`         // book author, seperated by comma
-	Order    string `json:"order"`          // volume, chapter
+	Number   string `json:"number"`         // volume, chapter, etc
 	Fullpath string `json:"fullpath"`       // book file path
 	Ranking  uint64 `json:"ranking"`        // 1-5 ranking, least to most liked
 	Fav      uint64 `json:"fav"`            // favourite, 0 false, 1 true
@@ -277,7 +277,8 @@ func (db *FlatDB) AddBook(bookPath string) error {
 		ID: id,
 		// Title:    records[11],
 		// Author:   records[12],
-		// Fullpath: records[13],
+		// Number:   records[13],
+		// Fullpath: records[14],
 		Cond: bookCond(bookPath),
 		// Pages: mustUint64(records[2]),
 		Size:  uint64(fstat.Size()),
@@ -315,7 +316,7 @@ func getTitle(str string) string {
 	// get rid of extension, case insensitive
 	s = regexp.MustCompile(`(?i).cbz`).ReplaceAllString(s, ``)
 	// get rid of english
-	s = regexp.MustCompile(` - [ \?\!\-\+\.\~\(\)\[\]A-Za-z0-9]+`).ReplaceAllString(s, ``)
+	s = regexp.MustCompile(` - [ \?\!\-\+\.\,\~\(\)\[\]A-Za-z0-9]+`).ReplaceAllString(s, ``)
 	// underline to space
 	s = regexp.MustCompile(`_`).ReplaceAllString(s, ` `)
 	// change unicode wide space to narrow(ascii) space
@@ -346,20 +347,20 @@ func getVolumeOrChapter(str string) string {
 	// change unicode wide space to narrow(ascii) space
 	s = regexp.MustCompile(`　`).ReplaceAllString(s, ` `)
 
-	// e.g.  第01巻   第1-3話
-	result = regexp.MustCompile(`(?i) (第[\d\-\~]+)(巻|部|話)`).FindStringSubmatch(s)
+	// e.g.  第01巻   第1-3話     巻(まき)  卷(かん)
+	result = regexp.MustCompile(`(?i) (第[\d\-\~]+)(巻|卷|部|話)`).FindStringSubmatch(s)
 	if result != nil {
 		return result[1] + result[2]
 	}
 
 	// e.g.  1巻   1-3話
-	result = regexp.MustCompile(`(?i) ([\d\-\~]+)(巻|部|話)`).FindStringSubmatch(s)
+	result = regexp.MustCompile(`(?i) ([\d\-\~\,]+)(巻|卷|部|話)`).FindStringSubmatch(s)
 	if result != nil {
 		return result[1] + result[2]
 	}
 
 	// e.g.  上巻
-	result = regexp.MustCompile(`(?i) (上|中|下)(巻|部|話)`).FindStringSubmatch(s)
+	result = regexp.MustCompile(`(?i) (上|中|下)(巻|卷|部|話)`).FindStringSubmatch(s)
 	if result != nil {
 		return result[1] + result[2]
 	}
@@ -429,7 +430,7 @@ func csvToBook(line string) *Book {
 	check(err)
 
 	// incomplete record
-	if len(records) != 14 {
+	if len(records) != 15 {
 		return nil
 	}
 
@@ -437,7 +438,8 @@ func csvToBook(line string) *Book {
 		ID:       records[0],
 		Title:    records[11],
 		Author:   records[12],
-		Fullpath: records[13],
+		Number:   records[13],
+		Fullpath: records[14],
 		Cond:     bookCond(records[1]),
 		Pages:    mustUint64(records[2]),
 		Page:     mustUint64(records[3]),
@@ -454,7 +456,8 @@ func csvToBook(line string) *Book {
 
 // bookToCSV convert Book to csv bytes
 func bookToCSV(book *Book) []byte {
-	fname := path.Base(book.Fullpath) // delete me
+	// book file name
+	fname := path.Base(book.Fullpath)
 
 	// DO NOT change ordering, can only append in future
 	// use this a reference
@@ -469,11 +472,11 @@ func bookToCSV(book *Book) []byte {
 		fmt.Sprintf(FlatDBCharsEpoch, book.Inode), //  7
 		fmt.Sprintf(FlatDBCharsEpoch, book.Mtime), //  8
 		fmt.Sprintf(FlatDBCharsEpoch, book.Itime), //  9
-		fmt.Sprintf(FlatDBCharsEpoch, book.Rtime), //  10
+		fmt.Sprintf(FlatDBCharsEpoch, book.Rtime), // 10
 		getTitle(fname),                           // book.Title,    // 11
 		getAuthor(fname),                          // book.Author,   // 12
-		getVolumeOrChapter(fname),                 // TODO delete me
-		book.Fullpath,                             // 13
+		getVolumeOrChapter(fname),                 // book.Number,   // 13
+		book.Fullpath,                             // 14
 	}
 
 	var b bytes.Buffer
@@ -489,10 +492,7 @@ func bookToCSV(book *Book) []byte {
 //
 
 // convJtoF makes old json db into flat db
-func convJtoF() {
-	in := userHome("etc/kamishibai-kai/db.json")
-	out := userHome("etc/shin-kamishibai/db.txt")
-
+func convJtoF(in, out string) {
 	dat, err := ioutil.ReadFile(in)
 	check(err)
 
@@ -514,10 +514,7 @@ func convJtoF() {
 }
 
 // convFtoJ makes flat db to json
-func convFtoJ() {
-	in := userHome("etc/shin-kamishibai/db.txt")
-	out := userHome("etc/shin-kamishibai/db.json")
-
+func convFtoJ(in, out string) {
 	dat, err := ioutil.ReadFile(in)
 	check(err)
 	strs := string(dat)
@@ -545,7 +542,8 @@ func convFtoJ() {
 			ID:       records[0],
 			Title:    records[11],
 			Author:   records[12],
-			Fullpath: records[13],
+			Number:   records[13],
+			Fullpath: records[14],
 			Cond:     bookCond(records[1]),
 			Pages:    mustUint64(records[2]),
 			Page:     mustUint64(records[3]),

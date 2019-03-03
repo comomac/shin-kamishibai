@@ -46,10 +46,13 @@ func startServer() {
 func main() {
 	// fmt.Println(genChar(3))
 
-	// convJtoF()
-	// convFtoJ()
+	// convert format
+	// jfile := userHome("etc/kamishibai-kai/db.json")
+	// tfile := userHome("etc/shin-kamishibai/db.txt")
+	// convJtoF(jfile, tfile) // json to txt
+	// convFtoJ(tfile, jfile) // txt to json
 
-	// # test load db
+	// test load db
 	db := NewFlatDB(userHome("etc/shin-kamishibai/db.txt"))
 	db.Load()
 
