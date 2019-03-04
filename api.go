@@ -53,11 +53,23 @@ type BookInfoLessTitleResponse struct {
 	Itime    Blank `json:"itime,omitempty"`
 }
 
+// BookInfoLessAuthorResponse for json response on single book information, without book author
+type BookInfoLessAuthorResponse struct {
+	*Book
+	Author   Blank `json:"author,omitempty"`
+	Fullpath Blank `json:"fullpath,omitempty"`
+	Inode    Blank `json:"inode,omitempty"`
+	Itime    Blank `json:"itime,omitempty"`
+}
+
 // BooksInfoResponse for json response on multiple book information
 type BooksInfoResponse map[string]*BookInfoResponse
 
-// BooksInfoByTitleResponse for json response on multiple book information which grouped by title
+// BooksInfoByTitleResponse for json response on multiple book information which grouped by book title
 type BooksInfoByTitleResponse map[string][]*BookInfoLessTitleResponse
+
+// BooksInfoByAuthorResponse for json response on multiple book information which grouped by book author
+type BooksInfoByAuthorResponse map[string][]*BookInfoLessAuthorResponse
 
 // BooksResponse for json response on all book information
 type BooksResponse []*BookInfoResponse
@@ -333,6 +345,51 @@ func getBooksByTitle(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 			default:
 				books[ibook.Title] = append(books[ibook.Title], &BookInfoLessTitleResponse{Book: ibook.Book})
 			}
+		}
+
+		b, err := json.Marshal(&books)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(b)
+	}
+}
+
+// getBooksByAuther return several books info and group them by book author
+func getBooksByAuther(db *FlatDB) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		strKeyword := r.URL.Query().Get("keyword")
+		keywords := strings.Split(strKeyword, " ")
+
+		books := BooksInfoByAuthorResponse{}
+
+	OUTER:
+		for _, ibook := range db.IBooks {
+			// TODO do pageination?
+			// if i > 3 {
+			// 	break
+			// }
+
+			// if there is keyword, make sure title or author matches
+			if len(keywords) > 0 {
+				for _, keyword := range keywords {
+					re := regexp.MustCompile("(?i)" + keyword)
+					if re.FindStringIndex(ibook.Title) == nil && re.FindStringIndex(ibook.Author) == nil {
+						continue OUTER
+					}
+				}
+			}
+
+			books[ibook.Author] = append(books[ibook.Author], &BookInfoLessAuthorResponse{Book: ibook.Book})
 		}
 
 		b, err := json.Marshal(&books)

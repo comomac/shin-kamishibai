@@ -19,6 +19,7 @@ func startServer(db *FlatDB) {
 	http.HandleFunc("/books_info", getBooksInfo(db))    // /books_info?bookcodes=1,2,3,4,5
 	http.HandleFunc("/setbookmark/", setBookmark(db))   // /setbookmark/{bookID}/{page}
 	http.HandleFunc("/lists", getBooksByTitle(db))
+	http.HandleFunc("/alists", getBooksByAuther(db))
 	http.HandleFunc("/list_sources", getSources)
 	http.HandleFunc("/lists_dir", postDirList(db))
 
