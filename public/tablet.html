@@ -27,10 +27,10 @@
 	<body>
 		<div class="navbar navbar-fixed-top" id="menu">
 			<div class="btn-group" id="bcs" role="group">
-				<button class="btn btn-default" data-localize="browse.All" id="bc1" link="/lists"></button>
-				<button class="btn btn-default" data-localize="browse.New" id="bc2" link="/nlists"></button>
-				<button class="btn btn-default" data-localize="browse.Reading" id="bc3" link="/rlists"></button>
-				<button class="btn btn-default" data-localize="browse.Finished" id="bc4" link="/flists"></button>
+				<button class="btn btn-default" data-localize="browse.All" id="bc1" link="/lists" filter-by="all"></button>
+				<button class="btn btn-default" data-localize="browse.New" id="bc2" link="/lists" filter-by="new"></button>
+				<button class="btn btn-default" data-localize="browse.Reading" id="bc3" link="/lists" filter-by="reading"></button>
+				<button class="btn btn-default" data-localize="browse.Finished" id="bc4" link="/lists" filter-by="finished"></button>
 				<button class="btn btn-default" data-localize="browse.Author" id="bc5" link="/alists"></button>
 			</div>
 			<button class="btn" onclick="location.href = '/'">

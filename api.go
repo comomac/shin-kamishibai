@@ -12,8 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 type responseErrorStruct struct {
@@ -47,6 +45,9 @@ type BookInfoResponse struct {
 
 // BooksInfoResponse for json response on multiple book information
 type BooksInfoResponse map[string]*BookInfoResponse
+
+// BooksInfoByTitleResponse for json response on multiple book information which grouped by title
+type BooksInfoByTitleResponse map[string][]*BookInfoResponse
 
 // BooksResponse for json response on all book information
 type BooksResponse []*BookInfoResponse
@@ -175,7 +176,7 @@ func postDirList(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 		re := regexp.MustCompile(`\.cbz$`)
 
 		// fmt.Printf("%+v", db.IMapper)
-		spew.Dump(db.FMapper)
+		// spew.Dump(db.FMapper)
 
 		for _, file := range files {
 			// fmt.Println(file.Name(), file.IsDir())
@@ -214,7 +215,7 @@ func postDirList(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-// get books returns all the book info
+// post books returns all the book info
 func getBooks(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
@@ -222,14 +223,106 @@ func getBooks(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
+		filterBy := r.URL.Query().Get("filter_by")
+		strKeyword := r.URL.Query().Get("keyword")
+		keywords := strings.Split(strKeyword, " ")
+
 		books := BooksResponse{}
 
+	OUTER:
 		for _, ibook := range db.IBooks {
 			// TODO do pageination?
 			// if i > 3 {
 			// 	break
 			// }
-			books = append(books, &BookInfoResponse{Book: ibook.Book})
+
+			// if there is keyword, make sure title or author matches
+			if len(keywords) > 0 {
+				for _, keyword := range keywords {
+					re := regexp.MustCompile("(?i)" + keyword)
+					if re.FindStringIndex(ibook.Title) == nil && re.FindStringIndex(ibook.Author) == nil {
+						continue OUTER
+					}
+				}
+			}
+
+			switch filterBy {
+			case "finished":
+				if ibook.Book.Page == ibook.Book.Pages {
+					books = append(books, &BookInfoResponse{Book: ibook.Book})
+				}
+			case "reading":
+				if ibook.Book.Page > 0 && ibook.Book.Page < ibook.Book.Pages {
+					books = append(books, &BookInfoResponse{Book: ibook.Book})
+				}
+			case "new":
+				if time.Unix(int64(ibook.Book.Itime)+int64(time.Second)*3600*24*3, 0).Before(time.Now()) {
+					books = append(books, &BookInfoResponse{Book: ibook.Book})
+				}
+			default:
+				books = append(books, &BookInfoResponse{Book: ibook.Book})
+			}
+		}
+
+		b, err := json.Marshal(&books)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(b)
+	}
+}
+
+// getBooksByTitle return several books info and group them by book title
+func getBooksByTitle(db *FlatDB) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		filterBy := r.URL.Query().Get("filter_by")
+		strKeyword := r.URL.Query().Get("keyword")
+		keywords := strings.Split(strKeyword, " ")
+
+		books := BooksInfoByTitleResponse{}
+
+	OUTER:
+		for _, ibook := range db.IBooks {
+			// TODO do pageination?
+			// if i > 3 {
+			// 	break
+			// }
+
+			// if there is keyword, make sure title or author matches
+			if len(keywords) > 0 {
+				for _, keyword := range keywords {
+					re := regexp.MustCompile("(?i)" + keyword)
+					if re.FindStringIndex(ibook.Title) == nil && re.FindStringIndex(ibook.Author) == nil {
+						continue OUTER
+					}
+				}
+			}
+
+			switch filterBy {
+			case "finished":
+				if ibook.Book.Page == ibook.Book.Pages {
+					books[ibook.Title] = append(books[ibook.Title], &BookInfoResponse{Book: ibook.Book})
+				}
+			case "reading":
+				if ibook.Book.Page > 0 && ibook.Book.Page < ibook.Book.Pages {
+					books[ibook.Title] = append(books[ibook.Title], &BookInfoResponse{Book: ibook.Book})
+				}
+			case "new":
+				if time.Unix(int64(ibook.Book.Itime)+int64(time.Second)*3600*24*3, 0).Before(time.Now()) {
+					books[ibook.Title] = append(books[ibook.Title], &BookInfoResponse{Book: ibook.Book})
+				}
+			default:
+				books[ibook.Title] = append(books[ibook.Title], &BookInfoResponse{Book: ibook.Book})
+			}
 		}
 
 		b, err := json.Marshal(&books)

@@ -3,9 +3,10 @@ License: refer to LICENSE file
  */
 
 // global search result list
-function reload_leftbox(url, keyword) {
+function reload_leftbox(url, filter_by, keyword) {
 	// retrive data
-	$.post(url, { keyword: keyword }, function(data) {
+	// $.post(url, { keyword: keyword }, function(data) {
+	$.get(url, { filter_by: filter_by, keyword: keyword }, function(data) {
 		var el = $("#leftbox");
 		el.empty();
 		el.append(data);
@@ -99,10 +100,7 @@ function reload_books(bookcodes, options) {
 			var pages = book.pages;
 			var pc = Math.round((page / pages) * 100); // percentage read
 			var pc2 = pc === 0 ? 0 : pc + 1; // if never read, then make it all 0
-			span.css(
-				"background",
-				"linear-gradient(to right, rgba(51,204,102,1) " + pc + "%,rgba(234,234,234,1) " + pc2 + "%)"
-			);
+			span.css("background", "linear-gradient(to right, rgba(51,204,102,1) " + pc + "%,rgba(234,234,234,1) " + pc2 + "%)");
 			a.append(span);
 
 			li.append(a);
@@ -126,13 +124,21 @@ function exe_show_author(author) {
 }
 
 function prepare_lists(url) {
-	if (typeof url === "undefined") url = get_menu_url();
+	// get menu url (All | New | Reading | Finished | Author)
+	if (typeof url === "undefined") url = $("#bcs > button.active").attr("link");
 
 	var sb = $("#searchbox");
 	var bcs = $("#bcs");
-	var i = get_menu_selection_number();
 
-	// remember keyword
+	// get menu selection number
+	var id = $("#bcs > button.active").attr("id");
+	var i = -1;
+	if (id) {
+		i = parseInt(id.replace("bc", ""));
+	}
+	if (i === -1) i = 1;
+
+	// remember keyword (search word)
 	var keyword;
 	if (i === 5) {
 		keyword = sb.val();
@@ -144,21 +150,10 @@ function prepare_lists(url) {
 		$.cookie(uport() + ".keyword", keyword, { path: "/" });
 	}
 
+	// filter by
+	var filter_by = $("#bcs > button.active").attr("filter-by");
+	if (!filter_by) filter_by = "all";
+
 	// reload leftbox
-	reload_leftbox(url, keyword);
-}
-
-function get_menu_selection_number() {
-	var id = $("#bcs > button.active").attr("id");
-
-	var n;
-	if (id) {
-		n = parseInt(id.replace("bc", ""));
-	}
-
-	return n || 1;
-}
-
-function get_menu_url() {
-	return $("#bcs > button.active").attr("link");
+	reload_leftbox(url, filter_by, keyword);
 }
