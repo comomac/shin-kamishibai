@@ -41,13 +41,23 @@ type BookInfoResponse struct {
 	*Book
 	Fullpath Blank `json:"fullpath,omitempty"`
 	Inode    Blank `json:"inode,omitempty"`
+	Itime    Blank `json:"itime,omitempty"`
+}
+
+// BookInfoLessTitleResponse for json response on single book information, without book title
+type BookInfoLessTitleResponse struct {
+	*Book
+	Title    Blank `json:"title,omitempty"`
+	Fullpath Blank `json:"fullpath,omitempty"`
+	Inode    Blank `json:"inode,omitempty"`
+	Itime    Blank `json:"itime,omitempty"`
 }
 
 // BooksInfoResponse for json response on multiple book information
 type BooksInfoResponse map[string]*BookInfoResponse
 
 // BooksInfoByTitleResponse for json response on multiple book information which grouped by title
-type BooksInfoByTitleResponse map[string][]*BookInfoResponse
+type BooksInfoByTitleResponse map[string][]*BookInfoLessTitleResponse
 
 // BooksResponse for json response on all book information
 type BooksResponse []*BookInfoResponse
@@ -310,18 +320,18 @@ func getBooksByTitle(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 			switch filterBy {
 			case "finished":
 				if ibook.Book.Page == ibook.Book.Pages {
-					books[ibook.Title] = append(books[ibook.Title], &BookInfoResponse{Book: ibook.Book})
+					books[ibook.Title] = append(books[ibook.Title], &BookInfoLessTitleResponse{Book: ibook.Book})
 				}
 			case "reading":
 				if ibook.Book.Page > 0 && ibook.Book.Page < ibook.Book.Pages {
-					books[ibook.Title] = append(books[ibook.Title], &BookInfoResponse{Book: ibook.Book})
+					books[ibook.Title] = append(books[ibook.Title], &BookInfoLessTitleResponse{Book: ibook.Book})
 				}
 			case "new":
 				if time.Unix(int64(ibook.Book.Itime)+int64(time.Second)*3600*24*3, 0).Before(time.Now()) {
-					books[ibook.Title] = append(books[ibook.Title], &BookInfoResponse{Book: ibook.Book})
+					books[ibook.Title] = append(books[ibook.Title], &BookInfoLessTitleResponse{Book: ibook.Book})
 				}
 			default:
-				books[ibook.Title] = append(books[ibook.Title], &BookInfoResponse{Book: ibook.Book})
+				books[ibook.Title] = append(books[ibook.Title], &BookInfoLessTitleResponse{Book: ibook.Book})
 			}
 		}
 
