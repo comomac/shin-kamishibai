@@ -167,12 +167,12 @@ function parse_dir_list(files) {
 					readstate += "5";
 				}
 
-				href = "/tablet#book=" + file.id + "&page=" + file.page;
+				href = "/tablet.html#book=" + file.id + "&page=" + file.page;
 			} else {
 				// unread
 
 				readstate += "0";
-				href = "/tablet#book=" + file.id;
+				href = "/tablet.html#book=" + file.id;
 			}
 
 			html.push(
@@ -222,7 +222,7 @@ function reload_dir_lists(dir_path, keyword) {
 	el.empty();
 
 	$.post("/lists_dir", { dir: dir_path, keyword: keyword, order_by: order_by }, function(data) {
-		let els = parse_dir_list(data);
+		var els = parse_dir_list(data);
 
 		el.append(els);
 

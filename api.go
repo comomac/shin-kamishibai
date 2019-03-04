@@ -38,12 +38,15 @@ func responseError(w http.ResponseWriter, err error) {
 // Blank use to blank sensitive or not needed data
 type Blank string
 
-// BookInfoResponse for json response on book information
+// BookInfoResponse for json response on single book information
 type BookInfoResponse struct {
 	*Book
 	Fullpath Blank `json:"fullpath,omitempty"`
 	Inode    Blank `json:"inode,omitempty"`
 }
+
+// BooksInfoResponse for json response on multiple book information
+type BooksInfoResponse map[string]*BookInfoResponse
 
 // BooksResponse for json response on all book information
 type BooksResponse []*BookInfoResponse
@@ -65,6 +68,40 @@ func getBookInfo(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 		}
 
 		b, err := json.Marshal(&BookInfoResponse{Book: book})
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(b)
+	}
+}
+
+// getBooksInfo return several books info
+func getBooksInfo(db *FlatDB) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		bookcodes := r.URL.Query().Get("bookcodes")
+		bookIDs := strings.Split(bookcodes, ",")
+
+		books := BooksInfoResponse{}
+
+		for _, bookID := range bookIDs {
+			book := db.GetBookByID(bookID)
+			if book == nil {
+				continue
+			}
+
+			books[bookID] = &BookInfoResponse{Book: book}
+		}
+
+		b, err := json.Marshal(books)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
