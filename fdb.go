@@ -435,7 +435,7 @@ func getNumber(str string) string {
 	}
 
 	// e.g.  v01.cbz
-	result = regexp.MustCompile(`(?i) (v\d+\.)$`).FindStringSubmatch(s)
+	result = regexp.MustCompile(`(?i) (v\d+)$`).FindStringSubmatch(s)
 	if result != nil {
 		return result[1]
 	}
