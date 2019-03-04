@@ -8,7 +8,7 @@ import (
 
 func startServer(db *FlatDB) {
 	fs := http.FileServer(http.Dir("public/"))
-	http.Handle("/public/", http.StripPrefix("/public/", fs))
+	http.Handle("/", fs)
 
 	// test codes
 
@@ -18,6 +18,8 @@ func startServer(db *FlatDB) {
 	http.HandleFunc("/bookinfo/", getBookInfo(db))      // /bookinfo/{bookID}
 	http.HandleFunc("/setbookmark/", setBookmark(db))   // /setbookmark/{bookID}/{page}
 	http.HandleFunc("/books", getBooks(db))
+	http.HandleFunc("/list_sources", getSources)
+	http.HandleFunc("/lists_dir", postDirList(db))
 	// r.Post("/list_dir", listDir)
 	// r.Post("/delete_book", deleteBook)
 

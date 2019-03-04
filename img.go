@@ -35,18 +35,18 @@ func imgThumb(reader io.Reader) ([]byte, error) {
 	if maxW >= maxH {
 		if imgW > imgH {
 			thmW = int(maxW)
-			thmH = int(float64(thmW) * ratio)
+			thmH = int(float64(thmW) / ratio)
 		} else {
 			thmH = int(maxH)
-			thmW = int(float64(thmH) * ratio)
+			thmW = int(float64(thmH) / ratio)
 		}
 	} else {
 		if imgW < imgH {
 			thmW = int(maxW)
-			thmH = int(float64(thmW) * ratio)
+			thmH = int(float64(thmW) / ratio)
 		} else {
 			thmH = int(maxH)
-			thmW = int(float64(thmH) * ratio)
+			thmW = int(float64(thmH) / ratio)
 		}
 	}
 

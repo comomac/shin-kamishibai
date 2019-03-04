@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta
+			content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
+			name="viewport"
+		/>
+		<meta content="yes" name="apple-mobile-web-app-capable" />
+		<meta content="black" name="apple-mobile-web-app-status-bar-style" />
+		<title>Kamishibai</title>
+		<link href="/vendor/css/bootstrap.css" rel="stylesheet" type="text/css" />
+		<link href="/css/tablet_browse.css" rel="stylesheet" type="text/css" />
+		<link href="/css/tablet_reader.css" rel="stylesheet" type="text/css" />
+		<link href="/css/tablet_reader_input.css" rel="stylesheet" type="text/css" />
+		<script src="/vendor/js/jquery-2.1.4.js"></script>
+		<script src="/vendor/js/jquery.localize.js"></script>
+		<script src="/vendor/js/jquery.cookie.js"></script>
+		<script src="/vendor/js/jquery.scrollTo-1.4.3.1.js"></script>
+		<script src="/vendor/js/bootstrap.js"></script>
+		<script src="/js/swipeview-k.js"></script>
+		<script src="/js/utilities.js"></script>
+		<script src="/js/tablet3_browse.js"></script>
+		<script src="/js/tablet3_reader.js"></script>
+		<script src="/js/tablet3.js"></script>
+	</head>
+	<body>
+		<div class="navbar navbar-fixed-top" id="menu">
+			<div class="btn-group" id="bcs" role="group">
+				<button class="btn btn-default" data-localize="browse.All" id="bc1" link="/lists"></button>
+				<button class="btn btn-default" data-localize="browse.New" id="bc2" link="/nlists"></button>
+				<button class="btn btn-default" data-localize="browse.Reading" id="bc3" link="/rlists"></button>
+				<button class="btn btn-default" data-localize="browse.Finished" id="bc4" link="/flists"></button>
+				<button class="btn btn-default" data-localize="browse.Author" id="bc5" link="/alists"></button>
+			</div>
+			<button class="btn" onclick="location.href = '/'">
+				<i class="glyphicon glyphicon-folder-open"></i>
+			</button>
+		</div>
+		<div id="window">
+			<div id="searchbox-holder">
+				<div class="input-group">
+					<span class="input-group-addon">
+						<i class="glyphicon glyphicon-search"></i>
+					</span>
+					<input class="form-control" id="searchbox" name="searchbox" placeholder="search" type="text" value="" />
+				</div>
+			</div>
+			<div id="leftbox-div">
+				<ul data-autodividers="true" data-filler-theme="d" data-role="listview" data-theme="d" id="leftbox"></ul>
+			</div>
+			<div id="bookinfo"></div>
+			<div id="rcontainer">
+				<ul id="books"></ul>
+			</div>
+		</div>
+		<div class="hidden" id="container">
+			<div id="wrapper"></div>
+			<div id="currentinfo">
+				<span id="pageCounter"></span>
+				<span id="clock"></span>
+				<span id="battery"></span>
+			</div>
+			<div class="ui-bar-a" id="booktitle"></div>
+			<div class="ui-bar-a" id="readermenu">
+				<div>
+					<div class="gap hidden" id="div-fs-btn">
+						<div
+							class="ui-btn ui-btn-up-a ui-shadow ui-btn-corner-all"
+							id="gofullscreen"
+							onclick="toggleFullScreen('container'); hidemenu();"
+						>
+							<div>
+								full screen
+							</div>
+						</div>
+					</div>
+					<div class="gap">
+						<div class="segmented-button" data-toggle="buttons" id="readdirection">
+							<input checked="checked" class="radio" id="readtoleft" name="readdirection" type="radio" />
+							<label class="first" for="readtoleft">eastern</label>
+							<input class="radio" id="readtoright" name="readdirection" type="radio" />
+							<label class="last" for="readtoright">western</label>
+						</div>
+					</div>
+					<div class="gap">
+						<input id="pageinput" type="text" />
+						<input id="pageslider" max="10" min="1" step="1" type="range" value="1" />
+					</div>
+					<div class="gap">
+						<div class="ui-btn ui-btn-up-a ui-shadow ui-btn-corner-all" id="closeReader">
+							<div>
+								close reader
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

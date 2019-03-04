@@ -1,115 +1,249 @@
+/* xx_jshint asi: true */
+/* xx_jshint esversion: 6 */
+
 /*!
 License: refer to LICENSE file
  */
 
-
 // global variables
-var hasTouch = 'ontouchstart' in window; //find out if device is touch device or not
+var hasTouch = "ontouchstart" in window; //find out if device is touch device or not
 var items_in_row = 0; // number of items in a row (inside #container)
-var lastbook = getHashParams()['lastbook'];
-if (!lastbook) lastbook = '';
+var lastbook = getHashParams()["lastbook"];
+if (!lastbook) lastbook = "";
 var isBookSelectMode = false;
-var isMobile = navigator.userAgent.match(/(iPad)|(iPhone)|(iPod)|(android)|(webOS)/i)
+var isMobile = navigator.userAgent.match(/(iPad)|(iPhone)|(iPod)|(android)|(webOS)/i);
 var primary_list;
 var last_window_width = window.innerWidth;
 var isDeleteMode = false;
 
 // set the last browse selected on cookie
-$.cookie(uport() + '.lastbrowse', '/browse/', { path: '/' });
+$.cookie(uport() + ".lastbrowse", "/browse/", { path: "/" });
 
 // detect os
-var OSName="Unknown OS";
-if (navigator.appVersion.indexOf("Win")!=-1) OSName="Windows";
-if (navigator.appVersion.indexOf("Mac")!=-1) OSName="MacOS";
-if (navigator.appVersion.indexOf("X11")!=-1) OSName="UNIX";
-if (navigator.appVersion.indexOf("Linux")!=-1) OSName="Linux";
-
+var OSName = "Unknown OS";
+if (navigator.appVersion.indexOf("Win") != -1) OSName = "Windows";
+if (navigator.appVersion.indexOf("Mac") != -1) OSName = "MacOS";
+if (navigator.appVersion.indexOf("X11") != -1) OSName = "UNIX";
+if (navigator.appVersion.indexOf("Linux") != -1) OSName = "Linux";
 
 //window.console||(console={log:function(){}});
 // add support to console.log if the browser doesn't support it
 if (!console.log) {
 	console = {
-		log:function(str) {
+		log: function(str) {
 			window.console.log(str);
 		}
-	}
+	};
 }
 
 function homepage() {
 	// get dir from hash
 	var hashes = getHashParams();
-	var dir = hashes['dir'].split('/');
+	var dir = hashes["dir"].split("/");
 
 	dir.pop();
 
-	window.location.hash = 'dir=' + dir.join('/')
+	window.location.hash = "dir=" + dir.join("/");
 	return false;
 }
 
 function exe_order_by(str) {
 	// toggle the order button
-	$('.nav-collapse').collapse('toggle');
-	
-	$.cookie(uport() + '.order_by', str, { path: '/' });
+	$(".nav-collapse").collapse("toggle");
 
-	reload_dir_lists( getHashParams()['dir'], $('#searchbox').val() );
+	$.cookie(uport() + ".order_by", str, { path: "/" });
+
+	reload_dir_lists(getHashParams()["dir"], $("#searchbox").val());
 }
 
 function reload_sources() {
-	var ul = $('#ul-sources');
+	var ul = $("#ul-sources");
 	ul.empty();
 
-	$.getScript('/list_sources', function() {
+	$.getScript("/list_sources", function() {
 		for (i in sources) {
-			ul.append('<li><a tabindex="-1" href="#dir=' + sources[i] + '" rel="' + sources[i] + '">' + i + '&nbsp;<i class="icon-bookmark"></i>&nbsp;' + sources[i] + '</a></li>');
+			ul.append(
+				'<li><a tabindex="-1" href="#dir=' +
+					sources[i] +
+					'" rel="' +
+					sources[i] +
+					'">' +
+					i +
+					'&nbsp;<i class="icon-bookmark"></i>&nbsp;' +
+					sources[i] +
+					"</a></li>"
+			);
 		}
 	});
 }
 
-function func_set_last_selected_item( str ) {
-	$.cookie(uport() + '.last_selected_item', str, { path: '/' });
+function func_set_last_selected_item(str) {
+	$.cookie(uport() + ".last_selected_item", str, { path: "/" });
+}
+
+function parse_dir_list(files) {
+	var html = [];
+
+	var path = files.shift().path;
+	var dirs = path.split("/");
+	var pathup = [];
+	for (var di in dirs) {
+		if (Number(di) + 1 >= dirs.length) {
+			continue;
+		}
+		pathup.push(dirs[di]);
+	}
+
+	html.push('<ul id="ul-lists" class="ul-lists">');
+
+	// updir
+	html.push(
+		'<li class="directory collapsed updir"><a href="#dir=' +
+			pathup.join("/") +
+			'" rel="' +
+			pathup.join("/") +
+			'/"><img src="/images/folder-mini-up.png" /><span>..</span></a></li>'
+	);
+
+	for (var i in files) {
+		var file = files[i];
+
+		var full_path = path + "/" + file.name;
+
+		if (file.is_dir) {
+			// dir
+
+			var icon = "folder-mini.png";
+
+			if (file.name === "Trash") {
+				// trash
+				html.push(
+					'<li class="directory collapsed" id="trash"><a href="#dir=' +
+						+full_path +
+						'" rel="' +
+						+full_path +
+						'/"><img src="/images/"' +
+						icon +
+						'" /><span>' +
+						file.name +
+						"</span></a></li>"
+				);
+			} else {
+				// dir
+				html.push(
+					'<li class="directory collapsed"><a href="#dir=' +
+						full_path +
+						'" rel="' +
+						full_path +
+						'/"><img src="/images/' +
+						icon +
+						'" /><span>' +
+						file.name +
+						"</span></a></li>"
+				);
+			}
+		} else {
+			// file
+
+			var img =
+				'<img class="lazy fadeIn fadeIn-1s fadeIn-Delay-Xs" data-original="/thumbnail/' +
+				file.id +
+				'" alt="Loading..." />';
+
+			var href = "";
+			var readstate = "read";
+
+			if (file.pages && file.page) {
+				// file read
+				// read5 10 20 30 40 ... 100
+
+				var bn = ((1.0 * file.page) / file.pages) * 100;
+				var pc = bn - (bn % 10);
+
+				//  read percentage css class
+				if (pc > 0) {
+					readstate += pc;
+				} else {
+					readstate += "5";
+				}
+
+				href = "/tablet#book=" + file.id + "&page=" + file.page;
+			} else {
+				// unread
+
+				readstate += "0";
+				href = "/tablet#book=" + file.id;
+			}
+
+			html.push(
+				'<li class="file ext_#{ext}"><a href="' +
+					href +
+					'" bookcode="' +
+					file.id +
+					'" rel="' +
+					full_path +
+					'">' +
+					img +
+					'<span class="' +
+					readstate +
+					'">' +
+					file.name +
+					'</span><span class="badge badge-info bookpages">' +
+					file.pages +
+					"</span></a></li>"
+			);
+		}
+	}
+
+	html.push("</ul>");
+
+	return html;
 }
 
 function reload_dir_lists(dir_path, keyword) {
 	// set default to name for order_by
-	var order_by = 'name';
-	var co = $.cookie(uport() + '.order_by');
-	if ( co ) {
-		switch ( co ) {
-			case 'name':
-			case 'size':
-			case 'date':
+	var order_by = "name";
+	var co = $.cookie(uport() + ".order_by");
+	if (co) {
+		switch (co) {
+			case "name":
+			case "size":
+			case "date":
 				order_by = co;
 				break;
 		}
-	}	
-	$.cookie(uport() + '.order_by', order_by, { path: '/' }) ;
+	}
+	$.cookie(uport() + ".order_by", order_by, { path: "/" });
 
 	// set the last path selected on cookie
-	$.cookie(uport() + '.lastpath', dir_path, { path: '/' });
+	$.cookie(uport() + ".lastpath", dir_path, { path: "/" });
 
-	var el = $('#dir_lists');
+	var el = $("#dir_lists");
 	el.empty();
 
-	$.post('/lists_dir', { dir: dir_path, keyword: keyword, order_by: order_by }, function(data) {
-		el.append(data);
+	$.post("/lists_dir", { dir: dir_path, keyword: keyword, order_by: order_by }, function(data) {
+		let els = parse_dir_list(data);
+
+		el.append(els);
 
 		// make li evenly horizontally filled
 		var window_width = $(window).innerWidth();
-		var li_width = $('.updir').eq(0).innerWidth();
+		var li_width = $(".updir")
+			.eq(0)
+			.innerWidth();
 		var num = parseInt(window_width / li_width);
 		num = parseInt(window_width / num);
-		$('.directory, .file').css('width', num +'px');
+		$(".directory, .file").css("width", num + "px");
 
 		// set container top height
 		container_height_refresh();
 
 		// replace all links to desktop reader
 		if (!hasTouch) {
-			for (i in el.find('LI A')) {
-				var el_a = el.find('LI A').eq(i);
-				if (el_a.parent().hasClass('file')) {
-					el_a.attr('href', el_a.attr('href').replace(/reader2/,'reader') );
+			for (i in el.find("LI A")) {
+				var el_a = el.find("LI A").eq(i);
+				if (el_a.parent().hasClass("file")) {
+					el_a.attr("href", el_a.attr("href").replace(/reader2/, "reader"));
 				}
 			}
 		}
@@ -117,22 +251,26 @@ function reload_dir_lists(dir_path, keyword) {
 		// make images load only when scrolled into view
 		$("img.lazy").lazyload({
 			//effect : "fadeIn",
-			threshold : 500
+			threshold: 500
 		});
 
 		// get to the last selected item
-		var el_lsi = $('span:contains("' + $.cookie(uport() + '.last_selected_item') + '")').parent();
+		var el_lsi = $('span:contains("' + $.cookie(uport() + ".last_selected_item") + '")').parent();
 		if (el_lsi.length == 1) {
-			$(el_lsi).addClass('last-selected-item');
-			$(document).scrollTo( el_lsi, {offset: - $('.navbar-inner').height() } );
+			$(el_lsi).addClass("last-selected-item");
+			$(document).scrollTo(el_lsi, { offset: -$(".navbar-inner").height() });
 		}
 
 		// apply click event for directory and file, so it will be focused next time
-		$('li.directory > a, li.file > a').click( function() {
-			func_set_last_selected_item( $(this).text() );
+		$("li.directory > a, li.file > a").click(function() {
+			func_set_last_selected_item($(this).text());
 		});
-		$('.updir > a').click( function() {
-			func_set_last_selected_item( getHashParams()['dir'].split('/').pop() );
+		$(".updir > a").click(function() {
+			func_set_last_selected_item(
+				getHashParams()
+					["dir"].split("/")
+					.pop()
+			);
 		});
 
 		// make sure files are deleteable if in delete mode
@@ -147,24 +285,23 @@ function reload_dir_lists(dir_path, keyword) {
 
 function delete_book(bookcode) {
 	// send delete bookcode command to server
-	$.post('/delete_book', { bookcode: bookcode });
+	$.post("/delete_book", { bookcode: bookcode });
 }
 
-function toggleDelete( el ) {	
-	var bookcode = el.attr('bookcode');
-	
-	var el = $('[bookcode=' + bookcode + ']');
+function toggleDelete(el) {
+	var bookcode = el.attr("bookcode");
 
-	if (el.children('.countdown').length < 1) {
+	var el = $("[bookcode=" + bookcode + "]");
+
+	if (el.children(".countdown").length < 1) {
 		el.prepend("<div class='countdown'><p>Z</p></div>");
 
-		countdownDelete( el, 6 );
-	}
-	else {
-		var timer = el.attr('timer');
-		clearTimeout( timer );
+		countdownDelete(el, 6);
+	} else {
+		var timer = el.attr("timer");
+		clearTimeout(timer);
 
-		el.children('.countdown').remove();
+		el.children(".countdown").remove();
 	}
 }
 
@@ -173,35 +310,42 @@ function countdownDelete(el, time) {
 
 	if (time > 0) {
 		// count down reduce by 1
-		el.children('.countdown').children('p').text(time);
+		el.children(".countdown")
+			.children("p")
+			.text(time);
 
-		var timer = setTimeout( function() {
+		var timer = setTimeout(function() {
 			countdownDelete(el, time);
 		}, 1000);
 
-		el.attr('timer', timer);
-	}
-	else {
+		el.attr("timer", timer);
+	} else {
 		// count down over, now delete book
-		el.removeAttr('timer');
+		el.removeAttr("timer");
 
-		var bookcode = el.attr('bookcode');
+		var bookcode = el.attr("bookcode");
 		delete_book(bookcode);
 
-		el.fadeOut( "slow", function() {
+		el.fadeOut("slow", function() {
 			// show trash if doesn't exist, change trash icon to full
-			var t = $('#trash');
+			var t = $("#trash");
 
 			if (t.length <= 0) {
-				var li_link = getHashParams()['dir'] + '/Trash/';
-				var li_trash = '<li class="directory collapsed trash" id="trash"><a href="#dir=' + li_link + '"><img src="/images/trash-full-mini.png" /><span>Trash</span></a></li>'
-				$('#ul-lists').append(li_trash);
-			}
-			else {
-				var img = t.find('img').attr('src').split('/').pop();
+				var li_link = getHashParams()["dir"] + "/Trash/";
+				var li_trash =
+					'<li class="directory collapsed trash" id="trash"><a href="#dir=' +
+					li_link +
+					'"><img src="/images/trash-full-mini.png" /><span>Trash</span></a></li>';
+				$("#ul-lists").append(li_trash);
+			} else {
+				var img = t
+					.find("img")
+					.attr("src")
+					.split("/")
+					.pop();
 
-				if (img == 'trash-empty-mini.png') {
-					t.find('img').attr('src', '/images/trash-full-mini.png');
+				if (img == "trash-empty-mini.png") {
+					t.find("img").attr("src", "/images/trash-full-mini.png");
 				}
 			}
 		});
@@ -211,17 +355,17 @@ function countdownDelete(el, time) {
 function delete_enable() {
 	isDeleteMode = true;
 
-	$('.nav-collapse').collapse('toggle');
+	$(".nav-collapse").collapse("toggle");
 
-	var el = $('#btnDeleteDisable');
-	el.removeClass('hidden');
+	var el = $("#btnDeleteDisable");
+	el.removeClass("hidden");
 	el.show();
 
 	// replace click event to toggle delete
-	el = $('li.file > a');
-	el.attr('onclick','').unbind('click');
-	el.click( function() {
-		toggleDelete( $(this) );
+	el = $("li.file > a");
+	el.attr("onclick", "").unbind("click");
+	el.click(function() {
+		toggleDelete($(this));
 
 		return false;
 	});
@@ -230,26 +374,26 @@ function delete_enable() {
 function delete_disable() {
 	isDeleteMode = false;
 
-	$('[timer]').each(function() {
-		var timer = $(this).attr('timer');
-		clearTimeout( timer );
+	$("[timer]").each(function() {
+		var timer = $(this).attr("timer");
+		clearTimeout(timer);
 
-		$(this).children('.countdown').remove();
+		$(this)
+			.children(".countdown")
+			.remove();
 	});
 
-	var el = $('#btnDeleteDisable');
+	var el = $("#btnDeleteDisable");
 	el.hide();
-	el.addClass('hidden');
+	el.addClass("hidden");
 
 	// restore remember last clicked item
-	el = $('li.file > a');
-	el.attr('onclick','').unbind('click');
-	el.click( function() {
-		func_set_last_selected_item( $(this).text() );
-	});	
-
+	el = $("li.file > a");
+	el.attr("onclick", "").unbind("click");
+	el.click(function() {
+		func_set_last_selected_item($(this).text());
+	});
 }
-
 
 function container_height_refresh() {
 	// $('#container').css('top', $('#navtop').outerHeight() - $('#navcollapse').outerHeight() );
@@ -272,7 +416,7 @@ $(document).keydown(function(e) {
 window.addEventListener("hashchange", function() {
 	// get dir from hash
 	var hashes = getHashParams();
-	var dir = hashes['dir'];
+	var dir = hashes["dir"];
 
 	// stop if dir not defined
 	if (dir == undefined) {
@@ -280,31 +424,31 @@ window.addEventListener("hashchange", function() {
 	}
 
 	// get keyword from searchbox
-	var keyword = $('#searchbox').val();
+	var keyword = $("#searchbox").val();
 
 	// save keyword used for search
-	$.cookie(uport() + '.lastsearch', keyword, { path: '/' });
+	$.cookie(uport() + ".lastsearch", keyword, { path: "/" });
 
 	// update path label
-	var dirs = dir.split('/');
+	var dirs = dir.split("/");
 	dirs.shift();
-	var el = '';
+	var el = "";
 	var ds;
-	for (var i = 0; i < dirs.length - 1 ; i++) {
-		var li_class = '';
+	for (var i = 0; i < dirs.length - 1; i++) {
+		var li_class = "";
 		if (i >= dirs.length) {
 			li_class = ' class="active"';
 		}
 
-		ds = '/';
+		ds = "/";
 		for (var j = 0; j < i; j++) {
-			ds += dirs[j] + '/';
+			ds += dirs[j] + "/";
 		}
 		ds += dirs[i];
-		el += '<li' + li_class + '><a href="#dir=' + ds + '">' + dirs[i] + '</a></li>';
+		el += "<li" + li_class + '><a href="#dir=' + ds + '">' + dirs[i] + "</a></li>";
 	}
-	el += '<li' + li_class + '>' + dirs[i] + '</li>';
-	$('#path').html(el);
+	el += "<li" + li_class + ">" + dirs[i] + "</li>";
+	$("#path").html(el);
 
 	// reload the dir list
 	reload_dir_lists(dir, keyword);
@@ -318,74 +462,73 @@ $(function() {
 	// load sources for menu
 	reload_sources();
 
-	if ($.cookie(uport() + '.lastsearch')) {
-		$('#searchbox').val( $.cookie(uport() + '.lastsearch') );
+	if ($.cookie(uport() + ".lastsearch")) {
+		$("#searchbox").val($.cookie(uport() + ".lastsearch"));
 	}
 
-	$('#searchbox').bind('change', function(e) {
+	$("#searchbox").bind("change", function(e) {
 		// get dir from hash
 		var hashes = getHashParams();
-		var dir = hashes['dir'];
+		var dir = hashes["dir"];
 
 		// get keyword from searchbox
-		var keyword = $('#searchbox').val();
+		var keyword = $("#searchbox").val();
 
 		// stop if it the search is same as last search
-		if (keyword == $.cookie(uport() + '.lastsearch')) return false;
+		if (keyword == $.cookie(uport() + ".lastsearch")) return false;
 
 		// save keyword used for search
-		$.cookie(uport() + '.lastsearch', keyword, { path: '/' });
+		$.cookie(uport() + ".lastsearch", keyword, { path: "/" });
 
 		// reload the dir list
 		reload_dir_lists(dir, keyword);
 	});
-	$('#searchbox').bind('keyup', function(e) {
+	$("#searchbox").bind("keyup", function(e) {
 		e = e || window.event;
 
 		if (e.keyCode == 13 || e.keyCode == 27) {
 			// enter key || escape key, unfocus the searchbox
-			$('#searchbox').blur();
+			$("#searchbox").blur();
 		}
 
 		// get dir from hash
 		var hashes = getHashParams();
-		var dir = hashes['dir'];
+		var dir = hashes["dir"];
 
 		// get keyword from searchbox
-		var keyword = $('#searchbox').val();
+		var keyword = $("#searchbox").val();
 
 		// stop if it the search is same as last search
-		if (keyword == $.cookie(uport() + '.lastsearch')) return false;
+		if (keyword == $.cookie(uport() + ".lastsearch")) return false;
 
 		// save keyword used for search
-		$.cookie(uport() + '.lastsearch', keyword, { path: '/' });
+		$.cookie(uport() + ".lastsearch", keyword, { path: "/" });
 
 		// reload the dir list
 		reload_dir_lists(dir, keyword);
 	});
 
 	// load dir and file list
-	setTimeout( function() {
+	setTimeout(function() {
 		setTimeout(function() {
 			// set container top height, make sure it runs after everything
 			container_height_refresh();
 		}, 100);
 
-
 		// set hash to nothing first, then shortly after the correct hash path will be load, so the dir list will be run
-		window.location.hash = '';
+		window.location.hash = "";
 
 		setTimeout(function() {
-			if ($.cookie(uport() + '.lastpath')) {
+			if ($.cookie(uport() + ".lastpath")) {
 				// load last path remembered
-				window.location.hash = '#dir=' + $.cookie(uport() + '.lastpath');
-			}
-			else {
+				window.location.hash = "#dir=" + $.cookie(uport() + ".lastpath");
+			} else {
 				// click the first source if there is no lastpath
-				window.location.hash = $('#ul-sources').find('LI A').eq(0).attr('href');
+				window.location.hash = $("#ul-sources")
+					.find("LI A")
+					.eq(0)
+					.attr("href");
 			}
 		}, 50);
-
 	}, 500);
 });
-

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta
+			content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
+			name="viewport"
+		/>
+		<meta content="yes" name="apple-mobile-web-app-capable" />
+		<meta content="black" name="apple-mobile-web-app-status-bar-style" />
+		<title>Kamishibai</title>
+		<link href="/vendor/css/bootstrap.css" rel="stylesheet" type="text/css" />
+		<link href="/css/browse.css" rel="stylesheet" type="text/css" />
+		<script src="/vendor/js/jquery-2.1.4.js"></script>
+		<script src="/vendor/js/jquery.localize.js"></script>
+		<script src="/vendor/js/jquery.cookie.js"></script>
+		<script src="/vendor/js/bootstrap.js"></script>
+		<script src="/js/utilities.js"></script>
+		<script src="/js/browse.js"></script>
+		<script src="/vendor/js/jquery.scrollTo-1.4.3.1.js"></script>
+		<script src="/vendor/js/jquery.lazyload.min.js"></script>
+	</head>
+	<body>
+		<nav class="navbar navbar-default" id="navtop">
+			<div class="container-fluid">
+				<div class="navbar-header">
+					<a class="navbar-brand" data-localize="browse.Path"></a>
+					<ol class="breadcrumb pull-left" id="path"></ol>
+					<button class="navbar-toggle collapsed" data-target="#navcollapse" data-toggle="collapse" type="button">
+						<span class="sr-only">Toggle Navigation</span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</button>
+				</div>
+				<div class="collapse navbar-collapse" id="navcollapse">
+					<form class="navbar-form navbar-right" role="search">
+						<div class="form-group">
+							<input class="form-control" data-localize="browse.Search" id="searchbox" placeholder="" type="text" />
+						</div>
+					</form>
+					<ul class="nav navbar-nav">
+						<li class="dropdown">
+							<a
+								aria-expanded="false"
+								aria-haspopup="true"
+								class="dropdown-toggle"
+								data-toggle="dropdown"
+								href="#"
+								role="button"
+							>
+								<span data-localize="browse.Bookmarks"></span>
+								<span class="caret"></span>
+							</a>
+							<ul aria-labelledby="dropdownMenu" class="dropdown-menu" id="ul-sources" role="menu">
+								<li>
+									<a href="#" tabindex="-1">blank</a>
+								</li>
+							</ul>
+						</li>
+						<li class="dropdown">
+							<a class="dropdown-toggle" data-toggle="dropdown" href="#">
+								<span data-localize="browse.Menu"></span>
+								<span class="caret"></span>
+							</a>
+							<ul aria-labelledby="dropdownMenu" class="dropdown-menu" role="menu">
+								<li>
+									<a href="/tablet.html" tabindex="-1">
+										<span class="glyphicon glyphicon-book">&nbsp;</span>
+										<span data-localize="browse.SimpleMode"></span>
+									</a>
+								</li>
+								<li>
+									<a href="/config.html" tabindex="-1">
+										<span class="glyphicon glyphicon-wrench">&nbsp;</span>
+										<span data-localize="browse.Preferences"></span>
+									</a>
+								</li>
+								<li>
+									<a
+										href="#"
+										onclick="toggleFullScreen(document.documentElement); $('.nav-collapse').collapse('toggle'); return false;"
+										tabindex="-1"
+									>
+										<span class="glyphicon glyphicon-fullscreen">&nbsp;</span>
+										<span data-localize="toggleFullScreen"></span>
+									</a>
+								</li>
+							</ul>
+						</li>
+						<li class="dropdown">
+							<a class="dropdown-toggle" data-toggle="dropdown" href="#">
+								<span data-localize="orderby"></span>
+								<span class="caret"></span>
+							</a>
+							<ul aria-labelledby="dropdownMenu" class="dropdown-menu" role="menu">
+								<li>
+									<a href="#" onclick="exe_order_by('name'); return false;" tabindex="-1">
+										<span class="glyphicon glyphicon-font">&nbsp;</span>
+										<span data-localize="filename"></span>
+									</a>
+								</li>
+								<li>
+									<a href="#" onclick="exe_order_by('size'); return false;" tabindex="-1">
+										<span class="glyphicon glyphicon-file">&nbsp;</span>
+										<span data-localize="filesize"></span>
+									</a>
+								</li>
+								<li>
+									<a href="#" onclick="exe_order_by('date'); return false;" tabindex="-1">
+										<span class="glyphicon glyphicon-time">&nbsp;</span>
+										<span data-localize="filedate"></span>
+									</a>
+								</li>
+							</ul>
+						</li>
+						<li class="dropdown">
+							<a class="dropdown-toggle" data-toggle="dropdown" href="#">
+								<span data-localize="browse.Edit"></span>
+								<span class="caret"></span>
+							</a>
+							<ul aria-labelledby="dropdownMenu" class="dropdown-menu" role="menu">
+								<li>
+									<a href="#" onclick="delete_enable(); return false;" tabindex="-1">
+										<span class="glyphicon glyphicon-remove">&nbsp;</span>
+										<span data-localize="browse.Delete"></span>
+									</a>
+								</li>
+							</ul>
+						</li>
+					</ul>
+				</div>
+				<div>
+					<a
+						class="btn hidden btn-danger pull-right"
+						data-localize="browse.DeleteDisable"
+						id="btnDeleteDisable"
+						onclick="delete_disable(); return false;"
+					></a>
+				</div>
+			</div>
+		</nav>
+		<div class="container-fluid" id="container">
+			<div id="dir_lists"></div>
+		</div>
+	</body>
+</html>

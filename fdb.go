@@ -193,7 +193,7 @@ func (db *FlatDB) Import(dbPath string) {
 		db.IBooks = append(db.IBooks, ibook)
 
 		db.IMapper[book.ID] = ibook
-		db.IMapper[book.Fullpath] = ibook
+		db.FMapper[book.Fullpath] = ibook
 
 		prevLen += uint64(len(line) + 1)
 	}
@@ -490,13 +490,20 @@ func (db *FlatDB) GetBookByID(bookID string) *Book {
 
 // GetBookByPath get Book object by file path
 func (db *FlatDB) GetBookByPath(fpath string) *Book {
-
+	// not working for some reason
 	ibook := db.FMapper[fpath]
 	if ibook == nil {
 		return nil
 	}
-
 	return db.FMapper[fpath].Book
+
+	// for _, ibook := range db.IBooks {
+	// 	fmt.Println(111, ibook.Fullpath)
+	// 	if ibook.Fullpath == fpath {
+	// 		return ibook.Book
+	// 	}
+	// }
+	// return nil
 }
 
 // SearchBookByNameAndSize get Books object by filename and size
