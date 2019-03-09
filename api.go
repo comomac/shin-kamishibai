@@ -68,6 +68,13 @@ type BooksInfoResponse map[string]*BookInfoResponse
 // BooksInfoByTitleResponse for json response on multiple book information which grouped by book title
 type BooksInfoByTitleResponse map[string][]*BookInfoLessTitleResponse
 
+// TODO give me name
+type BookInfoEncapsulateLessTitleResponse struct {
+	Title string                       `json:"title"`
+	Lists []*BookInfoLessTitleResponse `json:"lists"`
+}
+type BooksInfoGroupByTitleResponse []*BookInfoEncapsulateLessTitleResponse
+
 // BooksInfoByAuthorResponse for json response on multiple book information which grouped by book author
 type BooksInfoByAuthorResponse map[string][]*BookInfoLessAuthorResponse
 
@@ -307,44 +314,87 @@ func getBooksByTitle(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 		}
 
 		filterBy := r.URL.Query().Get("filter_by")
+		page, _ := strconv.Atoi(r.URL.Query().Get("page")) // pageination, 100 per page
 		strKeyword := r.URL.Query().Get("keyword")
 		keywords := strings.Split(strKeyword, " ")
 
-		books := BooksInfoByTitleResponse{}
+		// TODO silence error
+		fmt.Println(filterBy)
+
+		books := BooksInfoGroupByTitleResponse{}
+
+		fmt.Println("page", page)
+		// pageination counter
+		i := 0
 
 	OUTER:
-		for _, ibook := range db.IBooks {
-			// TODO do pageination?
-			// if i > 3 {
-			// 	break
-			// }
+		for title, ibooks := range db.TMapper {
+			// pageination
+			// 0    1-100
+			// 1  101-200
+			// 2  201-300
+			// 3  301-400
+			i++
+			if i <= 100*(page) {
+				continue
+			}
+			if i > 100*(page+1) {
+				break
+			}
 
 			// if there is keyword, make sure title or author matches
 			if len(keywords) > 0 {
 				for _, keyword := range keywords {
 					re := regexp.MustCompile("(?i)" + keyword)
-					if re.FindStringIndex(ibook.Title) == nil && re.FindStringIndex(ibook.Author) == nil {
+					// always assume there is at least 1 book otherwise title wont exists
+					if re.FindStringIndex(title) == nil && re.FindStringIndex(ibooks[0].Author) == nil {
 						continue OUTER
 					}
 				}
 			}
 
+			gbooks := []*BookInfoLessTitleResponse{}
+
 			switch filterBy {
 			case "finished":
-				if ibook.Book.Page == ibook.Book.Pages {
-					books[ibook.Title] = append(books[ibook.Title], &BookInfoLessTitleResponse{Book: ibook.Book})
+				for _, ibook := range ibooks {
+					if ibook.Book.Page == ibook.Book.Pages {
+						gbooks = append(gbooks, &BookInfoLessTitleResponse{
+							Book: ibook.Book,
+						})
+					}
 				}
 			case "reading":
-				if ibook.Book.Page > 0 && ibook.Book.Page < ibook.Book.Pages {
-					books[ibook.Title] = append(books[ibook.Title], &BookInfoLessTitleResponse{Book: ibook.Book})
+				for _, ibook := range ibooks {
+					if ibook.Book.Page > 0 && ibook.Book.Page < ibook.Book.Pages {
+						gbooks = append(gbooks, &BookInfoLessTitleResponse{
+							Book: ibook.Book,
+						})
+					}
 				}
 			case "new":
-				if time.Unix(int64(ibook.Book.Itime)+int64(time.Second)*3600*24*3, 0).Before(time.Now()) {
-					books[ibook.Title] = append(books[ibook.Title], &BookInfoLessTitleResponse{Book: ibook.Book})
+				for _, ibook := range ibooks {
+					if time.Unix(int64(ibook.Book.Itime)+int64(time.Second)*3600*24*3, 0).Before(time.Now()) {
+						gbooks = append(gbooks, &BookInfoLessTitleResponse{
+							Book: ibook.Book,
+						})
+					}
 				}
 			default:
-				books[ibook.Title] = append(books[ibook.Title], &BookInfoLessTitleResponse{Book: ibook.Book})
+				for _, ibook := range ibooks {
+					gbooks = append(gbooks, &BookInfoLessTitleResponse{
+						Book: ibook.Book,
+					})
+				}
 			}
+
+			if len(gbooks) > 0 {
+				books = append(books, &BookInfoEncapsulateLessTitleResponse{
+					Title: title,
+					Lists: gbooks,
+				})
+			}
+
 		}
 
 		b, err := json.Marshal(&books)
@@ -383,7 +433,7 @@ func getBooksByAuther(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 			if len(keywords) > 0 {
 				for _, keyword := range keywords {
 					re := regexp.MustCompile("(?i)" + keyword)
-					if re.FindStringIndex(ibook.Title) == nil && re.FindStringIndex(ibook.Author) == nil {
+					if re.FindStringIndex(ibook.Author) == nil {
 						continue OUTER
 					}
 				}

@@ -13,6 +13,7 @@
 		<link href="/css/tablet_browse.css" rel="stylesheet" type="text/css" />
 		<link href="/css/tablet_reader.css" rel="stylesheet" type="text/css" />
 		<link href="/css/tablet_reader_input.css" rel="stylesheet" type="text/css" />
+		<script src="/js/iscroll-infinite.js"></script>
 		<script src="/vendor/js/jquery-2.1.4.js"></script>
 		<script src="/vendor/js/jquery.localize.js"></script>
 		<script src="/vendor/js/jquery.cookie.js"></script>
@@ -25,6 +26,120 @@
 		<script src="/js/tablet3.js"></script>
 	</head>
 	<body>
+		<style type="text/css">
+			* {
+				-webkit-box-sizing: border-box;
+				-moz-box-sizing: border-box;
+				box-sizing: border-box;
+			}
+
+			html {
+				-ms-touch-action: none;
+			}
+
+			ul,
+			li {
+				padding: 0;
+				margin: 0;
+				border: 0;
+			}
+
+			body {
+				font-size: 12px;
+				font-family: ubuntu, helvetica, arial;
+				overflow: hidden; /* this is important to prevent the whole page to bounce */
+			}
+
+			#header {
+				position: absolute;
+				z-index: 2;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 45px;
+				line-height: 45px;
+				background: #cd235c;
+				padding: 0;
+				color: #eee;
+				font-size: 20px;
+				text-align: center;
+				font-weight: bold;
+			}
+
+			#footer {
+				position: absolute;
+				z-index: 2;
+				bottom: 0;
+				left: 0;
+				width: 100%;
+				height: 48px;
+				background: #444;
+				padding: 0;
+				border-top: 1px solid #444;
+			}
+
+			#wrapper-leftmenu {
+				position: absolute;
+				z-index: 1;
+				top: 45px;
+				bottom: 48px;
+				left: 0;
+				width: 50%;
+				background: #ccc;
+				overflow: hidden;
+			}
+
+			#scroller {
+				position: absolute;
+				z-index: 1;
+				-webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+				width: 100%;
+				-webkit-transform: translateZ(0);
+				-moz-transform: translateZ(0);
+				-ms-transform: translateZ(0);
+				-o-transform: translateZ(0);
+				transform: translateZ(0);
+				-webkit-touch-callout: none;
+				-webkit-user-select: none;
+				-moz-user-select: none;
+				-ms-user-select: none;
+				user-select: none;
+				-webkit-text-size-adjust: none;
+				-moz-text-size-adjust: none;
+				-ms-text-size-adjust: none;
+				-o-text-size-adjust: none;
+				text-size-adjust: none;
+			}
+
+			#scroller ul {
+				list-style: none;
+				padding: 0;
+				margin: 0;
+				width: 100%;
+				text-align: left;
+				position: relative;
+			}
+
+			#scroller li {
+				position: absolute;
+				width: 100%;
+				top: 0;
+				left: 10px;
+				-webkit-transform: translateZ(0);
+				-moz-transform: translateZ(0);
+				-ms-transform: translateZ(0);
+				-o-transform: translateZ(0);
+				transform: translateZ(0);
+				padding: 0 10px;
+				height: 40px;
+				line-height: 40px;
+				border-bottom: 1px solid #ccc;
+				border-top: 1px solid #fff;
+				background-color: #fafafa;
+				font-size: 16px;
+			}
+		</style>
+
 		<div class="navbar navbar-fixed-top" id="menu">
 			<div class="btn-group" id="bcs" role="group">
 				<button class="btn btn-default" data-localize="browse.All" id="bc1" link="/lists" filter-by="all"></button>
@@ -47,7 +162,44 @@
 				</div>
 			</div>
 			<div id="leftbox-div">
-				<ul data-autodividers="true" data-filler-theme="d" data-role="listview" data-theme="d" id="leftbox"></ul>
+				<!-- <ul data-autodividers="true" data-filler-theme="d" data-role="listview" data-theme="d" id="leftbox"></ul> -->
+				<div id="wrapper-leftmenu">
+					<div id="scroller">
+						<ul>
+							<li class="row">Row 1</li>
+							<li class="row">Row 2</li>
+							<li class="row">Row 3</li>
+							<li class="row">Row 4</li>
+							<li class="row">Row 5</li>
+							<li class="row">Row 6</li>
+							<li class="row">Row 7</li>
+							<li class="row">Row 8</li>
+							<li class="row">Row 9</li>
+							<li class="row">Row 10</li>
+							<li class="row">Row 11</li>
+							<li class="row">Row 12</li>
+							<li class="row">Row 13</li>
+							<li class="row">Row 14</li>
+							<li class="row">Row 15</li>
+
+							<li class="row">Row 16</li>
+							<li class="row">Row 17</li>
+							<li class="row">Row 18</li>
+							<li class="row">Row 19</li>
+							<li class="row">Row 20</li>
+							<li class="row">Row 21</li>
+							<li class="row">Row 22</li>
+							<li class="row">Row 23</li>
+							<li class="row">Row 24</li>
+							<li class="row">Row 25</li>
+							<li class="row">Row 26</li>
+							<li class="row">Row 27</li>
+							<li class="row">Row 28</li>
+							<li class="row">Row 29</li>
+							<li class="row">Row 30</li>
+						</ul>
+					</div>
+				</div>
 			</div>
 			<div id="bookinfo"></div>
 			<div id="rcontainer">

@@ -67,10 +67,12 @@ type Author struct {
 type FlatDB struct {
 	IBooks      []*IBook
 	Authors     []*Author
-	IMapper     map[string]*IBook // map books by id
-	FMapper     map[string]*IBook // map books by file path
-	Path        string            // where the database is stored
-	FileModDate int64             // file last modified date
+	IMapper     map[string]*IBook   // map books by id (unique)
+	FMapper     map[string]*IBook   // map books by file path (unique)
+	TMapper     map[string][]*IBook // group books by title (array)
+	AMapper     map[string][]*IBook // group books by author (array)
+	Path        string              // where the database is stored
+	FileModDate int64               // file last modified date
 }
 
 // convert string to uint64
@@ -125,6 +127,8 @@ func NewFlatDB(params ...string) *FlatDB {
 	db.Path = dbPath
 	db.IMapper = make(map[string]*IBook)
 	db.FMapper = make(map[string]*IBook)
+	db.TMapper = make(map[string][]*IBook)
+	db.AMapper = make(map[string][]*IBook)
 
 	return db
 }
@@ -135,6 +139,8 @@ func (db *FlatDB) Clear() {
 	db.Authors = nil
 	db.IMapper = make(map[string]*IBook)
 	db.FMapper = make(map[string]*IBook)
+	db.TMapper = make(map[string][]*IBook)
+	db.AMapper = make(map[string][]*IBook)
 }
 
 // Load data using default file path
@@ -192,8 +198,11 @@ func (db *FlatDB) Import(dbPath string) {
 
 		db.IBooks = append(db.IBooks, ibook)
 
+		// setup mapping
 		db.IMapper[book.ID] = ibook
 		db.FMapper[book.Fullpath] = ibook
+		db.TMapper[book.Title] = append(db.TMapper[book.Title], ibook)
+		db.AMapper[book.Author] = append(db.AMapper[book.Author], ibook)
 
 		prevLen += uint64(len(line) + 1)
 	}

@@ -3,8 +3,13 @@
 	#searchbox-holder {
 		width: 50%;
 	}
-	#leftbox {
+	#leftbox-div {
+		top: 10%;
+		left: 0%;
+		height: 90%;
 		right: 50%;
+		bottom: 0%;
+		position: relative;
 	}
 	#bookinfo {
 		left: 50%;
@@ -49,7 +54,7 @@
 	border-bottom: solid 1px #000;
 	height: 40px;
 	text-align: center;
-	background: linear-gradient(#DDD, #BBB) repeat scroll 0% 0% #BBB;
+	background: linear-gradient(#ddd, #bbb) repeat scroll 0% 0% #bbb;
 }
 #searchbox-holder {
 	float: left;
@@ -88,13 +93,13 @@
 	font-weight: bold;
 	border-left: solid 1px #000;
 	border-bottom: solid 1px #000;
-	background: linear-gradient( rgb(255, 255, 255), rgb(241, 241, 241) );
-	background: -webkit-linear-gradient( rgb(255, 255, 255), rgb(241, 241, 241) );
+	background: linear-gradient(rgb(255, 255, 255), rgb(241, 241, 241));
+	background: -webkit-linear-gradient(rgb(255, 255, 255), rgb(241, 241, 241));
 }
 #bookinfo > div:first-child {
 	font-size: 1.3em;
 }
-#bookinfo > div:first-child+span {
+#bookinfo > div:first-child + span {
 	font-size: 0.7em;
 }
 #bookinfo * {
@@ -120,10 +125,10 @@
 	list-style: none outside none;
 	font-family: Helvetica, Arial, sans-serif;
 
-	border: 1px solid #456F9A;
-	background: linear-gradient(#6FACD5, #497BAE) repeat scroll 0% 0% #5E87B0;
+	border: 1px solid #456f9a;
+	background: linear-gradient(#6facd5, #497bae) repeat scroll 0% 0% #5e87b0;
 
-	color: #FFF;
+	color: #fff;
 	/*text-shadow: 0px 1px 0px #FFF;*/
 }
 
@@ -135,20 +140,20 @@
 	border: 1px solid #9c9c9c;
 	background-color: #bfbbb9;
 	*/
-	background: linear-gradient( rgb(255, 255, 255), rgb(241, 241, 241) );
+	background: linear-gradient(rgb(255, 255, 255), rgb(241, 241, 241));
 	/* webkit don't support css with background linear-gradient, call it by -webkit-liner-gradient */
-	background: -webkit-linear-gradient( rgb(255, 255, 255), rgb(241, 241, 241) );
+	background: -webkit-linear-gradient(rgb(255, 255, 255), rgb(241, 241, 241));
 
 	/* new */
 	padding: 0.7em 15px;
 	display: block;
-	background: linear-gradient(#FFF, #F1F1F1) repeat scroll 0% 0% transparent;
+	background: linear-gradient(#fff, #f1f1f1) repeat scroll 0% 0% transparent;
 	font-family: Helvetica, Arial, sans-serif;
 	text-decoration: none;
-	border: 1px solid #BBB;
+	border: 1px solid #bbb;
 	font-weight: 700;
 	color: #333;
-	text-shadow: 0px 1px 0px #FFF;
+	text-shadow: 0px 1px 0px #fff;
 	/*padding: 0px;*/
 	margin: 0px;
 
@@ -157,12 +162,12 @@
 	text-align: left;
 }
 .li-title:hover {
-	background: linear-gradient( rgb(200, 200, 200), rgb(241, 241, 241) );
-	background: -webkit-linear-gradient( rgb(200, 200, 200), rgb(241, 241, 241) );
+	background: linear-gradient(rgb(200, 200, 200), rgb(241, 241, 241));
+	background: -webkit-linear-gradient(rgb(200, 200, 200), rgb(241, 241, 241));
 }
 .li-title:active {
-	background: linear-gradient( rgb(100, 200, 200), rgb(140, 241, 241) );
-	background: -webkit-linear-gradient( rgb(100, 200, 200), rgb(140, 241, 241) );
+	background: linear-gradient(rgb(100, 200, 200), rgb(140, 241, 241));
+	background: -webkit-linear-gradient(rgb(100, 200, 200), rgb(140, 241, 241));
 }
 
 #rcontainer {
@@ -178,13 +183,13 @@
 	display: inline-block;
 
 	list-style: none;
-    margin: 0 auto;
-    padding: 0;
+	margin: 0 auto;
+	padding: 0;
 }
 #rcontainer ul {
 	list-style: none;
-    margin: 0 auto;
-    padding: 0;
+	margin: 0 auto;
+	padding: 0;
 }
 #rcontainer ul li {
 	float: left;
