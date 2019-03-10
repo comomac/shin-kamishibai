@@ -146,7 +146,7 @@
 				<button class="btn btn-default" data-localize="browse.New" id="bc2" link="/lists" filter-by="new"></button>
 				<button class="btn btn-default" data-localize="browse.Reading" id="bc3" link="/lists" filter-by="reading"></button>
 				<button class="btn btn-default" data-localize="browse.Finished" id="bc4" link="/lists" filter-by="finished"></button>
-				<button class="btn btn-default" data-localize="browse.Author" id="bc5" link="/alists"></button>
+				<button class="btn btn-default" data-localize="browse.Author" id="bc5" link="/alists" filter-by="author"></button>
 			</div>
 			<button class="btn" onclick="location.href = '/'">
 				<i class="glyphicon glyphicon-folder-open"></i>
@@ -166,42 +166,45 @@
 				<div id="wrapper-leftmenu">
 					<div id="scroller">
 						<ul>
-							<li class="row">Row 1</li>
-							<li class="row">Row 2</li>
-							<li class="row">Row 3</li>
-							<li class="row">Row 4</li>
-							<li class="row">Row 5</li>
-							<li class="row">Row 6</li>
-							<li class="row">Row 7</li>
-							<li class="row">Row 8</li>
-							<li class="row">Row 9</li>
-							<li class="row">Row 10</li>
-							<li class="row">Row 11</li>
-							<li class="row">Row 12</li>
-							<li class="row">Row 13</li>
-							<li class="row">Row 14</li>
-							<li class="row">Row 15</li>
+							<li class="row scroll-row">Row 1</li>
+							<li class="row scroll-row">Row 2</li>
+							<li class="row scroll-row">Row 3</li>
+							<li class="row scroll-row">Row 4</li>
+							<li class="row scroll-row">Row 5</li>
+							<li class="row scroll-row">Row 6</li>
+							<li class="row scroll-row">Row 7</li>
+							<li class="row scroll-row">Row 8</li>
+							<li class="row scroll-row">Row 9</li>
+							<li class="row scroll-row">Row 10</li>
+							<li class="row scroll-row">Row 11</li>
+							<li class="row scroll-row">Row 12</li>
+							<li class="row scroll-row">Row 13</li>
+							<li class="row scroll-row">Row 14</li>
+							<li class="row scroll-row">Row 15</li>
 
-							<li class="row">Row 16</li>
-							<li class="row">Row 17</li>
-							<li class="row">Row 18</li>
-							<li class="row">Row 19</li>
-							<li class="row">Row 20</li>
-							<li class="row">Row 21</li>
-							<li class="row">Row 22</li>
-							<li class="row">Row 23</li>
-							<li class="row">Row 24</li>
-							<li class="row">Row 25</li>
-							<li class="row">Row 26</li>
-							<li class="row">Row 27</li>
-							<li class="row">Row 28</li>
-							<li class="row">Row 29</li>
-							<li class="row">Row 30</li>
+							<li class="row scroll-row">Row 16</li>
+							<li class="row scroll-row">Row 17</li>
+							<li class="row scroll-row">Row 18</li>
+							<li class="row scroll-row">Row 19</li>
+							<li class="row scroll-row">Row 20</li>
+							<li class="row scroll-row">Row 21</li>
+							<li class="row scroll-row">Row 22</li>
+							<li class="row scroll-row">Row 23</li>
+							<li class="row scroll-row">Row 24</li>
+							<li class="row scroll-row">Row 25</li>
+							<li class="row scroll-row">Row 26</li>
+							<li class="row scroll-row">Row 27</li>
+							<li class="row scroll-row">Row 28</li>
+							<li class="row scroll-row">Row 29</li>
+							<li class="row scroll-row">Row 30</li>
 						</ul>
 					</div>
 				</div>
 			</div>
-			<div id="bookinfo"></div>
+			<div id="bookinfo">
+				<div id="bookinfo-title"></div>
+				<div id="bookinfo-author"></div>
+			</div>
 			<div id="rcontainer">
 				<ul id="books"></ul>
 			</div>

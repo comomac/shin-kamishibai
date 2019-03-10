@@ -10,8 +10,11 @@ var timerKeywordChange = 0;
 
 // page init
 $(function(e) {
-	// leftmenu
-	loaded();
+	// clickable author
+	el = document.getElementById("bookinfo-author");
+	el.addEventListener("click", function(evt) {
+		exe_show_author(evt.target.innerHTML);
+	});
 
 	/*
 	 *  Browse section
@@ -120,12 +123,12 @@ $(function(e) {
 		prepare_lists();
 	});
 
-	if (getHashParams().book) {
+	if (getHashParams("book")) {
 		// load book if already specified in hash
 
-		var p = getHashParams().page || 1;
+		var p = getHashParams("page") || 1;
 
-		readBook(getHashParams().book, p);
+		readBook(getHashParams("book"), p);
 	} else {
 		// reload leftbox
 		// prepare_lists( get_menu_url() );
@@ -217,4 +220,7 @@ $(function(e) {
 	if (!/iphone|ipod|ipad/gi.test(navigator.appVersion)) {
 		$("#div-fs-btn").removeClass("hidden");
 	}
+
+	// leftmenu
+	rebuild_left_menu();
 });

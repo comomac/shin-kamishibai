@@ -250,9 +250,10 @@ function createGallery(goPage) {
 
 	gallery.onMoveOut(function() {
 		console.log("moveout");
-		gallery.masterPages[gallery.currentMasterPage].className = gallery.masterPages[
-			gallery.currentMasterPage
-		].className.replace(/(^|\s)swipeview-active(\s|$)/, "");
+		gallery.masterPages[gallery.currentMasterPage].className = gallery.masterPages[gallery.currentMasterPage].className.replace(
+			/(^|\s)swipeview-active(\s|$)/,
+			""
+		);
 
 		// get current page
 		var pg = gallery.pageIndex;
@@ -387,12 +388,14 @@ function goToPage(page) {
 }
 
 function staggerImages(page) {
-	var i;
-	if (isEasternBook()) {
-		i = book.pages - page;
-	} else {
+	// default to eastern page
+	var i = book.pages - page;
+	if (!isEasternBook()) {
 		i = page - 1;
 	}
+	// read page from hash if not exists
+	if (!!!page) page = Number(getHashParams("page"));
+	if (isNaN(page)) page = 1;
 
 	// global
 	window.stopOnFlipImg = true;

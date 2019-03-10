@@ -4,19 +4,34 @@ License: refer to LICENSE file
 
 var myScroll;
 
-function loaded() {
+function load_myScroll() {
 	myScroll = new IScroll("#wrapper-leftmenu", {
 		mouseWheel: true,
 		infiniteElements: "#scroller .row",
 		//infiniteLimit: 2000,
-		dataset: requestDataB,
+		dataset: requestData,
 		dataFiller: updateContent,
-		cacheSize: 100
+		cacheSize: 200
 	});
 }
 
 function requestData(start, count) {
-	ajax("dataset.php?start=" + +start + "&count=" + +count, {
+	var url = "/lists";
+	var page = Math.floor((start + 1) / 100);
+
+	// filter by
+	var filter_by = $("#bcs > button.active").attr("filter-by");
+	if (!filter_by) filter_by = "all";
+	if (filter_by === "author") url = "/alists";
+
+	var keyword = document.getElementById("searchbox").value;
+
+	ajax("/lists", {
+		get: {
+			filter_by: filter_by,
+			page: page,
+			keywords: keyword
+		},
 		callback: function(data) {
 			data = JSON.parse(data);
 			myScroll.updateCache(start, data);
@@ -24,15 +39,10 @@ function requestData(start, count) {
 	});
 }
 
-function requestDataB(start, count) {
-	$.get("/lists", { filter_by: "all", keyword: "" }, function(data) {
-		myScroll.updateCache(start, data);
-	});
-}
-
 function updateContent(el, data) {
-	// el.innerHTML = data;
 	if (!data) {
+		// blank if no data
+		el.innerHTML = "";
 		return;
 	}
 	el.innerHTML = data.title;
@@ -57,87 +67,6 @@ document.addEventListener(
 		  }
 		: false
 );
-
-function ajax(url, parms) {
-	parms = parms || {};
-	var req = new XMLHttpRequest(),
-		post = parms.post || null,
-		callback = parms.callback || null,
-		timeout = parms.timeout || null;
-
-	req.onreadystatechange = function() {
-		if (req.readyState != 4) return;
-
-		// Error
-		if (req.status != 200 && req.status != 304) {
-			if (callback) callback(false);
-			return;
-		}
-
-		if (callback) callback(req.responseText);
-	};
-
-	if (post) {
-		req.open("POST", url, true);
-		req.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-	} else {
-		req.open("GET", url, true);
-	}
-
-	req.setRequestHeader("X-Requested-With", "XMLHttpRequest");
-
-	req.send(post);
-
-	if (timeout) {
-		setTimeout(function() {
-			req.onreadystatechange = function() {};
-			req.abort();
-			if (callback) callback(false);
-		}, timeout);
-	}
-}
-
-// global search result list
-function reload_leftbox(url, filter_by, keyword) {
-	return;
-
-	// retrive data
-	$.get(url, { filter_by: filter_by, keyword: keyword }, function(data) {
-		console.log(data);
-
-		var el = $("#leftbox");
-		el.empty();
-		el.append(data);
-
-		$(".li-title").on("click", function() {
-			// set the last title selected on cookie
-			$.cookie(uport() + ".lasttitle", $(this).text(), { path: "/" });
-
-			reload_books($(this).attr("bookcodes"), $(this).attr("options"));
-		});
-
-		var elem = $('.li-title:contains("' + $.cookie(uport() + ".lasttitle") + '")');
-		if (elem.length > 0) {
-			// scroll to last selected title
-			$("#leftbox").scrollTo(elem.eq(0));
-
-			// show books
-			var bookcodes = elem.eq(0).attr("bookcodes");
-			reload_books(bookcodes, elem.eq(0).attr("options"));
-		} else {
-			// last selected title don't exist, select first available title
-			var el = $(".li-title");
-			if (el.length > 0) {
-				$("#leftbox").scrollTo(el.eq(0));
-
-				var bookcodes = el.eq(0).attr("bookcodes");
-				reload_books(bookcodes, el.eq(0).attr("options"));
-			} else {
-				reload_books();
-			}
-		}
-	});
-}
 
 // load books from the bookcodes
 function reload_books(bookcodes, options) {
@@ -206,25 +135,20 @@ function reload_books(bookcodes, options) {
 		}
 	});
 }
-
 function list_books(jData) {
-	// show book title and author
-	var el = $("#bookinfo");
-	el.empty();
+	var bookcodes = [];
+	var el;
 
-	var title = $("<div>");
-	title.html(jData.title);
-	el.append(title);
+	// show book title
+	el = document.getElementById("bookinfo-title");
+	el.innerHTML = jData.title;
 
-	var author = $("<div>");
-	author.html(jData.author);
-	author.on("click", function() {
-		exe_show_author(book.author);
-	});
-	el.append(author);
+	// show author
+	el = document.getElementById("bookinfo-author");
+	el.innerHTML = jData.author;
 
 	// list books
-	var el = $("#books");
+	el = $("#books");
 	el.empty();
 	var book;
 	for (var i = 0; i < jData.lists.length; i++) {
@@ -235,9 +159,9 @@ function list_books(jData) {
 
 		var a = $("<a>");
 		a.attr("href", "#book=" + book.id + "&page=" + book.page || 1);
-		a.on("click", { bookcode: book.id }, function(event) {
+		a.on("click", { bookcode: book.id, page: book.page }, function(event) {
 			// console.log(event.data.bookcode);
-			readBook(event.data.bookcode);
+			readBook(event.data.bookcode, event.data.page);
 		});
 
 		var img = $("<img>");
@@ -257,7 +181,12 @@ function list_books(jData) {
 
 		li.append(a);
 		el.append(li);
+
+		bookcodes.push(book.id);
 	}
+
+	// remember books codes so can reload when closing reader
+	$("#bookinfo").attr("bookcodes", bookcodes);
 }
 
 function exe_show_author(author) {
@@ -275,6 +204,7 @@ function exe_show_author(author) {
 }
 
 function prepare_lists(url) {
+	return;
 	// get menu url (All | New | Reading | Finished | Author)
 	if (typeof url === "undefined") url = $("#bcs > button.active").attr("link");
 
@@ -304,4 +234,44 @@ function prepare_lists(url) {
 	// filter by
 	var filter_by = $("#bcs > button.active").attr("filter-by");
 	if (!filter_by) filter_by = "all";
+
+	// reload leftbox
+	// TODO
+	// reload_leftbox(url, filter_by, keyword);
+	rebuild_left_menu();
+}
+
+// rebuild left menu
+function rebuild_left_menu() {
+	if (myScroll && myScroll.destroy) {
+		myScroll.destroy();
+	}
+
+	var leftbox = document.getElementById("leftbox-div");
+	// clear everything
+	while (leftbox.firstChild) {
+		leftbox.removeChild(leftbox.firstChild);
+	}
+
+	var wrapper = document.createElement("div");
+	wrapper.id = "wrapper-leftmenu";
+
+	var scroller = document.createElement("div");
+	scroller.id = "scroller";
+	wrapper.appendChild(scroller);
+
+	var ul = document.createElement("ul");
+	var li;
+	for (var i = 1; i <= 30; i++) {
+		li = document.createElement("li");
+		li.className = "row scroll-row";
+		li.innerText = "Row " + i;
+		ul.appendChild(li);
+	}
+
+	scroller.appendChild(ul);
+
+	leftbox.appendChild(wrapper);
+
+	load_myScroll();
 }

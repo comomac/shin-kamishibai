@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"path"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -65,15 +66,27 @@ type BookInfoLessAuthorResponse struct {
 // BooksInfoResponse for json response on multiple book information
 type BooksInfoResponse map[string]*BookInfoResponse
 
-// BooksInfoByTitleResponse for json response on multiple book information which grouped by book title
-type BooksInfoByTitleResponse map[string][]*BookInfoLessTitleResponse
-
-// TODO give me name
-type BookInfoEncapsulateLessTitleResponse struct {
-	Title string                       `json:"title"`
-	Lists []*BookInfoLessTitleResponse `json:"lists"`
-}
+// BooksInfoGroupByTitleResponse for json response on multiple book information which grouped by book title
 type BooksInfoGroupByTitleResponse []*BookInfoEncapsulateLessTitleResponse
+
+// BookInfoEncapsulateLessTitleResponse for books grouped by title title
+type BookInfoEncapsulateLessTitleResponse struct {
+	Title  string                       `json:"title"`
+	Author string                       `json:"author"`
+	Lists  []*BookInfoLessTitleResponse `json:"lists"`
+}
+
+type ByTitle []*BookInfoEncapsulateLessTitleResponse
+
+func (a ByTitle) Len() int {
+	return len(a)
+}
+func (a ByTitle) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+func (a ByTitle) Less(i, j int) bool {
+	return a[i].Title < a[j].Title
+}
 
 // BooksInfoByAuthorResponse for json response on multiple book information which grouped by book author
 type BooksInfoByAuthorResponse map[string][]*BookInfoLessAuthorResponse
@@ -390,12 +403,16 @@ func getBooksByTitle(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 
 			if len(gbooks) > 0 {
 				books = append(books, &BookInfoEncapsulateLessTitleResponse{
-					Title: title,
-					Lists: gbooks,
+					Title:  title,
+					Author: gbooks[0].Author,
+					Lists:  gbooks,
 				})
 			}
 
 		}
+
+		// sort by book titles
+		sort.Sort(ByTitle(books))
 
 		b, err := json.Marshal(&books)
 		if err != nil {

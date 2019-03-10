@@ -4,7 +4,7 @@ License: refer to LICENSE file
 
 // function to format the hash to object
 // example: #book=abc.zip&page=7 -> $['book']='abc.zip', $['page']=7
-function getHashParams() {
+function getHashParams(key) {
 	var hashParams = {};
 	var e,
 		a = /\+/g, // Regex for replacing addition symbol with a space
@@ -16,6 +16,10 @@ function getHashParams() {
 		q = window.location.hash.substring(1);
 
 	while ((e = r.exec(q))) hashParams[d(e[1])] = d(e[2]);
+
+	if (key) {
+		return hashParams[key];
+	}
 
 	return hashParams;
 }
@@ -180,4 +184,52 @@ function isPassive() {
 		);
 	} catch (e) {}
 	return supportsPassiveOption;
+}
+
+// good ol' fash ajax using xmlhttprequest
+function ajax(url, parms) {
+	parms = parms || {};
+	var req = new XMLHttpRequest(),
+		post = parms.post || null,
+		get = parms.get || null,
+		callback = parms.callback || null,
+		timeout = parms.timeout || null;
+
+	req.onreadystatechange = function() {
+		if (req.readyState != 4) return;
+
+		// Error
+		if (req.status != 200 && req.status != 304) {
+			if (callback) callback(false);
+			return;
+		}
+
+		if (callback) callback(req.responseText);
+	};
+
+	if (post) {
+		req.open("POST", url, true);
+		req.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+	} else {
+		if (get) {
+			var result = [];
+			for (var key in get) {
+				result.push(key + "=" + encodeURI(get[key]));
+			}
+			url += "?" + result.join("&");
+		}
+		req.open("GET", url, true);
+	}
+
+	req.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+
+	req.send(post);
+
+	if (timeout) {
+		setTimeout(function() {
+			req.onreadystatechange = function() {};
+			req.abort();
+			if (callback) callback(false);
+		}, timeout);
+	}
 }
