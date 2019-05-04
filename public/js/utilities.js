@@ -26,7 +26,7 @@ function getHashParams(key) {
 
 // return fully formatted hash
 function fullhash(page) {
-	return "book=" + getHashParams()["book"] + "&page=" + page;
+	return "book=" + getHashParams("book") + "&page=" + page;
 }
 
 // a queue that will make the browser run more responsively
@@ -155,18 +155,6 @@ function isImageCached(src) {
 	image.src = src;
 
 	return image.complete;
-}
-
-function updateBatteryLevel() {
-	if (navigator.battery) {
-		// firefox support
-		battery_level = Math.floor(navigator.battery.level * 100) + "%";
-	} else if (navigator.getBattery) {
-		// chrome support
-		navigator.getBattery().then(function(battery) {
-			battery_level = Math.floor(battery.level * 100) + "%";
-		});
-	}
 }
 
 // ref https://github.com/WICG/EventListenerOptions/pull/30
