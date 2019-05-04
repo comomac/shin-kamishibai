@@ -266,7 +266,7 @@ func getBooks(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 		}
 
 		filterBy := r.URL.Query().Get("filter_by")
-		strKeyword := r.URL.Query().Get("keyword")
+		strKeyword := r.URL.Query().Get("keywords")
 		keywords := strings.Split(strKeyword, " ")
 
 		books := BooksResponse{}
@@ -328,15 +328,12 @@ func getBooksByTitle(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 
 		filterBy := r.URL.Query().Get("filter_by")
 		page, _ := strconv.Atoi(r.URL.Query().Get("page")) // pageination, 100 per page
-		strKeyword := r.URL.Query().Get("keyword")
+		strKeyword := r.URL.Query().Get("keywords")
 		keywords := strings.Split(strKeyword, " ")
-
-		// TODO silence error
-		fmt.Println(filterBy)
 
 		books := BooksInfoGroupByTitleResponse{}
 
-		fmt.Println("page", page)
+		fmt.Println("filter_by", filterBy, "page", page, "keywords", keywords)
 		// pageination counter
 		i := 0
 
@@ -434,7 +431,7 @@ func getBooksByAuther(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
-		strKeyword := r.URL.Query().Get("keyword")
+		strKeyword := r.URL.Query().Get("keywords")
 		keywords := strings.Split(strKeyword, " ")
 
 		books := BooksInfoByAuthorResponse{}
@@ -499,6 +496,7 @@ func setBookmark(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 		db.UpdatePage(bookID, page)
 
 		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("updated"))
 	}
 }
 
