@@ -11,11 +11,8 @@ var book;
 // set gallery global variable so it can be accessed outside
 var gallery;
 
-// set date
-var date = new Date();
-
-// set battery
-var battery_level = "-1";
+// default to right to left
+var isEasternBookMode = true;
 
 // how long it takes to trigger actions in ms
 var onFlipActionDelay = 1000;
@@ -31,38 +28,41 @@ function readBook(bc, bp) {
 	// // set screen size so if the image is resized, server remember the screen size
 	// setScreenSize();
 
-	$.get("/books_info", { bookcodes: bc }, function(jData) {
-		$("#container").removeClass("hidden");
+	ajaxGet("/books_info", 
+		{
+			bookcodes: bc
+		},
+		function(data) {
+			jData = JSON.parse(data);
+			var el;
 
-		book = jData[bc];
+			document.getElementById("container").className = "";
 
-		book.bookcode = bc;
-		book.lastpage = bp || book.page || 1;
+			book = jData[bc];
 
-		$("#booktitle").html("<div>" + book.title + "</div>");
+			book.bookcode = bc;
+			book.lastpage = bp || book.page || 1;
 
-		// set #pageslider max
-		$("#pageslider").attr("max", book.pages);
-		$("#pageslider").val(book.lastpage);
+			document.getElementById("reader-bookinfo-title").innerText = book.title;
+			document.getElementById("reader-bookinfo-author").innerText = book.author;
+			document.getElementById("reader-bookinfo-number").innerText = book.number;
 
-		// set location hash if not set or diff
-		var hstr = "#book=" + book.bookcode + "&page=" + book.lastpage;
-		if (window.location.hash !== hstr) window.location.hash = hstr;
+			// set #pageslider max
+			el = document.getElementById("pageslider");
+			el.setAttribute("max", book.pages);
+			el.setAttribute("value", book.lastpage);
 
-		// create gallery
-		createGallery(bp);
+			// set location hash if not set or diff
+			var hstr = "#book=" + book.bookcode + "&page=" + book.lastpage;
+			if (window.location.hash !== hstr) window.location.hash = hstr;
 
-		// force trigger hashchange to load correct page
-		// window.dispatchEvent(new HashChangeEvent('hashchange'));
-	});
-}
+			// create gallery
+			createGallery(bp);
 
-function updateDivCurrentInfo(page) {
-	if (typeof page === "number") {
-		$("#pageCounter").html(gallery.pageIndex + "/" + book.pages);
-	}
-	$("#clock").html(date.toTimeString().slice(0, 5));
-	$("#battery").html("&#128267;" + battery_level);
+			// force trigger hashchange to load correct page
+			// window.dispatchEvent(new HashChangeEvent('hashchange'));
+		}
+	);
 }
 
 function sliderValue(el, e) {
@@ -94,12 +94,14 @@ function sliderValue(el, e) {
 
 // destroy and remove the gallery
 function destroyGallery(resetHash) {
-	if (gallery) gallery.destroy;
-	$("#wrapper").empty();
+	if (gallery && gallery.destroy) gallery.destroy();
+	var el = document.getElementById("wrapper");
+	while (el.firstChild) {
+		el.removeChild(el.firstChild);
+	}
 
 	// remove listener
-	$(window).unbind("hashchange");
-	$(window).unbind("keydown");
+	window.removeEventListener("keydown", keyboardCmd);
 
 	if (resetHash === false) return;
 
@@ -118,7 +120,7 @@ function createGallery(goPage) {
 	// initialize pages
 	var slides = [];
 	for (i = 1; i <= book.pages; i++) {
-		if (isEasternBook()) {
+		if (isEasternBookMode) {
 			// eastern book
 			slides.push({
 				img: "/cbz/" + book.bookcode + "/" + (book.pages - i + 1),
@@ -172,7 +174,7 @@ function createGallery(goPage) {
 
 			if (upcoming != gallery.masterPages[i].dataset.pageIndex) {
 				el = gallery.masterPages[i].querySelector("div");
-				el.className = "loading";
+				el.className = "loading data-page-index";
 				el.innerHTML = slides[upcoming].page;
 
 				el = gallery.masterPages[i].querySelector("img");
@@ -214,12 +216,12 @@ function createGallery(goPage) {
 
 		// get current page
 		var pg = gallery.pageIndex;
-		if (isEasternBook()) {
+		if (isEasternBookMode) {
 			pg = book.pages - gallery.pageIndex;
 		}
 
 		// update div current info
-		updateDivCurrentInfo(pg);
+		updateCurrentInfo(pg);
 
 		// change title according to page
 		document.title = "(" + pg + "/" + book.pages + ")";
@@ -244,8 +246,7 @@ function createGallery(goPage) {
 		);
 
 		// set the slider displayed page
-		$("#pageinput").val(pg);
-		$("#pageslider").val(pg);
+		document.getElementById("pageslider").value = pg;
 	});
 
 	gallery.onMoveOut(function() {
@@ -257,7 +258,7 @@ function createGallery(goPage) {
 
 		// get current page
 		var pg = gallery.pageIndex;
-		if (isEasternBook()) {
+		if (isEasternBookMode) {
 			pg = book.pages - gallery.pageIndex;
 		}
 
@@ -266,7 +267,7 @@ function createGallery(goPage) {
 		el.className += "loading";
 
 		// update current info
-		updateDivCurrentInfo(pg);
+		updateCurrentInfo(pg);
 	});
 
 	gallery.onMoveIn(function() {
@@ -289,52 +290,8 @@ function createGallery(goPage) {
 
 	// now add listener
 
-	// hash change
-	$(window).bind("hashchange", function() {
-		// do no trigger, because of onFlip
-		if (window.noHashchange) {
-			// reset
-			window.noHashchange = false;
-			return;
-		}
-
-		// replace the history
-		if (getpage() < 1) {
-			window.location.replace("#" + fullhash(1));
-		} else if (getpage() > book.pages) {
-			window.location.replace("#" + fullhash(book.pages));
-		}
-
-		// launch a moment later, to go around loading issue
-		window.setTimeout(function(e) {
-			goToPage(getpage());
-		}, 50);
-	});
-
-	// // keyboard commands
-	$(window).bind("keydown", function h_kd(e) {
-		e = e || window.event;
-
-		switch (e.keyCode) {
-			case 37:
-				// left button, previous page
-				goToPage(getpage() - 1);
-				break;
-			case 39:
-				// right button, next page
-				goToPage(getpage() + 1);
-				break;
-			case 27:
-				// escape button, go back to browse
-				closeReader();
-				return false;
-				break;
-			case 13:
-				// enter key, show/hide menu
-				togglemenu();
-				break;
-		}
-	});
+	// keyboard commands
+	window.addEventListener("keydown", keyboardCmd);
 }
 
 // set the bookmark
@@ -343,31 +300,19 @@ function setBookmark(bookcode, page) {
 
 	if (book.lastpage == page || page < 1 || page > book.pages) return false;
 
-	$.ajax({
-		url: "/setbookmark/" + bookcode + "/" + page,
-		beforeSend: function(xhr) {
-			xhr.overrideMimeType("text/plain; charset=x-user-defined");
-		}
-	}).done(function(data) {
-		if (1 == 2 && console && console.log) {
-			console.log("Sample of data:", data);
-		}
-	});
+	var url = "/setbookmark/" + bookcode + "/" + page;
+	ajax(url);
 
 	// update last rendered page
 	book.lastpage = page;
 }
 
 function closeReader() {
-	$("#container").addClass("hidden");
+	document.getElementById("container").className = "hidden";
 
 	destroyGallery();
 
 	reload_books($("#bookinfo").attr("bookcodes"));
-}
-
-function isEasternBook() {
-	return $("#readdirection :radio:checked").attr("id") == "readtoleft" ? true : false;
 }
 
 // go to particular page
@@ -378,7 +323,7 @@ function goToPage(page) {
 	console.log("going to page", page);
 	if (page < 1) return false;
 
-	if (isEasternBook()) {
+	if (isEasternBookMode) {
 		gallery.goToPage(book.pages - page);
 	} else {
 		gallery.goToPage(page - 1);
@@ -390,7 +335,7 @@ function goToPage(page) {
 function staggerImages(page) {
 	// default to eastern page
 	var i = book.pages - page;
-	if (!isEasternBook()) {
+	if (!isEasternBookMode) {
 		i = page - 1;
 	}
 	// read page from hash if not exists
@@ -403,16 +348,22 @@ function staggerImages(page) {
 		// current page
 		{
 			igal: "[data-page-index=" + i + "]",
+			target_img: "swipeview-img-0",
+			target_div: "swipeview-div-0",
 			url: "/cbz/" + book.bookcode + "/" + page
 		},
 		// next page
 		{
 			igal: "[data-page-index=" + (i + 1) + "]",
+			target_img: "swipeview-img-1",
+			target_div: "swipeview-div-1",
 			url: "/cbz/" + book.bookcode + "/" + (page + 1)
 		},
 		// prev page
 		{
 			igal: "[data-page-index=" + (i - 1) + "]",
+			target_img: "swipeview-img-2",
+			target_div: "swipeview-div-2",
 			url: "/cbz/" + book.bookcode + "/" + (page - 1)
 		}
 	];
@@ -429,40 +380,44 @@ function loadImage() {
 
 	window.currentImage = dat;
 
-	var img = (el = $("<img>"));
-	img.on(
-		"load",
-		function() {
-			console.log("loaded image in background", this.dat);
+	var img = document.createElement("img");
+	img.onload = function() {
+		console.log("loaded image in background", this.dat);
 
-			// change img src
-			var el = $(this.dat.igal);
-			el.find("img")
-				.attr("src", this.dat.url)
-				.removeClass("loading");
-			el.find("div").removeClass("loading");
-			el.css("visibility", "visible");
+		// // TODO, figure wtf is this
+		// // change img src
+		// var el = $(this.dat.igal);
+		// el.find("img")
+		// 	.attr("src", this.dat.url)
+		// 	.removeClass("loading");
+		// el.find("div").removeClass("loading");
+		// el.css("visibility", "visible");
+		//
+		var el = document.getElementById(this.dat.target_img);
+		el.src = this.dat.url;
+		var el2 = document.getElementById(this.dat.target_div);
+		el2.className = "";
 
-			// do more if exists
-			if (window.imageQueue && window.imageQueue.length > 0) {
-				loadImage();
-			}
-			// all done, clear
-			else {
-				window.currentImage = false;
-			}
-		}.bind({
-			dat: dat
-		})
-	);
+		// do more if exists
+		if (window.imageQueue && window.imageQueue.length > 0) {
+			loadImage();
+		}
+		// all done, clear
+		else {
+			window.currentImage = false;
+		}
+	}.bind({
+		dat: dat
+	});
+
 	// exec
 	console.log("starting image", dat);
-	img.attr("src", dat.url);
+	img.src = dat.url;
 }
 
 // get the page from hash
 function getpage() {
-	var i = parseInt(getHashParams()["page"]);
+	var i = parseInt(getHashParams("page");
 	if (typeof i == "number" && !isNaN(i)) {
 		return i;
 	}
@@ -532,4 +487,28 @@ function toggleFullScreen(id) {
 
 	// refresh button text
 	btn.button("refresh");
+}
+
+function keyboardCmd(e) {
+	e = e || window.event;
+
+	switch (e.keyCode) {
+		case 37:
+			// left button, previous page
+			goToPage(getpage() - 1);
+			break;
+		case 39:
+			// right button, next page
+			goToPage(getpage() + 1);
+			break;
+		case 27:
+			// escape button, go back to browse
+			closeReader();
+			return false;
+			break;
+		case 13:
+			// enter key, show/hide menu
+			togglemenu();
+			break;
+	}
 }

@@ -8,16 +8,19 @@ License: refer to LICENSE file
 // global variables
 var hasTouch = "ontouchstart" in window; //find out if device is touch device or not
 var items_in_row = 0; // number of items in a row (inside #container)
-var lastbook = getHashParams()["lastbook"];
+var lastbook = getHashParams("lastbook");
 if (!lastbook) lastbook = "";
 var isBookSelectMode = false;
 var isMobile = navigator.userAgent.match(/(iPad)|(iPhone)|(iPod)|(android)|(webOS)/i);
 var primary_list;
 var last_window_width = window.innerWidth;
 var isDeleteMode = false;
+var dirSources = []; // string[], bookmarks
+var dirLists = []; // string[], current folder listing
+var dirCurrent = ""; // string, current dir
 
 // set the last browse selected on cookie
-$.cookie(uport() + ".lastbrowse", "/browse/", { path: "/" });
+window.sessionStorage.lastbrowse = "/browse/";
 
 // detect os
 var OSName = "Unknown OS";
@@ -36,52 +39,94 @@ if (!console.log) {
 	};
 }
 
-function homepage() {
+function updir() {
 	// get dir from hash
-	var hashes = getHashParams();
-	var dir = hashes["dir"].split("/");
+	var dir = getHashParams("dir").split("/");
 
 	dir.pop();
 
 	window.location.hash = "dir=" + dir.join("/");
-	return false;
 }
 
 function exe_order_by(str) {
-	// toggle the order button
-	$(".nav-collapse").collapse("toggle");
+	window.localStorage.orderBy = str;
 
-	$.cookie(uport() + ".order_by", str, { path: "/" });
-
-	reload_dir_lists(getHashParams()["dir"], $("#searchbox").val());
+	reload_dir_lists(getHashParams("dir"), document.getElementById("searchbox").value);
 }
 
-function reload_sources() {
-	var ul = $("#ul-sources");
-	ul.empty();
+function reloadSources() {
+	var ul = document.getElementById("ul-sources");
+	// remove all child
+	while (ul.hasChildNodes()) {
+		ul.removeChild(ul.lastChild);
+	}
 
-	$.getScript("/list_sources", function() {
-		for (i in sources) {
-			ul.append(
-				'<li><a tabindex="-1" href="#dir=' +
-					sources[i] +
-					'" rel="' +
-					sources[i] +
-					'">' +
-					i +
-					'&nbsp;<i class="icon-bookmark"></i>&nbsp;' +
-					sources[i] +
-					"</a></li>"
+	ajaxGet("/list_sources", {}, function(dat) {
+		var srcs = JSON.parse(dat);
+
+		var lis = [];
+
+		for (var i in srcs) {
+			lis.push(
+				'<li class="pure-menu-item">' +
+					'<a href="#dir=' +
+					encodeURIComponent(srcs[i]) +
+					'" class="pure-menu-link">' +
+					srcs[i] +
+					"</a>" +
+					"</li>"
 			);
 		}
+
+		ul.innerHTML = lis.join("");
 	});
 }
 
-function func_set_last_selected_item(str) {
-	$.cookie(uport() + ".last_selected_item", str, { path: "/" });
+// update path label on top
+function updatePathLabel(path) {
+	if (typeof path !== "string" || path.length <= 0) return;
+
+	var el = document.getElementById("path");
+	// remove all child
+	while (el.hasChildNodes()) {
+		el.removeChild(el.lastChild);
+	}
+
+	var dirs = path.split("/");
+
+	var lis = [];
+	var dir, dir2;
+
+	for (var i = 1; i <= dirs.length; i++) {
+		if (i === 1) {
+			dir = "/";
+			dir2 = "/";
+		} else {
+			dir = path.split("/", i).join("/");
+			dir2 = "/ " + dirs[i - 1];
+		}
+
+		lis.push(
+			'<li class="pure-menu-item">' +
+				'<a href="#dir=' +
+				encodeURIComponent(dir) +
+				'" class="pure-menu-link">' +
+				dir2 +
+				"</a>" +
+				"</li>"
+		);
+	}
+
+	el.innerHTML = lis.join("");
 }
 
 function parse_dir_list(files) {
+	// not files
+	if (files instanceof Array === false) {
+		console.error("input not array");
+		return;
+	}
+
 	var html = [];
 
 	var path = files.shift().path;
@@ -119,9 +164,9 @@ function parse_dir_list(files) {
 				// trash
 				html.push(
 					'<li class="directory collapsed" id="trash"><a href="#dir=' +
-						+full_path +
+						full_path +
 						'" rel="' +
-						+full_path +
+						full_path +
 						'/"><img src="/images/"' +
 						icon +
 						'" /><span>' +
@@ -146,9 +191,7 @@ function parse_dir_list(files) {
 			// file
 
 			var img =
-				'<img class="lazy fadeIn fadeIn-1s fadeIn-Delay-Xs" data-original="/thumbnail/' +
-				file.id +
-				'" alt="Loading..." />';
+				'<img class="lazyload fadeIn fadeIn-1s fadeIn-Delay-Xs" data-src="/thumbnail/' + file.id + '" alt="Loading..." />';
 
 			var href = "";
 			var readstate = "read";
@@ -188,7 +231,7 @@ function parse_dir_list(files) {
 					readstate +
 					'">' +
 					file.name +
-					'</span><span class="badge badge-info bookpages">' +
+					'</span><span class="badge badge-secondary bookpages">' +
 					file.pages +
 					"</span></a></li>"
 			);
@@ -203,7 +246,7 @@ function parse_dir_list(files) {
 function reload_dir_lists(dir_path, keyword) {
 	// set default to name for order_by
 	var order_by = "name";
-	var co = $.cookie(uport() + ".order_by");
+	var co = window.sessionStorage.orderBy;
 	if (co) {
 		switch (co) {
 			case "name":
@@ -213,74 +256,78 @@ function reload_dir_lists(dir_path, keyword) {
 				break;
 		}
 	}
-	$.cookie(uport() + ".order_by", order_by, { path: "/" });
+	window.sessionStorage.orderBy = order_by;
 
 	// set the last path selected on cookie
-	$.cookie(uport() + ".lastpath", dir_path, { path: "/" });
+	window.sessionStorage.lastPath = dir_path;
 
-	var el = $("#dir_lists");
-	el.empty();
+	var el = document.getElementById("dir_lists");
+	// delete all child
+	while (el.hasChildNodes()) {
+		el.removeChild(el.lastChild);
+	}
 
-	$.post("/lists_dir", { dir: dir_path, keyword: keyword, order_by: order_by }, function(data) {
-		var els = parse_dir_list(data);
+	ajaxGet(
+		"/lists_dir",
+		{
+			dir: dir_path,
+			keyword: keyword
+		},
+		function(data) {
+			var els = parse_dir_list(JSON.parse(data));
 
-		el.append(els);
+			// add
+			el.innerHTML = els.join("");
 
-		// make li evenly horizontally filled
-		var window_width = $(window).innerWidth();
-		var li_width = $(".updir")
-			.eq(0)
-			.innerWidth();
-		var num = parseInt(window_width / li_width);
-		num = parseInt(window_width / num);
-		$(".directory, .file").css("width", num + "px");
+			// // make li evenly horizontally filled
+			// var window_width = window.innerWidth;
+			// var li_width = $(".updir")
+			// 	.eq(0)
+			// 	.innerWidth();
+			// var num = parseInt(window_width / li_width);
+			// num = parseInt(window_width / num);
+			// $(".directory, .file").css("width", num + "px");
 
-		// set container top height
-		container_height_refresh();
+			// // set container top height
+			// container_height_refresh();
 
-		// replace all links to desktop reader
-		if (!hasTouch) {
-			for (i in el.find("LI A")) {
-				var el_a = el.find("LI A").eq(i);
-				if (el_a.parent().hasClass("file")) {
-					el_a.attr("href", el_a.attr("href").replace(/reader2/, "reader"));
-				}
+			// make images load only when scrolled into view
+			var images = document.querySelectorAll("img.lazyload");
+			lazyload();
+			// new LazyLoad(images, {
+			// 	root: null,
+			// 	rootMargin: "0px",
+			// 	threshold: 0.5
+			// });
+
+			// // get to the last selected item
+			// var el_lsi = $('span:contains("' + window.sessionStorage.lastSelectedItem + '")').parent();
+			// if (el_lsi.length == 1) {
+			// 	$(el_lsi).addClass("last-selected-item");
+			// 	$(document).scrollTo(el_lsi, { offset: -$(".navbar-inner").height() });
+			// }
+
+			// apply click event for directory and file, so it will be focused next time
+			document.querySelectorAll("li.directory > a, li.file > a").forEach(function(el) {
+				el.addEventListener("click", function(evt) {
+					window.sessionStorage.lastSelectedItem = this.innerText;
+					return false;
+				});
+			});
+			document.querySelectorAll(".updir > a").forEach(function(el) {
+				el.addEventListener("click", function(evt) {
+					window.sessionStorage.lastSelectedItem = getHashParams("dir")
+						.split("/")
+						.pop();
+				});
+			});
+
+			// make sure files are deleteable if in delete mode
+			if (isDeleteMode) {
+				delete_enable();
 			}
 		}
-
-		// make images load only when scrolled into view
-		$("img.lazy").lazyload({
-			//effect : "fadeIn",
-			threshold: 500
-		});
-
-		// get to the last selected item
-		var el_lsi = $('span:contains("' + $.cookie(uport() + ".last_selected_item") + '")').parent();
-		if (el_lsi.length == 1) {
-			$(el_lsi).addClass("last-selected-item");
-			$(document).scrollTo(el_lsi, { offset: -$(".navbar-inner").height() });
-		}
-
-		// apply click event for directory and file, so it will be focused next time
-		$("li.directory > a, li.file > a").click(function() {
-			func_set_last_selected_item($(this).text());
-		});
-		$(".updir > a").click(function() {
-			func_set_last_selected_item(
-				getHashParams()
-					["dir"].split("/")
-					.pop()
-			);
-		});
-
-		// make sure files are deleteable if in delete mode
-		if (isDeleteMode) {
-			delete_enable();
-		}
-
-		// trigger scroll event, so the img.lazy show thumbnails
-		$(window).scroll();
-	});
+	);
 }
 
 function delete_book(bookcode) {
@@ -291,7 +338,7 @@ function delete_book(bookcode) {
 function toggleDelete(el) {
 	var bookcode = el.attr("bookcode");
 
-	var el = $("[bookcode=" + bookcode + "]");
+	el = $("[bookcode=" + bookcode + "]");
 
 	if (el.children(".countdown").length < 1) {
 		el.prepend("<div class='countdown'><p>Z</p></div>");
@@ -331,7 +378,7 @@ function countdownDelete(el, time) {
 			var t = $("#trash");
 
 			if (t.length <= 0) {
-				var li_link = getHashParams()["dir"] + "/Trash/";
+				var li_link = getHashParams("dir") + "/Trash/";
 				var li_trash =
 					'<li class="directory collapsed trash" id="trash"><a href="#dir=' +
 					li_link +
@@ -391,7 +438,7 @@ function delete_disable() {
 	el = $("li.file > a");
 	el.attr("onclick", "").unbind("click");
 	el.click(function() {
-		func_set_last_selected_item($(this).text());
+		window.sessionStorage.lastSelectedItem = $(this).text();
 	});
 }
 
@@ -404,105 +451,84 @@ function reload_path_label(dir) {
 	container_height_refresh();
 }
 
-$(document).keydown(function(e) {
+window.addEventListener("keydown", function(e) {
 	/* escape key */
 	if (e.keyCode == 27) {
-		homepage();
-		return false;
+		updir();
 	}
 });
 
 // change dir on hashchange
 window.addEventListener("hashchange", function() {
 	// get dir from hash
-	var hashes = getHashParams();
-	var dir = hashes["dir"];
+	var dir = getHashParams("dir");
 
 	// stop if dir not defined
 	if (dir == undefined) {
-		return false;
+		return;
 	}
 
 	// get keyword from searchbox
-	var keyword = $("#searchbox").val();
+	var keyword = document.getElementById("searchbox").value;
 
 	// save keyword used for search
-	$.cookie(uport() + ".lastsearch", keyword, { path: "/" });
+	window.sessionStorage.lastSearch = keyword;
 
 	// update path label
-	var dirs = dir.split("/");
-	dirs.shift();
-	var el = "";
-	var ds;
-	for (var i = 0; i < dirs.length - 1; i++) {
-		var li_class = "";
-		if (i >= dirs.length) {
-			li_class = ' class="active"';
-		}
-
-		ds = "/";
-		for (var j = 0; j < i; j++) {
-			ds += dirs[j] + "/";
-		}
-		ds += dirs[i];
-		el += "<li" + li_class + '><a href="#dir=' + ds + '">' + dirs[i] + "</a></li>";
-	}
-	el += "<li" + li_class + ">" + dirs[i] + "</li>";
-	$("#path").html(el);
+	updatePathLabel(dir);
 
 	// reload the dir list
 	reload_dir_lists(dir, keyword);
 });
 
 // page init
-$(function() {
-	// load the text localization
-	reload_locale();
+window.onload = function() {
+	// remember screen size
+	setScreenSize();
 
 	// load sources for menu
-	reload_sources();
+	reloadSources();
 
-	if ($.cookie(uport() + ".lastsearch")) {
-		$("#searchbox").val($.cookie(uport() + ".lastsearch"));
+	if (window.sessionStorage.lastSearch) {
+		document.getElementById("searchbox").value = window.sessionStorage.lastSearch;
 	}
 
-	$("#searchbox").bind("change", function(e) {
+	var searchbox = document.getElementById("searchbox");
+	searchbox.addEventListener("change", function(e) {
 		// get dir from hash
-		var hashes = getHashParams();
-		var dir = hashes["dir"];
+		var dir = getHashParams("dir");
 
 		// get keyword from searchbox
-		var keyword = $("#searchbox").val();
+		var keyword = this.value;
 
 		// stop if it the search is same as last search
-		if (keyword == $.cookie(uport() + ".lastsearch")) return false;
+		if (keyword == window.sessionStorage.lastSearch) return;
 
 		// save keyword used for search
-		$.cookie(uport() + ".lastsearch", keyword, { path: "/" });
+		window.sessionStorage.lastSearch = keyword;
 
 		// reload the dir list
 		reload_dir_lists(dir, keyword);
 	});
-	$("#searchbox").bind("keyup", function(e) {
+	searchbox.addEventListener("keyup", function(e) {
 		e = e || window.event;
 
 		if (e.keyCode == 13 || e.keyCode == 27) {
 			// enter key || escape key, unfocus the searchbox
-			$("#searchbox").blur();
+			this.blur();
 		}
 
-		// get dir from hash
-		var hashes = getHashParams();
-		var dir = hashes["dir"];
-
 		// get keyword from searchbox
-		var keyword = $("#searchbox").val();
+		var keyword = this.value;
 
 		// stop if it the search is same as last search
-		if (keyword == $.cookie(uport() + ".lastsearch")) return false;
+		if (keyword == window.sessionStorage.lastSearch) return;
+
+		// get dir from hash
+		var dir = getHashParams("dir");
 
 		// save keyword used for search
-		$.cookie(uport() + ".lastsearch", keyword, { path: "/" });
+		window.sessionStorage.lastSearch = keyword;
 
 		// reload the dir list
 		reload_dir_lists(dir, keyword);
@@ -519,16 +545,13 @@ $(function() {
 		window.location.hash = "";
 
 		setTimeout(function() {
-			if ($.cookie(uport() + ".lastpath")) {
+			if (window.sessionStorage.lastPath) {
 				// load last path remembered
-				window.location.hash = "#dir=" + $.cookie(uport() + ".lastpath");
-			} else {
+				window.location.hash = "#dir=" + window.sessionStorage.lastPath;
+			} else if (dirSources.length > 0) {
 				// click the first source if there is no lastpath
-				window.location.hash = $("#ul-sources")
-					.find("LI A")
-					.eq(0)
-					.attr("href");
+				window.location.hash = dirSources[0];
 			}
 		}, 50);
 	}, 500);
-});
+};

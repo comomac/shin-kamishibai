@@ -29,68 +29,52 @@ function fullhash(page) {
 	return "book=" + getHashParams("book") + "&page=" + page;
 }
 
-// a queue that will make the browser run more responsively
-// renamed $.queue to $.jobqueue, because of name conflict with scrollTo jquery plug-in
-$.jobqueue = {
-	_timer: null,
-	_queue: [],
-	add: function(fn, context, time) {
-		var setTimer = function(time) {
-			$.jobqueue._timer = setTimeout(function() {
-				time = $.jobqueue.add();
-				if ($.jobqueue._queue.length) {
-					setTimer(time);
-				}
-			}, time || 2);
-		};
-
-		if (fn) {
-			$.jobqueue._queue.push([fn, context, time]);
-			if ($.jobqueue._queue.length == 1) {
-				setTimer(time);
-			}
-			return;
-		}
-
-		var next = $.jobqueue._queue.shift();
-		if (!next) {
-			return 0;
-		}
-		next[0].call(next[1] || window);
-		return next[2];
-	},
-	clear: function() {
-		clearTimeout($.jobqueue._timer);
-		$.jobqueue._queue = [];
-	}
-};
-
-function reload_locale() {
-	// load the text localization for corresponding language i18n
-	var opts = { pathPrefix: "/lang" };
-	$("[data-localize]").localize("k", opts);
-}
-
-// set screen resolution on the session
-function setScreenSize() {
-	$.post(
-		"/screen",
-		{ width: window.innerWidth, height: window.innerHeight },
-		function(json) {
-			if (json.outcome == "success") {
-				// do something with the knowledge possibly?
-			} else {
-				alert("Unable to let server know what the screen resolution is!");
-			}
-		},
-		"json"
-	);
-}
-
 function uport() {
 	// get the url port
 	var port = window.location.port || "80";
 	return port;
+}
+
+// set cookie with prepending port number for key
+function cookiep(name, setVal) {
+	name = uport() + "." + name;
+	return cookie(name, setVal);
+}
+
+function cookie(name, setVal) {
+	var parseCookie = function(str) {
+		var items = str.split("; ");
+		var obj = {};
+
+		for (var i = 0; i < items.length; i++) {
+			var item = items[i];
+
+			var pos = item.indexOf("=");
+
+			var key = item.slice(0, pos);
+			var val = decodeURIComponent(item.slice(pos + 1));
+
+			obj[key] = val;
+		}
+
+		return obj;
+	};
+
+	var setCookie = function(skey, sval) {
+		// max-age is 1 year
+		document.cookie = skey + "=" + encodeURIComponent(sval) + "; max-age=31536000";
+	};
+
+	var cObj = parseCookie(document.cookie);
+
+	if (arguments.length === 0) {
+		return cObj;
+	}
+	if (arguments.length === 1) {
+		return cObj[name];
+	}
+
+	return setCookie(name, setVal);
 }
 
 /*
@@ -174,12 +158,53 @@ function isPassive() {
 	return supportsPassiveOption;
 }
 
+function objectToFormData(obj, form, namespace) {
+	var fd = form || new FormData();
+	var formKey;
+
+	for (var property in obj) {
+		if (obj.hasOwnProperty(property)) {
+			if (namespace) {
+				formKey = namespace + "[" + property + "]";
+			} else {
+				formKey = property;
+			}
+
+			// if the property is an object, but not a File,
+			// use recursivity.
+			if (typeof obj[property] === "object" && !(obj[property] instanceof File)) {
+				objectToFormData(obj[property], fd, property);
+			} else {
+				// if it's a string or a File object
+				fd.append(formKey, obj[property]);
+			}
+		}
+	}
+
+	return fd;
+}
+
+// ajax helper
+function ajaxGet(url, queries, callback) {
+	return ajax(url, {
+		get: queries,
+		callback: callback
+	});
+}
+function ajaxPost(url, data, callback) {
+	return ajax(url, {
+		post: JSON.stringify(data),
+		callback: callback
+	});
+}
+
 // good ol' fash ajax using xmlhttprequest
 function ajax(url, parms) {
 	parms = parms || {};
 	var req = new XMLHttpRequest(),
 		post = parms.post || null,
 		get = parms.get || null,
+		contentType = parms.contentType || null,
 		callback = parms.callback || null,
 		timeout = parms.timeout || null;
 
@@ -197,7 +222,12 @@ function ajax(url, parms) {
 
 	if (post) {
 		req.open("POST", url, true);
-		req.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+		// req.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+		if (contentType) {
+			req.setRequestHeader("Content-type", contentType);
+		} else {
+			req.setRequestHeader("Content-type", "application/json");
+		}
 	} else {
 		if (get) {
 			var result = [];
@@ -220,4 +250,12 @@ function ajax(url, parms) {
 			if (callback) callback(false);
 		}, timeout);
 	}
+
+	return req;
+}
+
+// remember screen size
+function setScreenSize() {
+	cookiep("width", window.innerWidth);
+	cookiep("height", window.innerHeight);
 }

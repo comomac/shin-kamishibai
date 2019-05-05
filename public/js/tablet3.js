@@ -8,14 +8,33 @@ var hasTouch = "ontouchstart" in window; //find out if device is touch device or
 // for saving cycle when typing keyword, delay search instead send immediately
 var timerKeywordChange = 0;
 
-// page init
-$(function(e) {
+function domready() {
+	var el;
+
+	// update reader bottom right info
+	updateCurrentInfo();
+
 	// clickable author
 	el = document.getElementById("bookinfo-author");
 	el.addEventListener("click", function(evt) {
 		exe_show_author(evt.target.innerHTML);
 	});
 
+	// load book immediately if detected
+	if (getHashParams("book")) {
+		var p = getHashParams("page") || 1;
+		readBook(getHashParams("book"), p);
+		return;
+	}
+
+	// leftmenu
+	rebuild_left_menu();
+}
+
+function $() {}
+
+// page init
+$(function(e) {
 	/*
 	 *  Browse section
 	 */
@@ -35,12 +54,12 @@ $(function(e) {
 	// set cookies
 	// load the book search query
 	var sb = $("#searchbox");
-	if ($.cookie(uport() + ".keyword") != undefined) {
-		sb.val($.cookie(uport() + ".keyword"));
+	if (cookiep("keyword") != undefined) {
+		sb.val(cookiep("keyword"));
 	}
 
 	// re-select the remembered menu selection
-	var i = $.cookie(uport() + ".last_menu_selection_number") || 1;
+	var i = cookiep("last_menu_selection_number") || 1;
 
 	// select menu selection
 	$("#bc" + i).button("toggle");
@@ -49,11 +68,11 @@ $(function(e) {
 	if (i == 5) {
 		// author selected, load author
 
-		sb.val(bcs.attr("author") || $.cookie(uport() + ".author") || "");
+		sb.val(bcs.attr("author") || cookiep("author") || "");
 	} else {
 		// non author selected, load normal keyword
 
-		sb.val(bcs.attr("keyword") || $.cookie(uport() + ".keyword") || "");
+		sb.val(bcs.attr("keyword") || cookiep("keyword") || "");
 	}
 
 	// swipe event for the browse page
@@ -101,38 +120,27 @@ $(function(e) {
 		if (i == 5) {
 			// author selected, load author
 
-			sb.val(bcs.attr("author") || $.cookie(uport() + ".author") || "");
+			sb.val(bcs.attr("author") || cookiep("author") || "");
 		} else {
 			// non author selected, load normal keyword
 
-			sb.val(bcs.attr("keyword") || $.cookie(uport() + ".keyword") || "");
+			sb.val(bcs.attr("keyword") || cookiep("keyword") || "");
 		}
 
 		// remember last menu selection number
-		$.cookie(uport() + ".last_menu_selection_number", i, { path: "/" });
+		cookiep("last_menu_selection_number", i, { path: "/" });
 
 		// change button high light
 		$(".btn-group > button").removeClass("active");
 		$(this).addClass("active");
 
 		// save cycles if search text isnt changed
-		// if ( sb.val() === $.cookie(uport() + '.keyword') || sb.val() === $.cookie(uport() + '.author') ) {
+		// if ( sb.val() === cookiep("keyword") || sb.val() === cookiep("author") ) {
 		// 	return false;
 		// }
 
 		prepare_lists();
 	});
-
-	if (getHashParams("book")) {
-		// load book if already specified in hash
-
-		var p = getHashParams("page") || 1;
-
-		readBook(getHashParams("book"), p);
-	} else {
-		// reload leftbox
-		// prepare_lists( get_menu_url() );
-	}
 
 	/*
 	 *  Reader section
@@ -140,11 +148,6 @@ $(function(e) {
 
 	// disable other other tuochmove events from propagating causing issuing
 	// document.addEventListener('touchmove', function (e) { e.preventDefault(); }, false);
-
-	// action when home button is pushed
-	$("#closeReader").on("click", function(event, ui) {
-		closeReader();
-	});
 
 	// show/hide menu
 	if (hasTouch) {
@@ -206,16 +209,6 @@ $(function(e) {
 		window.dispatchEvent(new HashChangeEvent("hashchange"));
 	});
 
-	updateBatteryLevel();
-	updateDivCurrentInfo();
-	window.setInterval(function() {
-		// update battery level
-		updateBatteryLevel();
-
-		// show clock
-		updateDivCurrentInfo();
-	}, 1000 * 60);
-
 	// load full screen button if device supports it
 	if (!/iphone|ipod|ipad/gi.test(navigator.appVersion)) {
 		$("#div-fs-btn").removeClass("hidden");
@@ -224,3 +217,38 @@ $(function(e) {
 	// leftmenu
 	rebuild_left_menu();
 });
+
+function updateCurrentInfo(page, pages) {
+	var el;
+
+	// update page
+	if (page) {
+		el = document.getElementById("book-page");
+		el.innerText = page;
+	}
+
+	// update pages
+	if (pages) {
+		el = document.getElementById("book-pages");
+		el.innerText = page;
+	}
+
+	// update clock
+	document.getElementById("clock").innerText = new Date().toTimeString().slice(0, 5);
+
+	// update battery
+	if (navigator.battery) {
+		// firefox support
+		var battery_level = Math.floor(navigator.battery.level * 100) + "%";
+		document.getElementById("battery").innerText = battery_level;
+	} else if (navigator.getBattery) {
+		// chrome support
+		navigator.getBattery().then(function(battery) {
+			var battery_level = Math.floor(battery.level * 100) + "%";
+			document.getElementById("battery").innerText = battery_level;
+		});
+	}
+}
+
+// schedule repeated timer
+window.setInterval(updateCurrentInfo, 1000 * 60); // every minute

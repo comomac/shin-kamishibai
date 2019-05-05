@@ -4,10 +4,17 @@ License: refer to LICENSE file
 
 var myScroll;
 
+var aaa = false;
+
 function load_myScroll() {
-	myScroll = new IScroll("#wrapper-leftmenu", {
+	if (aaa) {
+		return;
+	}
+	aaa = true;
+
+	myScroll = new IScroll("#leftbox", {
 		mouseWheel: true,
-		infiniteElements: "#scroller .row",
+		infiniteElements: "#scroller .scroll-li",
 		//infiniteLimit: 2000,
 		dataset: requestData,
 		dataFiller: updateContent,
@@ -20,23 +27,24 @@ function requestData(start, count) {
 	var page = Math.floor((start + 1) / 100);
 
 	// filter by
-	var filter_by = $("#bcs > button.active").attr("filter-by");
+	var filter_by = document.getElementsByClassName("pure-menu-selected")[0].getAttribute("choice");
 	if (!filter_by) filter_by = "all";
 	if (filter_by === "author") url = "/alists";
 
 	var keyword = document.getElementById("searchbox").value;
 
-	ajax("/lists", {
-		get: {
+	ajaxGet(
+		url,
+		{
 			filter_by: filter_by,
 			page: page,
 			keywords: keyword
 		},
-		callback: function(data) {
+		function(data) {
 			data = JSON.parse(data);
 			myScroll.updateCache(start, data);
 		}
-	});
+	);
 }
 
 function updateContent(el, data) {
@@ -135,6 +143,12 @@ function reload_books(bookcodes, options) {
 		}
 	});
 }
+
+function book_click_event(event) {
+	var tg = event.target;
+	readBook(tg.getAttribute("bookcode"), tg.getAttribute("page"));
+}
+
 function list_books(jData) {
 	var bookcodes = [];
 	var el;
@@ -147,46 +161,53 @@ function list_books(jData) {
 	el = document.getElementById("bookinfo-author");
 	el.innerHTML = jData.author;
 
-	// list books
-	el = $("#books");
-	el.empty();
+	// books
+	el = document.getElementById("books-ul");
+	// clear all books
+	while (el.firstChild) {
+		el.removeChild(el.firstChild);
+	}
+
 	var book;
+	var li, a, img, span, pages, page, pc, pc2;
 	for (var i = 0; i < jData.lists.length; i++) {
 		book = jData.lists[i];
 
-		var li = $("<li>");
-		li.addClass("book");
+		li = document.createElement("li");
+		li.className = "book-li";
 
-		var a = $("<a>");
-		a.attr("href", "#book=" + book.id + "&page=" + book.page || 1);
-		a.on("click", { bookcode: book.id, page: book.page }, function(event) {
-			// console.log(event.data.bookcode);
-			readBook(event.data.bookcode, event.data.page);
-		});
+		a = document.createElement("a");
+		a.href = "#book=" + book.id + "&page=" + book.page || 1;
+		a.setAttribute("bookcode", book.id);
+		a.setAttribute("page", book.page);
+		a.addEventListener("click", book_click_event, false);
 
-		var img = $("<img>");
-		img.attr("src", "/thumbnail/" + book.id);
-		img.attr("alt", "Loading...");
-		a.append(img);
+		img = document.createElement("img");
+		img.src = "/thumbnail/" + book.id;
+		img.setAttribute("alt", "Loading...");
+		a.appendChild(img);
 
-		var span = $("<span>");
-		span.html(book.number);
+		span = document.createElement("span");
+		span.innerText = book.number;
+
 		// set page progress
-		var page = book.page || 0;
-		var pages = book.pages;
-		var pc = Math.round((page / pages) * 100); // percentage read
-		var pc2 = pc === 0 ? 0 : pc + 1; // if never read, then make it all 0
-		span.css("background", "linear-gradient(to right, rgba(51,204,102,1) " + pc + "%,rgba(234,234,234,1) " + pc2 + "%)");
-		a.append(span);
+		page = book.page || 0;
+		pages = book.pages;
+		pc = Math.round((page / pages) * 100); // percentage read
+		pc2 = pc === 0 ? 0 : pc + 1; // if never read, then make it all 0
+		span.style.background = "linear-gradient(to right, rgba(51,204,102,1) " + pc + "%,rgba(234,234,234,1) " + pc2 + "%)";
+		a.appendChild(span);
 
-		li.append(a);
-		el.append(li);
+		li.appendChild(a);
+		el.appendChild(li);
 
+		// remember bookcode
 		bookcodes.push(book.id);
 	}
 
 	// remember books codes so can reload when closing reader
-	$("#bookinfo").attr("bookcodes", bookcodes);
+	el = document.getElementById("bookinfo");
+	el.setAttribute("bookcodes", bookcodes);
 }
 
 function exe_show_author(author) {
@@ -224,11 +245,11 @@ function prepare_lists(url) {
 	if (i === 5) {
 		keyword = sb.val();
 		bcs.attr("author", keyword);
-		$.cookie(uport() + ".author", keyword, { path: "/" });
+		cookiep("author", keyword, { path: "/" });
 	} else {
 		keyword = sb.val();
 		bcs.attr("keyword", keyword);
-		$.cookie(uport() + ".keyword", keyword, { path: "/" });
+		cookiep("keyword", keyword, { path: "/" });
 	}
 
 	// filter by
@@ -247,31 +268,43 @@ function rebuild_left_menu() {
 		myScroll.destroy();
 	}
 
-	var leftbox = document.getElementById("leftbox-div");
+	var leftbox = document.getElementById("leftbox");
 	// clear everything
 	while (leftbox.firstChild) {
 		leftbox.removeChild(leftbox.firstChild);
 	}
 
-	var wrapper = document.createElement("div");
-	wrapper.id = "wrapper-leftmenu";
-
 	var scroller = document.createElement("div");
 	scroller.id = "scroller";
-	wrapper.appendChild(scroller);
 
 	var ul = document.createElement("ul");
+	ul.className = "scroll-ul";
+
 	var li;
 	for (var i = 1; i <= 30; i++) {
 		li = document.createElement("li");
-		li.className = "row scroll-row";
+		li.className = "scroll-li";
 		li.innerText = "Row " + i;
 		ul.appendChild(li);
 	}
 
 	scroller.appendChild(ul);
 
-	leftbox.appendChild(wrapper);
+	leftbox.appendChild(scroller);
 
 	load_myScroll();
+}
+
+// update the filter on top
+function chooseFilter(target) {
+	// clear all other active class
+	var els = document.getElementsByClassName("a-filter");
+	for (var i = 0; i < els.length; i++) {
+		els[i].className = "a-filter";
+	}
+
+	var tgt = target;
+	tgt.className += " active pure-menu-selected";
+
+	rebuild_left_menu();
 }

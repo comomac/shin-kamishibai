@@ -4,18 +4,15 @@
 		<meta charset="utf-8" />
 		<title>Kamishibai</title>
 		<link href="/css/config.css" rel="stylesheet" type="text/css" />
-		<link href="/vendor/css/bootstrap.css" rel="stylesheet" type="text/css" />
 		<link href="/vendor/css/jqueryFileTree.css" rel="stylesheet" type="text/css" />
 		<script src="/vendor/js/jquery-2.1.4.js"></script>
-		<script src="/vendor/js/bootstrap.js"></script>
-		<script src="/vendor/js/jquery.localize.js"></script>
 		<script src="/vendor/js/jqueryFileTree.js"></script>
 		<script src="/js/config.js"></script>
 		<script src="/js/utilities.js"></script>
 	</head>
 	<body>
 		<script>
-			var drives = eval(["/"])
+			var drives = eval(["/"]);
 		</script>
 		<div class="container">
 			<div class="page-header">
@@ -117,12 +114,7 @@
 							</div>
 							<div id="pref-buttons">
 								<div class="controls">
-									<button
-										class="btn"
-										data-localize="cancel"
-										id="pref-cancel"
-										onclick="pref_load(); return false;"
-									></button>
+									<button class="btn" data-localize="cancel" id="pref-cancel" onclick="pref_load(); return false;"></button>
 									<button
 										class="btn btn-primary"
 										data-localize="config.SavePreferences"

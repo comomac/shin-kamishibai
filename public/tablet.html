@@ -9,21 +9,16 @@
 		<meta content="yes" name="apple-mobile-web-app-capable" />
 		<meta content="black" name="apple-mobile-web-app-status-bar-style" />
 		<title>Kamishibai</title>
-		<link href="/vendor/css/bootstrap.css" rel="stylesheet" type="text/css" />
-		<link href="/css/tablet_browse.css" rel="stylesheet" type="text/css" />
+		<link href="/vendor/css/pure-min.css" rel="stylesheet" type="text/css" />
+		<!-- <link href="/css/tablet_browse.css" rel="stylesheet" type="text/css" />
 		<link href="/css/tablet_reader.css" rel="stylesheet" type="text/css" />
-		<link href="/css/tablet_reader_input.css" rel="stylesheet" type="text/css" />
+		<link href="/css/tablet_reader_input.css" rel="stylesheet" type="text/css" /> -->
 		<script src="/js/iscroll-infinite.js"></script>
-		<script src="/vendor/js/jquery-2.1.4.js"></script>
-		<script src="/vendor/js/jquery.localize.js"></script>
-		<script src="/vendor/js/jquery.cookie.js"></script>
-		<script src="/vendor/js/jquery.scrollTo-1.4.3.1.js"></script>
-		<script src="/vendor/js/bootstrap.js"></script>
 		<script src="/js/swipeview-k.js"></script>
+		<script src="/js/tablet3.js"></script>
 		<script src="/js/utilities.js"></script>
 		<script src="/js/tablet3_browse.js"></script>
 		<script src="/js/tablet3_reader.js"></script>
-		<script src="/js/tablet3.js"></script>
 	</head>
 	<body>
 		<style type="text/css">
@@ -37,52 +32,27 @@
 				-ms-touch-action: none;
 			}
 
-			ul,
-			li {
+			ul.scroll-ul,
+			li.scroll-li {
 				padding: 0;
 				margin: 0;
 				border: 0;
 			}
 
 			body {
-				font-size: 12px;
 				font-family: ubuntu, helvetica, arial;
 				overflow: hidden; /* this is important to prevent the whole page to bounce */
 			}
 
-			#header {
-				position: absolute;
-				z-index: 2;
-				top: 0;
-				left: 0;
-				width: 100%;
-				height: 45px;
-				line-height: 45px;
-				background: #cd235c;
-				padding: 0;
-				color: #eee;
-				font-size: 20px;
-				text-align: center;
-				font-weight: bold;
+			.hidden {
+				visibility: hidden;
 			}
 
-			#footer {
-				position: absolute;
-				z-index: 2;
-				bottom: 0;
-				left: 0;
-				width: 100%;
-				height: 48px;
-				background: #444;
-				padding: 0;
-				border-top: 1px solid #444;
-			}
-
-			#wrapper-leftmenu {
+			#leftbox {
 				position: absolute;
 				z-index: 1;
-				top: 45px;
-				bottom: 48px;
+				top: 100px;
+				bottom: 0px;
 				left: 0;
 				width: 50%;
 				background: #ccc;
@@ -138,119 +108,515 @@
 				background-color: #fafafa;
 				font-size: 16px;
 			}
+
+			#bookinfo {
+				height: 66px;
+				border-top: solid 1px #000;
+				border-left: solid 1px #000;
+				border-bottom: solid 1px #000;
+			}
+
+			#books {
+				float: left;
+				position: absolute;
+				top: 100px;
+				bottom: 0px;
+				left: 50%;
+				right: 0px;
+				border-left: solid 1px #000;
+				overflow: hidden;
+				overflow-y: scroll;
+				-webkit-overflow-scrolling: touch;
+
+				display: inline-block;
+
+				list-style: none;
+				margin: 0 auto;
+				padding: 0;
+			}
+			#books-ul {
+				list-style: none;
+				margin: 0 auto;
+				padding: 0;
+			}
+			#books-ul li {
+				float: left;
+				width: 160px;
+				height: 220px;
+				/*background-color: #dedede;*/
+				position: relative;
+				margin: 15px;
+				display: table;
+				list-style: none;
+			}
+			#books-ul li.reading {
+				background-color: #ffece6;
+			}
+			#books-ul li.read {
+				/* background-color: #33cc66; */
+			}
+			#books-ul li.active {
+				background-color: red;
+			}
+			#books-ul li:hover {
+				/*background-color: yellow;*/
+			}
+			#books-ul li a {
+				/* top: 0px;
+			left: 0px;
+			position: relative; */
+				width: 100%;
+				height: 100%;
+				display: table-cell;
+				text-decoration: none;
+				overflow: hidden;
+				/*background-color: yellow;
+			 opacity: 0.3; */
+			}
+			#books-ul li a span {
+				position: absolute;
+				bottom: 0px;
+				font-size: smaller;
+				height: 42px;
+				width: 160px;
+				overflow: hidden;
+				display: inline-block;
+				color: #000;
+				/*background-color: #efe1e1;*/
+			}
+			#books-ul li a img {
+				min-height: 100px;
+				min-width: 50px;
+				max-width: 160px;
+				max-height: 170px;
+				position: absolute;
+				bottom: 48px;
+				display: block;
+				border-style: solid;
+				border-width: 1px;
+				border-color: #000;
+				box-shadow: 0px 0px 5px #999;
+				/*transform: rotate(10deg);*/
+			}
+
+			/* holds the manga reader */
+			#container {
+				z-index: 1000;
+				position: absolute;
+				left: 0;
+				top: 0;
+				right: 0;
+				bottom: 0;
+				background-color: rgba(128, 128, 128, 1);
+			}
+
+			/* ------- reader start ------- */
+			#wrapper {
+				width: 100%;
+				min-width: 320px;
+				height: 100%;
+			}
+
+			#swipeview-slider > div {
+				position: relative;
+				display: -webkit-box;
+				display: -moz-box;
+				display: -ms-box;
+				display: -o-box;
+				display: box;
+				-webkit-box-orient: vertical;
+				-moz-box-orient: vertical;
+				-ms-box-orient: vertical;
+				-o-box-orient: vertical;
+				box-orient: vertical;
+				-webkit-box-pack: center;
+				-moz-box-pack: center;
+				-ms-box-pack: center;
+				-o-box-pack: center;
+				box-pack: center;
+				-webkit-box-align: center;
+				-mox-box-align: center;
+				-ms-box-align: center;
+				-o-box-align: center;
+				box-align: center;
+				overflow: hidden;
+			}
+
+			#swipeview-slider img {
+				display: block;
+				-webkit-transition-duration: 0.4s;
+				-moz-transition-duration: 0.4s;
+				-ms-transition-duration: 0.4s;
+				-o-transition-duration: 0.4s;
+				transition-duration: 0.4s;
+				-webkit-transition-property: opacity;
+				-moz-transition-property: opacity;
+				-ms-transition-property: opacity;
+				-o-transition-property: opacity;
+				transition-property: opacity;
+				opacity: 1;
+				pointer-events: none;
+
+				/* me add */
+				width: auto;
+				height: auto;
+				max-width: 100%;
+				max-height: 100%;
+				margin-left: auto;
+				margin-right: auto;
+				object-fit: contain;
+			}
+
+			#wrapper > div > .swipeview-loading {
+				/*background-image:-webkit-gradient(linear, 0 0, 0 100%, from(#444), to(#555)),
+		-webkit-gradient(linear, 0 0, 100% 0, from(#777), to(#777));*/
+				/*background-position:50% 50%, 50% 50%;*/
+				/*background-size:200px 140px, 210px 150px;*/
+				/*background-repeat:no-repeat;*/
+			}
+
+			#wrapper > div > .swipeview-loading img,
+			#swipeview-slider img.loading {
+				-webkit-transition-duration: 0s;
+				opacity: 0;
+			}
+
+			#swipeview-slider > * {
+				/*background-color: black;*/
+				background-color: #efefef;
+			}
+
+			#swipeview-masterpage-0 img,
+			#swipeview-masterpage-1 img,
+			#swipeview-masterpage-2 img {
+				/*max-width: 150%;
+	max-height: 150%;*/
+			}
+
+			#swipeview-slider > div > div {
+				font-size: 6em;
+				position: fixed;
+				text-align: center;
+				width: 2em;
+				height: 1.5em;
+				top: 50%;
+				left: 50%;
+				margin: -2em 0 0 -1em;
+				background-image: url("/images/spinner.gif");
+				background-size: 32px 32px;
+				background-repeat: no-repeat;
+				background-position: bottom center;
+				/*background-color: #eff;*/
+
+				-webkit-transition-duration: 0s;
+				opacity: 0;
+				z-index: -9;
+				/*display: none;*/
+			}
+
+			#swipeview-slider > div > div.loading {
+				opacity: 1;
+			}
+
+			/* ------- reader end ------- */
+
+			/* reader top, book info */
+			#reader-bookinfo {
+				visibility: hidden;
+			}
+
+			/* reader bottom, control */
+			#readermenu {
+				text-align: center;
+				position: fixed;
+				bottom: 0px;
+				left: 0px;
+				right: 0px;
+				max-height: 0px;
+				overflow: hidden;
+				z-index: 99;
+				transition: max-height 0.3s;
+			}
+
+			/* reader bottom right, stats */
+			#currentinfo {
+				z-index: 9999;
+				position: fixed;
+				color: #ffffff;
+				bottom: 0px;
+				right: 0px;
+				/*width: 15em;*/
+				padding-bottom: 10px;
+				height: 1em;
+				background-color: #000000;
+				opacity: 0.5;
+			}
+
+			/* ___slider___ */
+			/* https://css-tricks.com/styling-cross-browser-compatible-range-inputs-css/ */
+			input[type="range"] {
+				-webkit-appearance: none; /* Hides the slider so that custom slider can be made */
+				width: 100%; /* Specific width is required for Firefox. */
+				background: transparent; /* Otherwise white in Chrome */
+			}
+
+			input[type="range"]::-webkit-slider-thumb {
+				-webkit-appearance: none;
+			}
+
+			input[type="range"]:focus {
+				outline: none; /* Removes the blue border. You should probably do some kind of focus styling for accessibility reasons though. */
+			}
+
+			input[type="range"]::-ms-track {
+				width: 100%;
+				cursor: pointer;
+
+				/* Hides the slider so custom styles can be added */
+				background: transparent;
+				border-color: transparent;
+				color: transparent;
+			}
+			/* ___slider's_thumb___ */
+			/* Special styling for WebKit/Blink */
+			input[type="range"]::-webkit-slider-thumb {
+				-webkit-appearance: none;
+				border: 1px solid #000000;
+				height: 36px;
+				width: 16px;
+				border-radius: 3px;
+				background: #ffffff;
+				cursor: pointer;
+				margin-top: -14px; /* You need to specify a margin in Chrome, but in Firefox and IE it is automatic */
+				box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d; /* Add cool effects to your sliders! */
+			}
+
+			/* All the same stuff for Firefox */
+			input[type="range"]::-moz-range-thumb {
+				box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+				border: 1px solid #000000;
+				height: 36px;
+				width: 16px;
+				border-radius: 3px;
+				background: #ffffff;
+				cursor: pointer;
+			}
+
+			/* All the same stuff for IE */
+			input[type="range"]::-ms-thumb {
+				box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+				border: 1px solid #000000;
+				height: 36px;
+				width: 16px;
+				border-radius: 3px;
+				background: #ffffff;
+				cursor: pointer;
+			}
+			/* ___slider's_track___ */
+			input[type="range"]::-webkit-slider-runnable-track {
+				width: 100%;
+				height: 8.4px;
+				cursor: pointer;
+				box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+				background: #3071a9;
+				border-radius: 1.3px;
+				border: 0.2px solid #010101;
+			}
+
+			input[type="range"]:focus::-webkit-slider-runnable-track {
+				background: #367ebd;
+			}
+
+			input[type="range"]::-moz-range-track {
+				width: 100%;
+				height: 8.4px;
+				cursor: pointer;
+				box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+				background: #3071a9;
+				border-radius: 1.3px;
+				border: 0.2px solid #010101;
+			}
+
+			input[type="range"]::-ms-track {
+				width: 100%;
+				height: 8.4px;
+				cursor: pointer;
+				background: transparent;
+				border-color: transparent;
+				border-width: 16px 0;
+				color: transparent;
+			}
+			input[type="range"]::-ms-fill-lower {
+				background: #2a6495;
+				border: 0.2px solid #010101;
+				border-radius: 2.6px;
+				box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+			}
+			input[type="range"]:focus::-ms-fill-lower {
+				background: #3071a9;
+			}
+			input[type="range"]::-ms-fill-upper {
+				background: #3071a9;
+				border: 0.2px solid #010101;
+				border-radius: 2.6px;
+				box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+			}
+			input[type="range"]:focus::-ms-fill-upper {
+				background: #367ebd;
+			}
 		</style>
-
-		<div class="navbar navbar-fixed-top" id="menu">
-			<div class="btn-group" id="bcs" role="group">
-				<button class="btn btn-default" data-localize="browse.All" id="bc1" link="/lists" filter-by="all"></button>
-				<button class="btn btn-default" data-localize="browse.New" id="bc2" link="/lists" filter-by="new"></button>
-				<button class="btn btn-default" data-localize="browse.Reading" id="bc3" link="/lists" filter-by="reading"></button>
-				<button class="btn btn-default" data-localize="browse.Finished" id="bc4" link="/lists" filter-by="finished"></button>
-				<button class="btn btn-default" data-localize="browse.Author" id="bc5" link="/alists" filter-by="author"></button>
-			</div>
-			<button class="btn" onclick="location.href = '/'">
-				<i class="glyphicon glyphicon-folder-open"></i>
-			</button>
+		<div class="pure-menu pure-menu-horizontal">
+			<ul class="pure-menu-list">
+				<li class="pure-menu-item">
+					<a href="#" class="pure-menu-link pure-menu-selected" onclick="chooseFilter(this);" choice="all"
+						>&nbsp;&nbsp;&nbsp;All&nbsp;&nbsp;&nbsp;&nbsp;</a
+					>
+				</li>
+				<li class="pure-menu-item">
+					<a href="#" class="pure-menu-link" onclick="chooseFilter(this);" choice="new"
+						>&nbsp;&nbsp;&nbsp;New&nbsp;&nbsp;&nbsp;&nbsp;</a
+					>
+				</li>
+				<li class="pure-menu-item">
+					<a href="#" class="pure-menu-link" onclick="chooseFilter(this);" choice="reading">Reading</a>
+				</li>
+				<li class="pure-menu-item">
+					<a href="#" class="pure-menu-link" onclick="chooseFilter(this);" choice="finished">Finished</a>
+				</li>
+				<li class="pure-menu-item">
+					<a href="#" class="pure-menu-link" onclick="chooseFilter(this);" choice="author">Author</a>
+				</li>
+				<li class="pure-menu-item"><a href="/" class="pure-menu-link">Folder</a></li>
+			</ul>
 		</div>
-		<div id="window">
-			<div id="searchbox-holder">
-				<div class="input-group">
-					<span class="input-group-addon">
-						<i class="glyphicon glyphicon-search"></i>
-					</span>
-					<input class="form-control" id="searchbox" name="searchbox" placeholder="search" type="text" value="" />
+		<div class="pure-g">
+			<div class="pure-u-1-2">
+				<div class="row">
+					<form class="pure-form">
+						<input class="pure-input-2-3" id="searchbox" placeholder="search" />
+						<button type="submit" class="pure-button">Search</button>
+					</form>
 				</div>
-			</div>
-			<div id="leftbox-div">
-				<!-- <ul data-autodividers="true" data-filler-theme="d" data-role="listview" data-theme="d" id="leftbox"></ul> -->
-				<div id="wrapper-leftmenu">
+				<div class="row" id="leftbox">
 					<div id="scroller">
-						<ul>
-							<li class="row scroll-row">Row 1</li>
-							<li class="row scroll-row">Row 2</li>
-							<li class="row scroll-row">Row 3</li>
-							<li class="row scroll-row">Row 4</li>
-							<li class="row scroll-row">Row 5</li>
-							<li class="row scroll-row">Row 6</li>
-							<li class="row scroll-row">Row 7</li>
-							<li class="row scroll-row">Row 8</li>
-							<li class="row scroll-row">Row 9</li>
-							<li class="row scroll-row">Row 10</li>
-							<li class="row scroll-row">Row 11</li>
-							<li class="row scroll-row">Row 12</li>
-							<li class="row scroll-row">Row 13</li>
-							<li class="row scroll-row">Row 14</li>
-							<li class="row scroll-row">Row 15</li>
+						<ul class="scroll-ul">
+							<li class="scroll-li">Row 1</li>
+							<li class="scroll-li">Row 2</li>
+							<li class="scroll-li">Row 3</li>
+							<li class="scroll-li">Row 4</li>
+							<li class="scroll-li">Row 5</li>
+							<li class="scroll-li">Row 6</li>
+							<li class="scroll-li">Row 7</li>
+							<li class="scroll-li">Row 8</li>
+							<li class="scroll-li">Row 9</li>
+							<li class="scroll-li">Row 10</li>
+							<li class="scroll-li">Row 11</li>
+							<li class="scroll-li">Row 12</li>
+							<li class="scroll-li">Row 13</li>
+							<li class="scroll-li">Row 14</li>
+							<li class="scroll-li">Row 15</li>
 
-							<li class="row scroll-row">Row 16</li>
-							<li class="row scroll-row">Row 17</li>
-							<li class="row scroll-row">Row 18</li>
-							<li class="row scroll-row">Row 19</li>
-							<li class="row scroll-row">Row 20</li>
-							<li class="row scroll-row">Row 21</li>
-							<li class="row scroll-row">Row 22</li>
-							<li class="row scroll-row">Row 23</li>
-							<li class="row scroll-row">Row 24</li>
-							<li class="row scroll-row">Row 25</li>
-							<li class="row scroll-row">Row 26</li>
-							<li class="row scroll-row">Row 27</li>
-							<li class="row scroll-row">Row 28</li>
-							<li class="row scroll-row">Row 29</li>
-							<li class="row scroll-row">Row 30</li>
+							<li class="scroll-li">Row 16</li>
+							<li class="scroll-li">Row 17</li>
+							<li class="scroll-li">Row 18</li>
+							<li class="scroll-li">Row 19</li>
+							<li class="scroll-li">Row 20</li>
+							<li class="scroll-li">Row 21</li>
+							<li class="scroll-li">Row 22</li>
+							<li class="scroll-li">Row 23</li>
+							<li class="scroll-li">Row 24</li>
+							<li class="scroll-li">Row 25</li>
+							<li class="scroll-li">Row 26</li>
+							<li class="scroll-li">Row 27</li>
+							<li class="scroll-li">Row 28</li>
+							<li class="scroll-li">Row 29</li>
+							<li class="scroll-li">Row 30</li>
 						</ul>
 					</div>
 				</div>
 			</div>
-			<div id="bookinfo">
-				<div id="bookinfo-title"></div>
-				<div id="bookinfo-author"></div>
-			</div>
-			<div id="rcontainer">
-				<ul id="books"></ul>
+			<div class="pure-u-1-2">
+				<div class="row" id="bookinfo">
+					<div class="row" id="bookinfo-title">title</div>
+					<div class="row" id="bookinfo-author">author</div>
+				</div>
+				<div class="row" id="books">
+					<ul id="books-ul"></ul>
+				</div>
 			</div>
 		</div>
+
 		<div class="hidden" id="container">
+			<!-- reader -->
 			<div id="wrapper"></div>
+
+			<!-- bottom right, always visible -->
 			<div id="currentinfo">
-				<span id="pageCounter"></span>
-				<span id="clock"></span>
-				<span id="battery"></span>
+				<span id="book-page">11</span>
+				<span>/</span>
+				<span id="book-pages">187</span>
+				<span id="clock">19:31</span>
+				<span>&#128267;</span>
+				<span id="battery">-1</span>
 			</div>
-			<div class="ui-bar-a" id="booktitle"></div>
-			<div class="ui-bar-a" id="readermenu">
-				<div>
-					<div class="gap hidden" id="div-fs-btn">
-						<div
-							class="ui-btn ui-btn-up-a ui-shadow ui-btn-corner-all"
-							id="gofullscreen"
-							onclick="toggleFullScreen('container'); hidemenu();"
-						>
-							<div>
-								full screen
-							</div>
-						</div>
+
+			<!-- top -->
+			<div id="reader-bookinfo">
+				<div class="row">
+					<div class="col is-center" id="reader-bookinfo-title">
+						book title
 					</div>
-					<div class="gap">
-						<div class="segmented-button" data-toggle="buttons" id="readdirection">
-							<input checked="checked" class="radio" id="readtoleft" name="readdirection" type="radio" />
-							<label class="first" for="readtoleft">eastern</label>
-							<input class="radio" id="readtoright" name="readdirection" type="radio" />
-							<label class="last" for="readtoright">western</label>
-						</div>
+				</div>
+				<div class="row">
+					<div class="col is-center" id="reader-bookinfo-author">
+						book author
 					</div>
-					<div class="gap">
-						<input id="pageinput" type="text" />
+				</div>
+				<div class="row">
+					<div class="col is-center" id="reader-bookinfo-number">
+						book number
+					</div>
+				</div>
+				<div class="row">
+					<div class="col is-center" id="reader-bookinfo-thumbnail">
+						book thumbnail
+					</div>
+				</div>
+			</div>
+
+			<!-- bottom -->
+			<div id="readermenu">
+				<div class="row">
+					<div class="col is-center">
 						<input id="pageslider" max="10" min="1" step="1" type="range" value="1" />
 					</div>
-					<div class="gap">
-						<div class="ui-btn ui-btn-up-a ui-shadow ui-btn-corner-all" id="closeReader">
-							<div>
-								close reader
-							</div>
-						</div>
+				</div>
+
+				<div class="row">
+					<div class="col is-center">
+						<a class="button is-center" onclick="toggleFullScreen();">full screen</a>
+					</div>
+				</div>
+
+				<div class="row">
+					<div class="col is-center">
+						<a class="button" onclick="isEasternBookMode=true;">eastern</a>
+						<a class="button" onclick="isEasternBookMode=false;">western</a>
+					</div>
+				</div>
+
+				<div class="row">
+					<div class="col is-center">
+						<a class="button" onclick="closeReader();">
+							close reader
+						</a>
 					</div>
 				</div>
 			</div>
 		</div>
+
+		<script>
+			domready();
+		</script>
 	</body>
 </html>

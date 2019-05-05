@@ -3,119 +3,108 @@ License: refer to LICENSE file
  */
 
 // bookcode
-var bookcode = getHashParams()['book'];
+var bookcode = getHashParams("book");
 
 // initialize book variables
 var maxpage;
 var booktitle;
 
 // load bookinfo
-document.write("<script src=\"/bookinfo/" + bookcode + "\"><\/script>");
-
+document.write('<script src="/bookinfo/' + bookcode + '"></script>');
 
 // record the cookie
-$.cookie('lastbook' + uport(), bookcode, { path: '/' });
+cookie("lastbook" + uport(), bookcode, { path: "/" });
 
 // get the hash for the page
 function getpage() {
-	var i = parseInt( getHashParams()['page'] );
+	var i = parseInt(getHashParams("page"));
 
-	if (typeof i == "number" && ! isNaN(i) ) {
+	if (typeof i == "number" && !isNaN(i)) {
 		return i;
 	}
 
 	return -1;
 }
 
-
-$(window).bind('hashchange', function(e) {
-	$('#pageslider').slider('value', getpage());
+$(window).bind("hashchange", function(e) {
+	$("#pageslider").slider("value", getpage());
 	reload_images();
 	preload_images();
 });
 
-
 var $slider_flag = false;
-
 
 $(function() {
 	// page init
 
 	// setup book variable
-	maxpage   = book.pages;
+	maxpage = book.pages;
 	booktitle = book.title;
 
 	// load the text localization
 	reload_locale();
 
 	// set book title on menu
-	$('#booktitle').html('<h2>' + booktitle + '</h2>');
-
+	$("#booktitle").html("<h2>" + booktitle + "</h2>");
 
 	// set even/odd tab and min value
 	if (getpage() == -1 || getpage() % 2 == 0) {
-		$('#pageeven').click();
+		$("#pageeven").click();
+	} else {
+		$("#pageodd").click();
 	}
-	else {
-		$('#pageodd').click();
-	}
-
 
 	// setup page slider
-	$('#pageslider').slider({
-        range: 'min',
-        min: 0,
-        max: maxpage,
-        step: 2,
-        value: getpage(),
-	    slide: function(event,ui) {
-	    	$('#pageslider-value').val( ui.value );
-	    },
-		start: function(event,ui) {
-			$slider_flag = true
+	$("#pageslider").slider({
+		range: "min",
+		min: 0,
+		max: maxpage,
+		step: 2,
+		value: getpage(),
+		slide: function(event, ui) {
+			$("#pageslider-value").val(ui.value);
 		},
-		stop: function(event,ui) {
-			window.location.hash = fullhash( ui.value );
+		start: function(event, ui) {
+			$slider_flag = true;
+		},
+		stop: function(event, ui) {
+			window.location.hash = fullhash(ui.value);
 			$slider_flag = false;
 		},
-		change: function(event,ui) {
-			$('#pageslider-value').val( $('#pageslider').slider('value') );
+		change: function(event, ui) {
+			$("#pageslider-value").val($("#pageslider").slider("value"));
 
 			if ($slider_flag) return false;
-			window.location.hash = fullhash( ui.value );
+			window.location.hash = fullhash(ui.value);
 		}
 	});
-	$('#pageslider-value').val( $('#pageslider').slider('value') );
-
+	$("#pageslider-value").val($("#pageslider").slider("value"));
 
 	if (getpage() == -1) {
-		window.location.hash = fullhash( 0 );
-	}
-	else {
+		window.location.hash = fullhash(0);
+	} else {
 		// wait until jquery ui fully loaded, then setup page, or some stuff isn't displayed properly
 		reload_images();
 		preload_images();
 	}
 
-
 	/* setup button functions */
-	$('#pagemode')
+	$("#pagemode")
 		.buttonset()
 		.change(function(e) {
 			/* setting using mouse function and a time delay, or it won't work
 			 * bug is probably cause by double trigger and transition time, if it is responded immediately, the called radio will still be stuck at previous selection
 			 */
-			var elem = $('#pageslider');
+			var elem = $("#pageslider");
 			if (isSinglePageMode()) {
 				// set slider step by 1
-				elem.slider('option', 'step', 1);
+				elem.slider("option", "step", 1);
 
 				// disable set of buttons
 				disable_buttons();
-			}
-			else {
+			} else {
 				// set slider step by 2
-				elem.slider('option', 'step', 2);
+				elem.slider("option", "step", 2);
 
 				// enable set of buttons
 				enable_buttons();
@@ -124,59 +113,62 @@ $(function() {
 			// load images
 			reload_images();
 		});
-	$('#itemsheight')
+	$("#itemsheight")
 		.buttonset()
 		.change(function(e) {
 			if (isNormalHeight()) {
 				/* change to normal height */
-				$('#pagemode').buttonset('enable');
-			}
-			else {
+				$("#pagemode").buttonset("enable");
+			} else {
 				/* change to full height */
-				$('#singlepage').click();
-				$('#pagemode').buttonset('disable');
+				$("#singlepage").click();
+				$("#pagemode").buttonset("disable");
 			}
 			reload_images();
 		});
-	$('#readdirection')
+	$("#readdirection")
 		.buttonset()
 		.change(function(e) {
 			reload_images();
 		});
-	$('#primarypage')
+	$("#primarypage")
 		.buttonset()
 		.change(function(e) {
-			console.log('primary change');
+			console.log("primary change");
 
 			// making the page even or odd page primary
 			if (isEvenPage()) {
-				$('#pageslider').slider('option', 'min', 0);
-			}
-			else {
-				$('#pageslider').slider('option', 'min', 1);
+				$("#pageslider").slider("option", "min", 0);
+			} else {
+				$("#pageslider").slider("option", "min", 1);
 			}
 			reload_images();
 		});
-	$('#barmode')
+	$("#barmode")
 		.buttonset()
 		.change(function(e) {
 			reload_images();
 		});
-	$('#closemenu')
+	$("#closemenu")
 		.button()
-		.click( function(e) {
-			window.setTimeout( function() { hidemenu(); }, 50 );
+		.click(function(e) {
+			window.setTimeout(function() {
+				hidemenu();
+			}, 50);
 		});
-	$('#gohome')
+	$("#gohome")
 		.button()
-		.click( function(e) {
-			window.setTimeout( function() { goHomepage(); }, 50 );
-	});
-
+		.click(function(e) {
+			window.setTimeout(function() {
+				goHomepage();
+			}, 50);
+		});
 });
 
 function reload_images() {
-	window.setTimeout( function() { exec_reload_images(); }, 50 );
+	window.setTimeout(function() {
+		exec_reload_images();
+	}, 50);
 }
 
 function exec_reload_images() {
@@ -188,69 +180,82 @@ function exec_reload_images() {
 
 	// set pageslider's min base on page
 	if (isEvenPage()) {
-		$('#pageslider').slider('option', 'min', 0);
-	}
-	else {
-		$('#pageslider').slider('option', 'min', 1);
+		$("#pageslider").slider("option", "min", 0);
+	} else {
+		$("#pageslider").slider("option", "min", 1);
 	}
 
 	// set the page to make slider call changes and set the appropriate page
-	$('#pageslider').slider('value', getpage());
+	$("#pageslider").slider("value", getpage());
 
 	// remove image first then add, instead of changing image source ( otherwise image resize won't work)
-	$('#ileft').remove();
-	$('#ibar').remove();
-	$('#iright').remove();
+	$("#ileft").remove();
+	$("#ibar").remove();
+	$("#iright").remove();
 
 	// set icontainer height
 	if (isNormalHeight()) {
-		$('#icontainer').addClass('icontainer-normal_height');
-	}
-	else {
-		$('#icontainer').removeClass('icontainer-normal_height');
+		$("#icontainer").addClass("icontainer-normal_height");
+	} else {
+		$("#icontainer").removeClass("icontainer-normal_height");
 	}
 
 	// add left page
 	if (isSinglePageMode()) {
 		//** single page mode **//
-		$('<img />').attr('id','ileft').appendTo('#icontainer');
-		$('#ileft').css('display','none');
-	}
-	else {
+		$("<img />")
+			.attr("id", "ileft")
+			.appendTo("#icontainer");
+		$("#ileft").css("display", "none");
+	} else {
 		//** dual page mode **//
 		if (isEasternBook()) {
-			$('<img />').attr('id','ileft').attr("src", "/cbz/" + bookcode + "/" + (getpage() + 1) ).appendTo('#icontainer');
-		}
-		else {
-			$('<img />').attr('id','ileft').attr("src", "/cbz/" + bookcode + "/" + getpage() ).appendTo('#icontainer');
+			$("<img />")
+				.attr("id", "ileft")
+				.attr("src", "/cbz/" + bookcode + "/" + (getpage() + 1))
+				.appendTo("#icontainer");
+		} else {
+			$("<img />")
+				.attr("id", "ileft")
+				.attr("src", "/cbz/" + bookcode + "/" + getpage())
+				.appendTo("#icontainer");
 		}
 	}
 	// set the left image height
-	if (isNormalHeight()) $('#ileft').addClass('normal_height');
+	if (isNormalHeight()) $("#ileft").addClass("normal_height");
 
 	// black bar mode
 	if (isBlackBared()) {
 		// with black bar
-		$('<div></div>').attr('id','ibar').css('display','inline-block').appendTo('#icontainer');
-	}
-	else {
+		$("<div></div>")
+			.attr("id", "ibar")
+			.css("display", "inline-block")
+			.appendTo("#icontainer");
+	} else {
 		// without black bar
-		$('<div></div>').attr('id','ibar').css('display','none').appendTo('#icontainer');
+		$("<div></div>")
+			.attr("id", "ibar")
+			.css("display", "none")
+			.appendTo("#icontainer");
 	}
 
 	// add right image
 	if (isEasternBook()) {
-		$('<img />').attr('id','iright').attr("src", "/cbz/" + bookcode + "/" + getpage() ).appendTo('#icontainer');
-	}
-	else {
-		$('<img />').attr('id','iright').attr("src", "/cbz/" + bookcode + "/" + (getpage() + 1) ).appendTo('#icontainer');
+		$("<img />")
+			.attr("id", "iright")
+			.attr("src", "/cbz/" + bookcode + "/" + getpage())
+			.appendTo("#icontainer");
+	} else {
+		$("<img />")
+			.attr("id", "iright")
+			.attr("src", "/cbz/" + bookcode + "/" + (getpage() + 1))
+			.appendTo("#icontainer");
 	}
 	// set the right image height
 	if (isNormalHeight()) {
-		$('#iright').addClass('normal_height');
-	}
-	else {
-		$('#iright').addClass('full_height');
+		$("#iright").addClass("normal_height");
+	} else {
+		$("#iright").addClass("full_height");
 	}
 
 	/*
@@ -270,53 +275,51 @@ function exec_reload_images() {
 }
 
 function isEasternBook() {
-	return ( $('#readdirection :radio:checked').attr('id') == 'readtoleft' ) ? true : false;
+	return $("#readdirection :radio:checked").attr("id") == "readtoleft" ? true : false;
 }
 
 function isNormalHeight() {
-	return ( $('#itemsheight :radio:checked').attr('id') == 'normalheight' ) ? true : false;
+	return $("#itemsheight :radio:checked").attr("id") == "normalheight" ? true : false;
 }
 
 function isEvenPage() {
-	return ( $('#primarypage :radio:checked').attr('id') == 'pageeven' ) ? true : false;
+	return $("#primarypage :radio:checked").attr("id") == "pageeven" ? true : false;
 }
 
 function isOddPage() {
-	return ( $('#primarypage :radio:checked').attr('id') == 'pageodd' ) ? true : false;
+	return $("#primarypage :radio:checked").attr("id") == "pageodd" ? true : false;
 }
 
 function isSinglePageMode() {
-	return ( $('#pagemode :radio:checked').attr('id') == 'singlepage' ) ? true : false;
+	return $("#pagemode :radio:checked").attr("id") == "singlepage" ? true : false;
 }
 
 function isBlackBared() {
-	return ( $('#barmode :radio:checked').attr('id') == 'yesbar' ) ? true : false;
+	return $("#barmode :radio:checked").attr("id") == "yesbar" ? true : false;
 }
 
 function disable_buttons() {
 	// reset and disable black bar
-	$('#nobar').click();
-	$('#barmode').buttonset('disable');
+	$("#nobar").click();
+	$("#barmode").buttonset("disable");
 
 	// disable page even / odd mode
-	$("#primarypage").buttonset('disable');
+	$("#primarypage").buttonset("disable");
 
 	// disable read direction
-	$("#readdirection").buttonset('disable');
+	$("#readdirection").buttonset("disable");
 }
 
 function enable_buttons() {
 	// enable black bar
-	$('#barmode').buttonset('enable');
+	$("#barmode").buttonset("enable");
 
 	// enable page even / odd mode
-	$('#primarypage').buttonset('enable');
+	$("#primarypage").buttonset("enable");
 
 	// enable readdirection
-	$('#readdirection').buttonset('enable');
+	$("#readdirection").buttonset("enable");
 }
-
-
 
 // keyboard commands
 document.onkeydown = function(e) {
@@ -347,19 +350,17 @@ document.onkeydown = function(e) {
 			break;
 		case 192:
 			// ` key, show/hide menu
-			if (($('#menu').css('display')) == 'none') {
+			if ($("#menu").css("display") == "none") {
 				showmenu();
-			}
-			else {
+			} else {
 				hidemenu();
 			}
 			break;
 		case 13:
 			// enter key, show/hide menu
-			if (($('#menu').css('display')) == 'none') {
+			if ($("#menu").css("display") == "none") {
 				showmenu();
-			}
-			else {
+			} else {
 				hidemenu();
 			}
 			break;
@@ -367,20 +368,18 @@ document.onkeydown = function(e) {
 			// a key, normal or full height image
 			if (isNormalHeight()) {
 				/* change to full height */
-				$('#fullheight').click();
-			}
-			else {
+				$("#fullheight").click();
+			} else {
 				/* change to normal height */
-				$('#normalheight').click();
+				$("#normalheight").click();
 			}
 			break;
 		case 83:
 			// s key, single or double page mode
 			if (isSinglePageMode()) {
-				$('#doublepage').click();
-			}
-			else {
-				$('#singlepage').click();
+				$("#doublepage").click();
+			} else {
+				$("#singlepage").click();
 			}
 			break;
 		case 69:
@@ -388,10 +387,9 @@ document.onkeydown = function(e) {
 			if (isSinglePageMode()) break;
 
 			if (isEasternBook()) {
-				$('#readtoright').click();
-			}
-			else {
-				$('#readtoleft').click();
+				$("#readtoright").click();
+			} else {
+				$("#readtoleft").click();
 			}
 			break;
 		case 66:
@@ -399,10 +397,9 @@ document.onkeydown = function(e) {
 			if (isSinglePageMode()) break;
 
 			if (isBlackBared()) {
-				$('#nobar').click();
-			}
-			else {
-				$('#yesbar').click();
+				$("#nobar").click();
+			} else {
+				$("#yesbar").click();
 			}
 			break;
 		case 86:
@@ -410,23 +407,21 @@ document.onkeydown = function(e) {
 			if (isSinglePageMode()) break;
 
 			if (isEvenPage()) {
-				$('#pageodd').click();
-			}
-			else {
-				$('#pageeven').click();
+				$("#pageodd").click();
+			} else {
+				$("#pageeven").click();
 			}
 			break;
 	}
 	// catch/disable all other keys
 	//return false;
-}
-
+};
 
 function goHomepage() {
-	var page = $.cookie('lastbrowse' + uport());
+	var page = cookie("lastbrowse" + uport());
 
 	if (page == undefined) {
-		page = '/';
+		page = "/";
 	}
 	window.location.href = page;
 }
@@ -437,7 +432,7 @@ function goNextPages() {
 		var i = isSinglePageMode() ? 1 : 2;
 
 		// change page by changing the slider, otherwise the navigation will have unpredictable or buggy behaviour
-		$('#pageslider').slider('value', getpage() + i );
+		$("#pageslider").slider("value", getpage() + i);
 	}
 }
 
@@ -447,36 +442,37 @@ function goPrevPages() {
 		var i = isSinglePageMode() ? 1 : 2;
 
 		// change page by changing the slider, otherwise the navigation will have unpredictable or buggy behaviour
-		$('#pageslider').slider('value', getpage() - i );
+		$("#pageslider").slider("value", getpage() - i);
 	}
 }
 
 function showmenu() {
-	$('#menu').css('display','block');
+	$("#menu").css("display", "block");
 }
 
 function hidemenu() {
-	$('#menu').css('display','none');
+	$("#menu").css("display", "none");
 }
 
 // function to preload images
 function preload(arrayOfImages) {
 	// remove old element
-	$('.pl_image').remove();
+	$(".pl_image").remove();
 
 	// append new hidden image element
-	$(arrayOfImages).each( function() {
-		$('<img />').attr('src',this).appendTo('body').css('display','none').addClass('pl_image');
+	$(arrayOfImages).each(function() {
+		$("<img />")
+			.attr("src", this)
+			.appendTo("body")
+			.css("display", "none")
+			.addClass("pl_image");
 	});
 }
 
 function preload_images() {
 	// precaching images for fast loading
 
-	var	images = [
-		"/cbz/" + bookcode + "/" + (getpage() + 2),
-		"/cbz/" + bookcode + "/" + (getpage() + 3)
-	];
+	var images = ["/cbz/" + bookcode + "/" + (getpage() + 2), "/cbz/" + bookcode + "/" + (getpage() + 3)];
 
 	preload(images);
 }
@@ -485,13 +481,12 @@ function preload_images() {
 function setbookmark() {
 	$.ajax({
 		url: "/setbookmark/" + bookcode + "/" + getpage(),
-		beforeSend: function ( xhr ) {
+		beforeSend: function(xhr) {
 			xhr.overrideMimeType("text/plain; charset=x-user-defined");
 		}
-	}).done(function ( data ) {
-		if( 1==2 && console && console.log ) {
+	}).done(function(data) {
+		if (1 == 2 && console && console.log) {
 			console.log("Sample of data:", data);
 		}
 	});
 }
-
