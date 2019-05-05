@@ -158,8 +158,15 @@ func getBooksInfo(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 
 // TODO
 func getSources(w http.ResponseWriter, r *http.Request) {
+	cookies := r.Cookies()
+	fmt.Printf("%+v\n", cookies)
+	cookie, err := r.Cookie("8086.order_by")
+	if err == nil {
+		fmt.Printf("%+v %+v\n", cookie.Name, cookie.Value)
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(`sources = ["/Users/mac/tmp/mangas"];`))
+	w.Write([]byte(`["/Users/mac/tmp/mangas"]`))
 }
 
 // FileList contains list of files and folders
@@ -177,28 +184,16 @@ type FileInfoBasic struct {
 // TODO
 func postDirList(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "POST" {
+		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 
-		err := r.ParseForm()
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
-			return
-		}
+		query := r.URL.Query()
 
-		pdir := r.PostForm["dir"]
+		dir := query.Get("dir")
 
-		fmt.Println(pdir)
-
-		if len(pdir) < 1 {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(`dir not provided`))
-		}
-
-		dir := pdir[0]
+		fmt.Println(dir)
 
 		// TODO check permission
 		files, err := ioutil.ReadDir(dir)
