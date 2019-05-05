@@ -297,14 +297,43 @@ function rebuild_left_menu() {
 
 // update the filter on top
 function chooseFilter(target) {
+	var nameSelected = "pure-menu-selected";
+
 	// clear all other active class
-	var els = document.getElementsByClassName("a-filter");
+	var els = document.getElementsByClassName(nameSelected);
 	for (var i = 0; i < els.length; i++) {
-		els[i].className = "a-filter";
+		els[i].classList.remove(nameSelected);
 	}
 
-	var tgt = target;
-	tgt.className += " active pure-menu-selected";
+	// highlight selected
+	target.classList.add(nameSelected);
+
+	// remember selection
+	window.sessionStorage.filterSelected = target.getAttribute("choice");
 
 	rebuild_left_menu();
+}
+
+// #searchbox event
+function searchboxOnChange(evt) {
+	// reload the list with keyword matches
+	prepare_lists();
+}
+function searchboxOnKeyDown(evt) {
+	// save cycles, stop the timer to send query when key is pressed
+	clearTimeout(timerKeywordChange);
+}
+function searchboxOnKeyUp(evt) {
+	evt = evt || window.event;
+
+	if (evt.keyCode == 13) {
+		// enter key, unfocus the searchbox
+		this.blur();
+		return;
+	}
+
+	// save cycles, only sent query when search is truly finished typing
+	timerKeywordChange = setTimeout(function() {
+		prepare_lists();
+	}, 1200);
 }

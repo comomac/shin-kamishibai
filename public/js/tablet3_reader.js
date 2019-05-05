@@ -18,7 +18,7 @@ var isEasternBookMode = true;
 var onFlipActionDelay = 1000;
 
 function readBook(bc, bp) {
-	console.log("readBook", arguments);
+	// console.log("readBook", arguments);
 	// bc, bookcode
 	// bp, bookpage
 
@@ -28,7 +28,8 @@ function readBook(bc, bp) {
 	// // set screen size so if the image is resized, server remember the screen size
 	// setScreenSize();
 
-	ajaxGet("/books_info", 
+	ajaxGet(
+		"/books_info",
 		{
 			bookcodes: bc
 		},
@@ -46,6 +47,7 @@ function readBook(bc, bp) {
 			document.getElementById("reader-bookinfo-title").innerText = book.title;
 			document.getElementById("reader-bookinfo-author").innerText = book.author;
 			document.getElementById("reader-bookinfo-number").innerText = book.number;
+			document.getElementById("reader-bookinfo-thumbnail").src = "/thumbnail/" + book.id;
 
 			// set #pageslider max
 			el = document.getElementById("pageslider");
@@ -66,9 +68,8 @@ function readBook(bc, bp) {
 }
 
 function sliderValue(el, e) {
-	var el = $(el);
-	var min = Number(el.attr("min"));
-	var max = Number(el.attr("max"));
+	var min = Number(el.getAttribute("min"));
+	var max = Number(el.getAttribute("max"));
 	var t;
 	if (e.originalEvent.touches) {
 		t = e.originalEvent.touches[0];
@@ -312,7 +313,7 @@ function closeReader() {
 
 	destroyGallery();
 
-	reload_books($("#bookinfo").attr("bookcodes"));
+	reload_books(document.getElementById("bookinfo").getAttribute("bookcodes"));
 }
 
 // go to particular page
@@ -417,7 +418,7 @@ function loadImage() {
 
 // get the page from hash
 function getpage() {
-	var i = parseInt(getHashParams("page");
+	var i = parseInt(getHashParams("page"));
 	if (typeof i == "number" && !isNaN(i)) {
 		return i;
 	}
@@ -427,7 +428,7 @@ function getpage() {
 
 // toggle menu
 function togglemenu() {
-	if ($("#readermenu").hasClass("showtop")) {
+	if (document.getElementById("reader-menu").classList.contains("showtop")) {
 		hidemenu();
 	} else {
 		showmenu();
@@ -440,14 +441,14 @@ function togglemenu() {
 // show menu
 function showmenu() {
 	// show the menu
-	$("#booktitle").addClass("showtop");
-	$("#readermenu").addClass("showtop");
+	document.getElementById("reader-bookinfo").classList.add("showtop");
+	document.getElementById("reader-menu").classList.add("showtop");
 }
 
 function hidemenu() {
 	// set header & footer hidden
-	$("#booktitle").removeClass("showtop");
-	$("#readermenu").removeClass("showtop");
+	document.getElementById("reader-bookinfo").classList.remove("showtop");
+	document.getElementById("reader-menu").classList.remove("showtop");
 }
 
 // show/hide menu when touch the page
@@ -471,18 +472,19 @@ function hasMoved(b, e) {
 	}
 }
 
-function toggleFullScreen(id) {
-	var elem = document.getElementById(id);
-	var btn = $("#gofullscreen"); // button for toggle full screen
+function readerToggleFullScreen() {
+	var id = "btn-fullscreen-toggle";
+	var btn = document.getElementById(id); // button for toggle full screen
 
 	if (isFullScreen()) {
-		btn.text("full screen");
+		btn.innerText = "full screen";
 
 		exitFullScreen();
 	} else {
-		btn.text("exit full screen");
+		btn.innerText = "exit full screen";
 
-		goFullScreen(id);
+		// goFullScreen("container");
+		toggleFullScreen(document.documentElement);
 	}
 
 	// refresh button text
@@ -511,4 +513,75 @@ function keyboardCmd(e) {
 			togglemenu();
 			break;
 	}
+}
+
+// change page when slider is moved
+function pagesliderOnChange(e) {
+	goToPage(this.value);
+}
+function pagesliderOnInput(e) {
+	$("#pageinput").val($(this).val());
+}
+function pagesliderOnTouchStart(e) {
+	// change page when slider is moved (touch)
+	var i = sliderValue(this, e);
+
+	$("#pageinput").val(i);
+	this.value = i;
+}
+function pagesliderOnTouchMove(e) {
+	// console.log('slider move');
+	var i = sliderValue(this, e);
+
+	$("#pageinput").val(i);
+	this.value = i;
+}
+function pagesliderOnTouchEnd(e) {
+	// goToPage( $(this).val() );
+}
+
+function readRightToLeft(tf) {}
+// // change read direction when button is touched
+// $("#readdirection").change(function(e) {
+// 	destroyGallery();
+// 	createGallery();
+// 	// force trigger hashchange on load
+// 	window.dispatchEvent(new HashChangeEvent("hashchange"));
+// });
+
+function initReaderUI() {
+	// use for menu toggle
+	window.wrapperMouseLastPos = {
+		x: -1,
+		y: -1
+	};
+
+	var wrapper = document.getElementById("wrapper");
+	wrapper.addEventListener("click", function(e) {
+		// show/hide menu
+
+		if (!hasTouch) return;
+
+		e.stopPropagation();
+		togglemenu();
+	});
+	wrapper.addEventListener("mousedown", function(e) {
+		// prevent swipe triggering menu when using mouse
+
+		if (hasTouch) return;
+
+		window.wrapperMouseLastPos = {
+			x: e.clientX,
+			y: e.clientY
+		};
+	});
+	wrapper.addEventListener("mouseup", function(e) {
+		if (hasTouch) return;
+
+		// moved, so no menu
+		if (Math.abs(window.wrapperMouseLastPos.x - e.clientX) > 10) return;
+		if (Math.abs(window.wrapperMouseLastPos.y - e.clientY) > 10) return;
+
+		togglemenu();
+	});
 }

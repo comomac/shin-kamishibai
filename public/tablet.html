@@ -322,11 +322,21 @@
 
 			/* reader top, book info */
 			#reader-bookinfo {
-				visibility: hidden;
+				/* visibility: hidden; */
+				text-align: center;
+				position: fixed;
+				top: 0px;
+				left: 0px;
+				right: 0px;
+				max-height: 0px;
+				overflow: hidden;
+				z-index: 99;
+				transition: max-height 0.3s;
+				background-color: grey;
 			}
 
 			/* reader bottom, control */
-			#readermenu {
+			#reader-menu {
 				text-align: center;
 				position: fixed;
 				bottom: 0px;
@@ -336,6 +346,11 @@
 				overflow: hidden;
 				z-index: 99;
 				transition: max-height 0.3s;
+				background-color: grey;
+			}
+			#reader-menu.showtop,
+			#reader-bookinfo.showtop {
+				max-height: 300px;
 			}
 
 			/* reader bottom right, stats */
@@ -347,7 +362,7 @@
 				right: 0px;
 				/*width: 15em;*/
 				padding-bottom: 10px;
-				height: 1em;
+				/* height: 1em; */
 				background-color: #000000;
 				opacity: 0.5;
 			}
@@ -467,24 +482,20 @@
 		</style>
 		<div class="pure-menu pure-menu-horizontal">
 			<ul class="pure-menu-list">
-				<li class="pure-menu-item">
-					<a href="#" class="pure-menu-link pure-menu-selected" onclick="chooseFilter(this);" choice="all"
-						>&nbsp;&nbsp;&nbsp;All&nbsp;&nbsp;&nbsp;&nbsp;</a
-					>
+				<li class="pure-menu-item pure-menu-selected" onclick="chooseFilter(this);" choice="all">
+					<a href="#" class="pure-menu-link">&nbsp;&nbsp;&nbsp;All&nbsp;&nbsp;&nbsp;&nbsp;</a>
 				</li>
-				<li class="pure-menu-item">
-					<a href="#" class="pure-menu-link" onclick="chooseFilter(this);" choice="new"
-						>&nbsp;&nbsp;&nbsp;New&nbsp;&nbsp;&nbsp;&nbsp;</a
-					>
+				<li class="pure-menu-item" onclick="chooseFilter(this);" choice="new" id="choice-new">
+					<a href="#" class="pure-menu-link">&nbsp;&nbsp;&nbsp;New&nbsp;&nbsp;&nbsp;&nbsp;</a>
 				</li>
-				<li class="pure-menu-item">
-					<a href="#" class="pure-menu-link" onclick="chooseFilter(this);" choice="reading">Reading</a>
+				<li class="pure-menu-item" onclick="chooseFilter(this);" choice="reading" id="choice-reading">
+					<a href="#" class="pure-menu-link">Reading</a>
 				</li>
-				<li class="pure-menu-item">
-					<a href="#" class="pure-menu-link" onclick="chooseFilter(this);" choice="finished">Finished</a>
+				<li class="pure-menu-item" onclick="chooseFilter(this);" choice="finished" id="choice-finished">
+					<a href="#" class="pure-menu-link">Finished</a>
 				</li>
-				<li class="pure-menu-item">
-					<a href="#" class="pure-menu-link" onclick="chooseFilter(this);" choice="author">Author</a>
+				<li class="pure-menu-item" onclick="chooseFilter(this);" choice="author" id="choice-author">
+					<a href="#" class="pure-menu-link">Author</a>
 				</li>
 				<li class="pure-menu-item"><a href="/" class="pure-menu-link">Folder</a></li>
 			</ul>
@@ -493,7 +504,14 @@
 			<div class="pure-u-1-2">
 				<div class="row">
 					<form class="pure-form">
-						<input class="pure-input-2-3" id="searchbox" placeholder="search" />
+						<input
+							class="pure-input-2-3"
+							id="searchbox"
+							placeholder="search"
+							onkeyup="searchboxOnKeyUp(this);"
+							onkeydown="searchboxOnKeyDown(this);"
+							onchange="searchboxOnChange(this);"
+						/>
 						<button type="submit" class="pure-button">Search</button>
 					</form>
 				</div>
@@ -538,7 +556,7 @@
 			<div class="pure-u-1-2">
 				<div class="row" id="bookinfo">
 					<div class="row" id="bookinfo-title">title</div>
-					<div class="row" id="bookinfo-author">author</div>
+					<div class="row" id="bookinfo-author" onclick="exe_show_author(this.innerHTML);">author</div>
 				</div>
 				<div class="row" id="books">
 					<ul id="books-ul"></ul>
@@ -552,9 +570,9 @@
 
 			<!-- bottom right, always visible -->
 			<div id="currentinfo">
-				<span id="book-page">11</span>
+				<span id="book-page">1</span>
 				<span>/</span>
-				<span id="book-pages">187</span>
+				<span id="book-pages">100</span>
 				<span id="clock">19:31</span>
 				<span>&#128267;</span>
 				<span id="battery">-1</span>
@@ -578,38 +596,49 @@
 					</div>
 				</div>
 				<div class="row">
-					<div class="col is-center" id="reader-bookinfo-thumbnail">
-						book thumbnail
-					</div>
+					<img class="col is-center" src="/thumbnail/x" id="reader-bookinfo-thumbnail" />
 				</div>
 			</div>
 
 			<!-- bottom -->
-			<div id="readermenu">
+			<div id="reader-menu">
 				<div class="row">
 					<div class="col is-center">
-						<input id="pageslider" max="10" min="1" step="1" type="range" value="1" />
+						<input
+							id="pageslider"
+							max="10"
+							min="1"
+							step="1"
+							type="range"
+							value="1"
+							oninput="pagesliderOnInput(this);"
+							ontouchstart="pagesliderOnTouchStart(this);"
+							ontouchend="pagesliderOnTouchEnd(this);"
+							ontouchmove="pagesliderOnTouchMove(this);"
+						/>
+					</div>
+				</div>
+
+				<div class="row hidden" id="div-fs-btn">
+					<div class="col is-center">
+						<button class="pure-button is-center" onclick="readerToggleFullScreen();" id="btn-fullscreen-toggle">
+							full screen
+						</button>
+					</div>
+				</div>
+
+				<div class="row">
+					<div class="pure-button-group" role="group" aria-label="...">
+						<button class="pure-button" onclick="readRightToLeft(true);">eastern</button>
+						<button class="pure-button" onclick="readRightToLeft(false);">western</button>
 					</div>
 				</div>
 
 				<div class="row">
 					<div class="col is-center">
-						<a class="button is-center" onclick="toggleFullScreen();">full screen</a>
-					</div>
-				</div>
-
-				<div class="row">
-					<div class="col is-center">
-						<a class="button" onclick="isEasternBookMode=true;">eastern</a>
-						<a class="button" onclick="isEasternBookMode=false;">western</a>
-					</div>
-				</div>
-
-				<div class="row">
-					<div class="col is-center">
-						<a class="button" onclick="closeReader();">
+						<button class="pure-button" onclick="closeReader();">
 							close reader
-						</a>
+						</button>
 					</div>
 				</div>
 			</div>

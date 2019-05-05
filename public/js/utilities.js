@@ -104,6 +104,12 @@ function goFullScreen(i) {
 	}
 }
 
+function fullScreenSupported() {
+	if (document.mozCancelFullScreen) return true;
+	if (document.webkitCancelFullScreen) return true;
+	return false;
+}
+
 function exitFullScreen() {
 	if (document.mozCancelFullScreen) {
 		document.mozCancelFullScreen();
