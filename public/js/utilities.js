@@ -275,6 +275,6 @@ function ajax(url, parms) {
 
 // remember screen size
 function setScreenSize() {
-	cookiep("width", window.innerWidth);
-	cookiep("height", window.innerHeight);
+	cookie("width", window.innerWidth);
+	cookie("height", window.innerHeight);
 }
