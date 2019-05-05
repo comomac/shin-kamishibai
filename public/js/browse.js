@@ -309,17 +309,25 @@ function reload_dir_lists(dir_path, keyword) {
 
 			// apply click event for directory and file, so it will be focused next time
 			document.querySelectorAll("li.directory > a, li.file > a").forEach(function(el) {
-				el.addEventListener("click", function(evt) {
-					window.sessionStorage.lastSelectedItem = this.innerText;
-					return false;
-				});
+				el.addEventListener(
+					"click",
+					function(evt) {
+						window.sessionStorage.lastSelectedItem = this.innerText;
+						return false;
+					},
+					tryPassiveListner()
+				);
 			});
 			document.querySelectorAll(".updir > a").forEach(function(el) {
-				el.addEventListener("click", function(evt) {
-					window.sessionStorage.lastSelectedItem = getHashParams("dir")
-						.split("/")
-						.pop();
-				});
+				el.addEventListener(
+					"click",
+					function(evt) {
+						window.sessionStorage.lastSelectedItem = getHashParams("dir")
+							.split("/")
+							.pop();
+					},
+					tryPassiveListner()
+				);
 			});
 
 			// make sure files are deleteable if in delete mode
@@ -451,35 +459,43 @@ function reload_path_label(dir) {
 	container_height_refresh();
 }
 
-window.addEventListener("keydown", function(e) {
-	/* escape key */
-	if (e.keyCode == 27) {
-		updir();
-	}
-});
+window.addEventListener(
+	"keydown",
+	function(e) {
+		/* escape key */
+		if (e.keyCode == 27) {
+			updir();
+		}
+	},
+	tryPassiveListner()
+);
 
 // change dir on hashchange
-window.addEventListener("hashchange", function() {
-	// get dir from hash
-	var dir = getHashParams("dir");
+window.addEventListener(
+	"hashchange",
+	function() {
+		// get dir from hash
+		var dir = getHashParams("dir");
 
-	// stop if dir not defined
-	if (dir == undefined) {
-		return;
-	}
+		// stop if dir not defined
+		if (dir == undefined) {
+			return;
+		}
 
-	// get keyword from searchbox
-	var keyword = document.getElementById("searchbox").value;
+		// get keyword from searchbox
+		var keyword = document.getElementById("searchbox").value;
 
-	// save keyword used for search
-	window.sessionStorage.lastSearch = keyword;
+		// save keyword used for search
+		window.sessionStorage.lastSearch = keyword;
 
-	// update path label
-	updatePathLabel(dir);
+		// update path label
+		updatePathLabel(dir);
 
-	// reload the dir list
-	reload_dir_lists(dir, keyword);
-});
+		// reload the dir list
+		reload_dir_lists(dir, keyword);
+	},
+	tryPassiveListner()
+);
 
 // page init
 window.onload = function() {
@@ -494,45 +510,53 @@ window.onload = function() {
 	}
 
 	var searchbox = document.getElementById("searchbox");
-	searchbox.addEventListener("change", function(e) {
-		// get dir from hash
-		var dir = getHashParams("dir");
+	searchbox.addEventListener(
+		"change",
+		function(e) {
+			// get dir from hash
+			var dir = getHashParams("dir");
 
-		// get keyword from searchbox
-		var keyword = this.value;
+			// get keyword from searchbox
+			var keyword = this.value;
 
-		// stop if it the search is same as last search
-		if (keyword == window.sessionStorage.lastSearch) return;
+			// stop if it the search is same as last search
+			if (keyword == window.sessionStorage.lastSearch) return;
 
-		// save keyword used for search
-		window.sessionStorage.lastSearch = keyword;
+			// save keyword used for search
+			window.sessionStorage.lastSearch = keyword;
 
-		// reload the dir list
-		reload_dir_lists(dir, keyword);
-	});
-	searchbox.addEventListener("keyup", function(e) {
-		e = e || window.event;
+			// reload the dir list
+			reload_dir_lists(dir, keyword);
+		},
+		tryPassiveListner()
+	);
+	searchbox.addEventListener(
+		"keyup",
+		function(e) {
+			e = e || window.event;
 
-		if (e.keyCode == 13 || e.keyCode == 27) {
-			// enter key || escape key, unfocus the searchbox
-			this.blur();
-		}
+			if (e.keyCode == 13 || e.keyCode == 27) {
+				// enter key || escape key, unfocus the searchbox
+				this.blur();
+			}
 
-		// get keyword from searchbox
-		var keyword = this.value;
+			// get keyword from searchbox
+			var keyword = this.value;
 
-		// stop if it the search is same as last search
-		if (keyword == window.sessionStorage.lastSearch) return;
+			// stop if it the search is same as last search
+			if (keyword == window.sessionStorage.lastSearch) return;
 
-		// get dir from hash
-		var dir = getHashParams("dir");
+			// get dir from hash
+			var dir = getHashParams("dir");
 
-		// save keyword used for search
-		window.sessionStorage.lastSearch = keyword;
+			// save keyword used for search
+			window.sessionStorage.lastSearch = keyword;
 
-		// reload the dir list
-		reload_dir_lists(dir, keyword);
-	});
+			// reload the dir list
+			reload_dir_lists(dir, keyword);
+		},
+		tryPassiveListner()
+	);
 
 	// load dir and file list
 	setTimeout(function() {

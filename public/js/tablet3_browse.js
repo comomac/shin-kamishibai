@@ -68,12 +68,7 @@ document.addEventListener(
 	function(e) {
 		e.preventDefault();
 	},
-	isPassive()
-		? {
-				capture: false,
-				passive: false
-		  }
-		: false
+	tryPassiveListner()
 );
 
 // load books from the bookcodes
@@ -180,7 +175,7 @@ function list_books(jData) {
 		a.href = "#book=" + book.id + "&page=" + book.page || 1;
 		a.setAttribute("bookcode", book.id);
 		a.setAttribute("page", book.page);
-		a.addEventListener("click", book_click_event, false);
+		a.addEventListener("click", book_click_event, tryPassiveListner());
 
 		img = document.createElement("img");
 		img.src = "/thumbnail/" + book.id;

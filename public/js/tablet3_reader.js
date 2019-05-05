@@ -295,7 +295,7 @@ function createGallery(goPage) {
 	// now add listener
 
 	// keyboard commands
-	window.addEventListener("keydown", keyboardCmd);
+	window.addEventListener("keydown", keyboardCmd, tryPassiveListner());
 }
 
 // set the bookmark
@@ -535,61 +535,93 @@ function initReaderUI() {
 	};
 
 	var wrapper = document.getElementById("wrapper");
-	wrapper.addEventListener("click", function(e) {
-		// show/hide menu
+	wrapper.addEventListener(
+		"click",
+		function(e) {
+			// show/hide menu
 
-		if (!hasTouch) return;
+			if (!hasTouch) return;
 
-		e.stopPropagation();
-		togglemenu();
-	});
-	wrapper.addEventListener("mousedown", function(e) {
-		// prevent swipe triggering menu when using mouse
+			e.stopPropagation();
+			togglemenu();
+		},
+		tryPassiveListner()
+	);
+	wrapper.addEventListener(
+		"mousedown",
+		function(e) {
+			// prevent swipe triggering menu when using mouse
 
-		if (hasTouch) return;
+			if (hasTouch) return;
 
-		window.wrapperMouseLastPos = {
-			x: e.clientX,
-			y: e.clientY
-		};
-	});
-	wrapper.addEventListener("mouseup", function(e) {
-		if (hasTouch) return;
+			window.wrapperMouseLastPos = {
+				x: e.clientX,
+				y: e.clientY
+			};
+		},
+		tryPassiveListner()
+	);
+	wrapper.addEventListener(
+		"mouseup",
+		function(e) {
+			if (hasTouch) return;
 
-		// moved, so no menu
-		if (Math.abs(window.wrapperMouseLastPos.x - e.clientX) > 10) return;
-		if (Math.abs(window.wrapperMouseLastPos.y - e.clientY) > 10) return;
+			// moved, so no menu
+			if (Math.abs(window.wrapperMouseLastPos.x - e.clientX) > 10) return;
+			if (Math.abs(window.wrapperMouseLastPos.y - e.clientY) > 10) return;
 
-		togglemenu();
-	});
+			togglemenu();
+		},
+		tryPassiveListner()
+	);
 
 	var slider = document.getElementById("pageslider");
 
 	// change page when slider is moved
-	slider.addEventListener("change", function(e) {
-		// touch should be trigger by touchend, while change trigger by mouse
-		if (hasTouch) return;
+	slider.addEventListener(
+		"change",
+		function(e) {
+			// touch should be trigger by touchend, while change trigger by mouse
+			if (hasTouch) return;
 
-		goToPage(this.value);
-	});
-	slider.addEventListener("input", function(e) {
-		document.getElementById("pageinput").value = this.value;
-	});
-	slider.addEventListener("touchstart", function(e) {
-		// change page when slider is moved (touch)
-		var i = sliderValue(this, e);
+			goToPage(this.value);
+		},
+		tryPassiveListner()
+	);
+	slider.addEventListener(
+		"input",
+		function(e) {
+			document.getElementById("pageinput").value = this.value;
+		},
+		tryPassiveListner()
+	);
+	slider.addEventListener(
+		"touchstart",
+		function(e) {
+			// change page when slider is moved (touch)
+			var i = sliderValue(this, e);
 
-		document.getElementById("pageinput").value = i;
-		this.value = i;
-	});
-	slider.addEventListener("touchmove", function(e) {
-		// console.log('slider move');
-		var i = sliderValue(this, e);
+			document.getElementById("pageinput").value = i;
+			this.value = i;
+		},
+		tryPassiveListner()
+	);
+	slider.addEventListener(
+		"touchmove",
+		function(e) {
+			// console.log('slider move');
+			var i = sliderValue(this, e);
 
-		document.getElementById("pageinput").value = i;
-		this.value = i;
-	});
-	slider.addEventListener("touchend", function(e) {
-		goToPage(this.value);
-	});
+			document.getElementById("pageinput").value = i;
+			this.value = i;
+		},
+		tryPassiveListner()
+	);
+	slider.addEventListener(
+		"touchend",
+		function(e) {
+			goToPage(this.value);
+		},
+		tryPassiveListner()
+	);
 }

@@ -147,6 +147,8 @@ function isImageCached(src) {
 	return image.complete;
 }
 
+// for performance on addEventListener
+// ref https://developers.google.com/web/tools/lighthouse/audits/passive-event-listeners
 // ref https://github.com/WICG/EventListenerOptions/pull/30
 function isPassive() {
 	var supportsPassiveOption = false;
@@ -162,6 +164,17 @@ function isPassive() {
 		);
 	} catch (e) {}
 	return supportsPassiveOption;
+}
+
+// attempt to use passive listener
+function tryPassiveListner() {
+	if (isPassive()) {
+		return {
+			capture: false,
+			passive: false
+		};
+	}
+	return false;
 }
 
 function objectToFormData(obj, form, namespace) {
