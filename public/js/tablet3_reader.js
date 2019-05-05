@@ -71,15 +71,18 @@ function sliderValue(el, e) {
 	var min = Number(el.getAttribute("min"));
 	var max = Number(el.getAttribute("max"));
 	var t;
-	if (e.originalEvent.touches) {
-		t = e.originalEvent.touches[0];
+	if (e.touches) {
+		t = e.touches[0];
 	}
 	// else {
 	// 	t = e.originalEvent;
 	// }
-	var w = Number(el.width());
+	// console.log(t, el.getBoundingClientRect());
+	var rect = el.getBoundingClientRect();
+	var w = Number(el.offsetWidth);
 	var x = w / max;
-	var l = el.position().left;
+	// var l = el.position().left;
+	var l = rect.left;
 
 	// approximate value on the slider position
 	var i = Math.ceil((t.pageX - l) / x);
@@ -515,31 +518,6 @@ function keyboardCmd(e) {
 	}
 }
 
-// change page when slider is moved
-function pagesliderOnChange(e) {
-	goToPage(this.value);
-}
-function pagesliderOnInput(e) {
-	$("#pageinput").val($(this).val());
-}
-function pagesliderOnTouchStart(e) {
-	// change page when slider is moved (touch)
-	var i = sliderValue(this, e);
-
-	$("#pageinput").val(i);
-	this.value = i;
-}
-function pagesliderOnTouchMove(e) {
-	// console.log('slider move');
-	var i = sliderValue(this, e);
-
-	$("#pageinput").val(i);
-	this.value = i;
-}
-function pagesliderOnTouchEnd(e) {
-	// goToPage( $(this).val() );
-}
-
 function readRightToLeft(tf) {}
 // // change read direction when button is touched
 // $("#readdirection").change(function(e) {
@@ -583,5 +561,35 @@ function initReaderUI() {
 		if (Math.abs(window.wrapperMouseLastPos.y - e.clientY) > 10) return;
 
 		togglemenu();
+	});
+
+	var slider = document.getElementById("pageslider");
+
+	// change page when slider is moved
+	slider.addEventListener("change", function(e) {
+		// touch should be trigger by touchend, while change trigger by mouse
+		if (hasTouch) return;
+
+		goToPage(this.value);
+	});
+	slider.addEventListener("input", function(e) {
+		document.getElementById("pageinput").value = this.value;
+	});
+	slider.addEventListener("touchstart", function(e) {
+		// change page when slider is moved (touch)
+		var i = sliderValue(this, e);
+
+		document.getElementById("pageinput").value = i;
+		this.value = i;
+	});
+	slider.addEventListener("touchmove", function(e) {
+		// console.log('slider move');
+		var i = sliderValue(this, e);
+
+		document.getElementById("pageinput").value = i;
+		this.value = i;
+	});
+	slider.addEventListener("touchend", function(e) {
+		goToPage(this.value);
 	});
 }

@@ -320,6 +320,11 @@
 
 			/* ------- reader end ------- */
 
+			#reader-menu .row {
+				padding-top: 10px;
+				padding-bottom: 10px;
+			}
+
 			/* reader top, book info */
 			#reader-bookinfo {
 				/* visibility: hidden; */
@@ -348,6 +353,8 @@
 				transition: max-height 0.3s;
 				background-color: grey;
 			}
+
+			/* show/hide */
 			#reader-menu.showtop,
 			#reader-bookinfo.showtop {
 				max-height: 300px;
@@ -368,6 +375,11 @@
 			}
 
 			/* ___slider___ */
+
+			#pageslider {
+				padding: 20px 30px 20px 30px;
+			}
+
 			/* https://css-tricks.com/styling-cross-browser-compatible-range-inputs-css/ */
 			input[type="range"] {
 				-webkit-appearance: none; /* Hides the slider so that custom slider can be made */
@@ -604,18 +616,12 @@
 			<div id="reader-menu">
 				<div class="row">
 					<div class="col is-center">
-						<input
-							id="pageslider"
-							max="10"
-							min="1"
-							step="1"
-							type="range"
-							value="1"
-							oninput="pagesliderOnInput(this);"
-							ontouchstart="pagesliderOnTouchStart(this);"
-							ontouchend="pagesliderOnTouchEnd(this);"
-							ontouchmove="pagesliderOnTouchMove(this);"
-						/>
+						<form class="pure-form">
+							<input id="pageslider" max="10" min="1" step="1" type="range" value="1" />
+							<center>
+								<input id="pageinput" disabled style="color: black;" />
+							</center>
+						</form>
 					</div>
 				</div>
 
