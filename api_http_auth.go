@@ -152,7 +152,7 @@ func generateSessionID(n int) string {
 }
 
 // login is for basic http login
-func login(httpSessions *HTTPSession) func(http.ResponseWriter, *http.Request) {
+func login(httpSessions *HTTPSession, config *Config) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			w.WriteHeader(http.StatusNotFound)
@@ -170,7 +170,7 @@ func login(httpSessions *HTTPSession) func(http.ResponseWriter, *http.Request) {
 
 		// w.Header().Set("Content-Type", "application/json")
 
-		if r.FormValue("password") == "aaa" {
+		if SHA256Iter100k(r.FormValue("password"), config.Salt) == config.Crypt {
 
 			values := SessionValuesType{
 				"LoggedIn": true,

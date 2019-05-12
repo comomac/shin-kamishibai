@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 )
 
-func startServer(db *FlatDB) {
+func startServer(config *Config, db *FlatDB) {
 	// setup session
 	httpSession := &HTTPSession{}
 
@@ -17,7 +18,7 @@ func startServer(db *FlatDB) {
 	h.Handle("/", fs)
 
 	// public api
-	h.HandleFunc("/login", login(httpSession))
+	h.HandleFunc("/login", login(httpSession, config))
 
 	// private api
 	h.HandleFunc("/api/thumbnail/", renderThumbnail(db)) // /thumbnail/{bookID}
@@ -37,7 +38,7 @@ func startServer(db *FlatDB) {
 	// middleware
 	h1 := CheckAuthHandler(h, httpSession)
 
-	port := ":8086"
+	port := ":" + strconv.Itoa(config.Port)
 	fmt.Println("listening on", port)
 	log.Fatal(http.ListenAndServe(port, h1))
 }
@@ -68,12 +69,18 @@ func main() {
 	// check(err)
 	// fmt.Println(x)
 
+	config, err := ConfigRead("config.json")
+	if err != nil {
+		fmt.Println("faile to read config file")
+		panic(err)
+	}
+
 	// new db
 	db := NewFlatDB(userHome("etc/shin-kamishibai/db.txt"))
 	db.Load()
 	addBooksDir(db, userHome("tmp/mangas"))
 
-	startServer(db)
+	startServer(config, db)
 }
 
 // 22849
