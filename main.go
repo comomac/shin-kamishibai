@@ -7,29 +7,39 @@ import (
 )
 
 func startServer(db *FlatDB) {
+	// setup session
+	httpSession := &HTTPSession{}
+
+	h := http.NewServeMux()
+
+	// public folder access
 	fs := http.FileServer(http.Dir("public/"))
-	http.Handle("/", fs)
+	h.Handle("/", fs)
 
-	// test codes
+	// public api
+	h.HandleFunc("/login", login(httpSession))
 
-	// TODO not yet coded
-	http.HandleFunc("/thumbnail/", renderThumbnail(db)) // /thumbnail/{bookID}
-	http.HandleFunc("/cbz/", getPage(db))               // /cbz/{bookID}/{page}
-	http.HandleFunc("/bookinfo/", getBookInfo(db))      // /bookinfo/{bookID}
-	http.HandleFunc("/books_info", getBooksInfo(db))    // /books_info?bookcodes=1,2,3,4,5
-	http.HandleFunc("/setbookmark/", setBookmark(db))   // /setbookmark/{bookID}/{page}
-	http.HandleFunc("/lists", getBooksByTitle(db))
-	http.HandleFunc("/alists", getBooksByAuther(db))
-	http.HandleFunc("/list_sources", getSources)
-	http.HandleFunc("/lists_dir", postDirList(db))
+	// private api
+	h.HandleFunc("/api/thumbnail/", renderThumbnail(db)) // /thumbnail/{bookID}
+	h.HandleFunc("/api/cbz/", getPage(db))               // /cbz/{bookID}/{page}
+	h.HandleFunc("/api/bookinfo/", getBookInfo(db))      // /bookinfo/{bookID}
+	h.HandleFunc("/api/books_info", getBooksInfo(db))    // /books_info?bookcodes=1,2,3,4,5
+	h.HandleFunc("/api/setbookmark/", setBookmark(db))   // /setbookmark/{bookID}/{page}
+	h.HandleFunc("/api/lists", getBooksByTitle(db))
+	h.HandleFunc("/api/alists", getBooksByAuther(db))
+	h.HandleFunc("/api/list_sources", getSources)
+	h.HandleFunc("/api/lists_dir", postDirList(db))
 
+	// TODO
 	// http.HandleFunc("/alists", postBooksAuthor(db))
-
 	// r.Post("/delete_book", deleteBook)
+
+	// middleware
+	h1 := CheckAuthHandler(h, httpSession)
 
 	port := ":8086"
 	fmt.Println("listening on", port)
-	log.Fatal(http.ListenAndServe(port, nil))
+	log.Fatal(http.ListenAndServe(port, h1))
 }
 
 func main() {
