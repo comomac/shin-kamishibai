@@ -170,8 +170,9 @@ func login(httpSessions *HTTPSession, config *Config) func(http.ResponseWriter, 
 
 		// w.Header().Set("Content-Type", "application/json")
 
-		if SHA256Iter100k(r.FormValue("password"), config.Salt) == config.Crypt {
-
+		// more secure compare
+		strCrypt := SHA256Iter100k(r.FormValue("password"), config.Salt)
+		if subtle.ConstantTimeCompare([]byte(strCrypt), []byte(config.Crypt)) == 1 {
 			values := SessionValuesType{
 				"LoggedIn": true,
 			}
