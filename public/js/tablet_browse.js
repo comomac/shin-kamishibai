@@ -23,13 +23,13 @@ function load_myScroll() {
 }
 
 function requestData(start, count) {
-	var url = "/lists";
+	var url = "/api/lists";
 	var page = Math.floor((start + 1) / 100);
 
 	// filter by
 	var filter_by = document.getElementsByClassName("pure-menu-selected")[0].getAttribute("choice");
 	if (!filter_by) filter_by = "all";
-	if (filter_by === "author") url = "/alists";
+	if (filter_by === "author") url = "/api/alists";
 
 	var keyword = document.getElementById("searchbox").value;
 
@@ -81,7 +81,7 @@ function reload_books(bookcodes, options) {
 
 	var bookcode = bookcodes.split(",")[0];
 
-	$.get("/books_info", { bookcodes: bookcodes, options: options }, function(jData) {
+	$.get("/api/books_info", { bookcodes: bookcodes, options: options }, function(jData) {
 		// show book title and author
 		var el = $("#bookinfo");
 		el.empty();
@@ -119,7 +119,7 @@ function reload_books(bookcodes, options) {
 			});
 
 			var img = $("<img>");
-			img.attr("src", "/thumbnail/" + bookcode);
+			img.attr("src", "/api/thumbnail/" + bookcode);
 			img.attr("alt", "Loading...");
 			a.append(img);
 
@@ -178,7 +178,7 @@ function list_books(jData) {
 		a.addEventListener("click", book_click_event, tryPassiveListner());
 
 		img = document.createElement("img");
-		img.src = "/thumbnail/" + book.id;
+		img.src = "/api/thumbnail/" + book.id;
 		img.setAttribute("alt", "Loading...");
 		a.appendChild(img);
 

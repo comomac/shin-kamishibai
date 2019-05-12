@@ -61,7 +61,7 @@ function reloadSources() {
 		ul.removeChild(ul.lastChild);
 	}
 
-	ajaxGet("/list_sources", {}, function(dat) {
+	ajaxGet("/api/list_sources", {}, function(dat) {
 		var srcs = JSON.parse(dat);
 
 		var lis = [];
@@ -191,7 +191,7 @@ function parse_dir_list(files) {
 			// file
 
 			var img =
-				'<img class="lazyload fadeIn fadeIn-1s fadeIn-Delay-Xs" data-src="/thumbnail/' + file.id + '" alt="Loading..." />';
+				'<img class="lazyload fadeIn fadeIn-1s fadeIn-Delay-Xs" data-src="/api/thumbnail/' + file.id + '" alt="Loading..." />';
 
 			var href = "";
 			var readstate = "read";
@@ -268,7 +268,7 @@ function reload_dir_lists(dir_path, keyword) {
 	}
 
 	ajaxGet(
-		"/lists_dir",
+		"/api/api/lists_dir",
 		{
 			dir: dir_path,
 			keyword: keyword

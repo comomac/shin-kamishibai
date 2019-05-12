@@ -21,6 +21,9 @@ if (/iphone|ipod|ipad.*os 5/gi.test(navigator.appVersion)) {
 
 // page init
 function domready() {
+	// remember screen size
+	setScreenSize();
+
 	// update reader bottom right info
 	updateCurrentInfo();
 

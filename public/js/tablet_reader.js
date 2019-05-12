@@ -25,11 +25,8 @@ function readBook(bc, bp) {
 	// destroy exiting gallery already exists
 	destroyGallery(false);
 
-	// // set screen size so if the image is resized, server remember the screen size
-	// setScreenSize();
-
 	ajaxGet(
-		"/books_info",
+		"/api/books_info",
 		{
 			bookcodes: bc
 		},
@@ -47,7 +44,7 @@ function readBook(bc, bp) {
 			document.getElementById("reader-bookinfo-title").innerText = book.title;
 			document.getElementById("reader-bookinfo-author").innerText = book.author;
 			document.getElementById("reader-bookinfo-number").innerText = book.number;
-			document.getElementById("reader-bookinfo-thumbnail").src = "/thumbnail/" + book.id;
+			document.getElementById("reader-bookinfo-thumbnail").src = "/api/thumbnail/" + book.id;
 
 			// set #pageslider max
 			el = document.getElementById("pageslider");
@@ -127,13 +124,13 @@ function createGallery(goPage) {
 		if (isEasternBookMode) {
 			// eastern book
 			slides.push({
-				img: "/cbz/" + book.bookcode + "/" + (book.pages - i + 1),
+				img: "/api/cbz/" + book.bookcode + "/" + (book.pages - i + 1),
 				page: book.pages - i + 1
 			});
 		} else {
 			// western book
 			slides.push({
-				img: "/cbz/" + book.bookcode + "/" + i,
+				img: "/api/cbz/" + book.bookcode + "/" + i,
 				page: i
 			});
 		}
@@ -304,7 +301,7 @@ function setBookmark(bookcode, page) {
 
 	if (book.lastpage == page || page < 1 || page > book.pages) return false;
 
-	var url = "/setbookmark/" + bookcode + "/" + page;
+	var url = "/api/setbookmark/" + bookcode + "/" + page;
 	ajax(url);
 
 	// update last rendered page
@@ -354,21 +351,21 @@ function staggerImages(page) {
 			igal: "[data-page-index=" + i + "]",
 			target_img: "swipeview-img-0",
 			target_div: "swipeview-div-0",
-			url: "/cbz/" + book.bookcode + "/" + page
+			url: "/api/cbz/" + book.bookcode + "/" + page
 		},
 		// next page
 		{
 			igal: "[data-page-index=" + (i + 1) + "]",
 			target_img: "swipeview-img-1",
 			target_div: "swipeview-div-1",
-			url: "/cbz/" + book.bookcode + "/" + (page + 1)
+			url: "/api/cbz/" + book.bookcode + "/" + (page + 1)
 		},
 		// prev page
 		{
 			igal: "[data-page-index=" + (i - 1) + "]",
 			target_img: "swipeview-img-2",
 			target_div: "swipeview-div-2",
-			url: "/cbz/" + book.bookcode + "/" + (page - 1)
+			url: "/api/cbz/" + book.bookcode + "/" + (page - 1)
 		}
 	];
 
