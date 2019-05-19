@@ -502,6 +502,12 @@ window.onload = function() {
 	// remember screen size
 	setScreenSize();
 
+	// make sure user is logged in
+	// or hide page
+	checkLogin(function() {
+		document.getElementById("cover").className = "hidden";
+	});
+
 	// load sources for menu
 	reloadSources();
 

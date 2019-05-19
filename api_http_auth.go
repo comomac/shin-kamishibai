@@ -199,6 +199,29 @@ func login(httpSession *HTTPSession, config *Config) func(http.ResponseWriter, *
 	}
 }
 
+// checkLogin so the client knows if current session is login or not
+func checkLogin(httpSession *HTTPSession, config *Config) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		// not logged in
+		value, err := httpSession.Get(r, "LoggedIn")
+		if err != nil || value != true {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte("failed"))
+			return
+		}
+
+		// logged in
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+	}
+}
+
+// browse / page
 func getRootPage(httpSession *HTTPSession, config *Config) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" || r.URL.Path != "/" {
@@ -206,14 +229,14 @@ func getRootPage(httpSession *HTTPSession, config *Config) func(http.ResponseWri
 			return
 		}
 
-		// not logged in? show login page
+		// not logged in, show login page
 		value, err := httpSession.Get(r, "LoggedIn")
 		if err != nil || value != true {
 			http.Redirect(w, r, "/public/login.html", http.StatusFound)
 			return
 		}
 
-		// logged in? show browse
+		// logged in, show browse
 		http.Redirect(w, r, "/public/browse.html", http.StatusFound)
 	}
 }

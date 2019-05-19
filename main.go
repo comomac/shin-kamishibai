@@ -34,6 +34,7 @@ func startServer(config *Config, db *FlatDB) {
 	h.HandleFunc("/api/alists", getBooksByAuther(db))
 	h.HandleFunc("/api/list_sources", getSources)
 	h.HandleFunc("/api/lists_dir", postDirList(config, db))
+	h.HandleFunc("/api/check", checkLogin(httpSession, config))
 
 	// TODO
 	// http.HandleFunc("/alists", postBooksAuthor(db))

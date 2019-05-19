@@ -204,16 +204,18 @@ function objectToFormData(obj, form, namespace) {
 }
 
 // ajax helper
-function ajaxGet(url, queries, callback) {
+function ajaxGet(url, queries, callback, callbackFail) {
 	return ajax(url, {
 		get: queries,
-		callback: callback
+		callback: callback,
+		callbackFail: callbackFail
 	});
 }
-function ajaxPost(url, data, callback) {
+function ajaxPost(url, data, callback, callbackFail) {
 	return ajax(url, {
 		post: JSON.stringify(data),
-		callback: callback
+		callback: callback,
+		callbackFail
 	});
 }
 
@@ -225,6 +227,7 @@ function ajax(url, parms) {
 		get = parms.get || null,
 		contentType = parms.contentType || null,
 		callback = parms.callback || null,
+		callbackFail = parms.callbackFail || null,
 		timeout = parms.timeout || null;
 
 	req.onreadystatechange = function() {
@@ -232,7 +235,7 @@ function ajax(url, parms) {
 
 		// Error
 		if (req.status != 200 && req.status != 304) {
-			if (callback) callback(false);
+			if (callbackFail) callbackFail(req.responseText);
 			return;
 		}
 
@@ -266,7 +269,7 @@ function ajax(url, parms) {
 		setTimeout(function() {
 			req.onreadystatechange = function() {};
 			req.abort();
-			if (callback) callback(false);
+			if (callbackFail) callbackFail(false);
 		}, timeout);
 	}
 
@@ -277,4 +280,8 @@ function ajax(url, parms) {
 function setScreenSize() {
 	cookie("width", window.innerWidth);
 	cookie("height", window.innerHeight);
+}
+
+function checkLogin(callbackSuccess, callbackFail) {
+	ajaxGet("/api/check", null, callbackSuccess, callbackFail);
 }
