@@ -14,8 +14,11 @@ func startServer(config *Config, db *FlatDB) {
 	h := http.NewServeMux()
 
 	// public folder access
-	fs := http.FileServer(http.Dir("public/"))
-	h.Handle("/", fs)
+	fs := http.FileServer(http.Dir("./public"))
+	h.Handle("/public/", http.StripPrefix("/public/", fs))
+
+	// http root path
+	h.HandleFunc("/", getRootPage(httpSession, config))
 
 	// public api
 	h.HandleFunc("/login", login(httpSession, config))

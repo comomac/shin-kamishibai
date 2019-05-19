@@ -1,4 +1,6 @@
 {
-	"port": 8086,
-	"password": "helloworld"
+  "port": 8086,
+  "iterations": 100000,
+  "salt": "hfnpMOeHBm1oUtJR1hrO3G4fmtcZEUb4msruZU5fjSqm3B6ldedaDtiGT6etO7eZtnsVXEBhF6vmoxYCYpKXuRJNDwpUDzfqOubtynnCDCaOXz0KnHbwvH2O5LHJDhF2",
+  "crypt": "d987709191bb392c47a7254f12ec73b077d30c02ed104091f0b3c7b3a860c56b"
 }

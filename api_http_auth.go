@@ -152,8 +152,12 @@ func generateSessionID(n int) string {
 }
 
 // login is for basic http login
-func login(httpSessions *HTTPSession, config *Config) func(http.ResponseWriter, *http.Request) {
+func login(httpSession *HTTPSession, config *Config) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			http.Redirect(w, r, "/public/login.html", http.StatusFound)
+			return
+		}
 		if r.Method != "POST" {
 			w.WriteHeader(http.StatusNotFound)
 			return
@@ -177,7 +181,7 @@ func login(httpSessions *HTTPSession, config *Config) func(http.ResponseWriter, 
 				"LoggedIn": true,
 			}
 
-			newSession := httpSessions.Add(r, values)
+			newSession := httpSession.Add(r, values)
 			// fmt.Printf("sess dat: %+v\n", sess)
 
 			newCookie := &http.Cookie{
@@ -186,12 +190,31 @@ func login(httpSessions *HTTPSession, config *Config) func(http.ResponseWriter, 
 			}
 
 			http.SetCookie(w, newCookie)
-			http.Redirect(w, r, "/index.html", http.StatusFound)
+			http.Redirect(w, r, "/public/browse.html", http.StatusFound)
 			return
 		}
 
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("wrong username or password"))
+	}
+}
+
+func getRootPage(httpSession *HTTPSession, config *Config) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" || r.URL.Path != "/" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		// not logged in? show login page
+		value, err := httpSession.Get(r, "LoggedIn")
+		if err != nil || value != true {
+			http.Redirect(w, r, "/public/login.html", http.StatusFound)
+			return
+		}
+
+		// logged in? show browse
+		http.Redirect(w, r, "/public/browse.html", http.StatusFound)
 	}
 }
 
