@@ -159,8 +159,8 @@ type FileInfoBasic struct {
 	*Book
 }
 
-// TODO
-func postDirList(db *FlatDB) func(http.ResponseWriter, *http.Request) {
+// postDirList lists the folder content, only the folder and the manga will be shown
+func postDirList(config *Config, db *FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -173,7 +173,14 @@ func postDirList(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 
 		fmt.Println(dir)
 
-		// TODO check permission
+		// check if the dir is allowed to browse
+		exists := StringSliceContain(config.AllowedDirs, dir)
+		if !exists {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		// listing dir
 		files, err := ioutil.ReadDir(dir)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)

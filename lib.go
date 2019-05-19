@@ -1,6 +1,9 @@
 package main
 
-import "os/user"
+import (
+	"os/user"
+	"strings"
+)
 
 func check(e error) {
 	if e != nil {
@@ -35,4 +38,15 @@ type BookInfoBasic struct {
 
 func getBookInfoBasic(filepath string) {
 
+}
+
+// StringSliceContain search the string slice and see if it contains the searched word, match from first character
+func StringSliceContain(strSlice []string, strSearch string) bool {
+	for _, str := range strSlice {
+		if strings.Index(strSearch, str) == 0 {
+			return true
+		}
+	}
+
+	return false
 }

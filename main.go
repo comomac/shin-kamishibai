@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 func startServer(config *Config, db *FlatDB) {
@@ -32,7 +33,7 @@ func startServer(config *Config, db *FlatDB) {
 	h.HandleFunc("/api/lists", getBooksByTitle(db))
 	h.HandleFunc("/api/alists", getBooksByAuther(db))
 	h.HandleFunc("/api/list_sources", getSources)
-	h.HandleFunc("/api/lists_dir", postDirList(db))
+	h.HandleFunc("/api/lists_dir", postDirList(config, db))
 
 	// TODO
 	// http.HandleFunc("/alists", postBooksAuthor(db))
@@ -43,6 +44,7 @@ func startServer(config *Config, db *FlatDB) {
 
 	port := ":" + strconv.Itoa(config.Port)
 	fmt.Println("listening on", port)
+	fmt.Println("allowed dirs: " + strings.Join(config.AllowedDirs, ", "))
 	log.Fatal(http.ListenAndServe(port, h1))
 }
 
