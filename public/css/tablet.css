@@ -8,6 +8,17 @@ html {
 	-ms-touch-action: none;
 }
 
+#cover {
+	position: absolute;
+	background: white;
+	display: block;
+	z-index: 1200;
+	top: 0px;
+	left: 0px;
+	right: 0px;
+	bottom: 0px;
+}
+
 ul.scroll-ul,
 li.scroll-li {
 	padding: 0;

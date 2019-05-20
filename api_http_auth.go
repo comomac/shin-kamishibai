@@ -190,6 +190,13 @@ func login(httpSession *HTTPSession, config *Config) func(http.ResponseWriter, *
 			}
 
 			http.SetCookie(w, newCookie)
+
+			// tablet mode
+			if r.FormValue("mode") == "tablet" {
+				http.Redirect(w, r, "/public/tablet.html", http.StatusFound)
+				return
+			}
+
 			http.Redirect(w, r, "/public/browse.html", http.StatusFound)
 			return
 		}
