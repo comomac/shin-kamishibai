@@ -456,8 +456,10 @@ func setBookmark(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
-		bookID, page, err := parseURIBookIDandPage(w, r, "/setbookmark/")
+		bookID, page, err := parseURIBookIDandPage(r.RequestURI, "/api/setbookmark/")
 		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
 			return
 		}
 		// fmt.Println(r.Method, r.RequestURI, bookID, page)
@@ -540,13 +542,13 @@ func getPage(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		fmt.Println("11111")
 
-		bookID, page, err := parseURIBookIDandPage(w, r, "/cbz/")
+		bookID, page, err := parseURIBookIDandPage(r.RequestURI, "/api/cbz/")
 		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
 			return
 		}
-		fmt.Println("22222", bookID, page)
 
 		ibook := db.IMapper[bookID]
 		if ibook == nil {
@@ -625,26 +627,20 @@ func deleteBook(w http.ResponseWriter, r *http.Request) {
 
 // parseURIBookIDandPage parse url and return book id and page. it also do http error if failed
 // e.g. /bookinfo/pz3/57    -->    pz3  57
-func parseURIBookIDandPage(w http.ResponseWriter, r *http.Request, replStr string) (string, int, error) {
-	spt := strings.Split(strings.Replace(r.RequestURI, replStr, "", -1), "/")
+// replStr is the text to delete
+func parseURIBookIDandPage(uriStr, replStr string) (string, int, error) {
+	spt := strings.Split(strings.Replace(uriStr, replStr, "", -1), "/")
 	if len(spt) != 2 {
-		w.WriteHeader(http.StatusNotFound)
 		return "", 0, errors.New("not 2 params")
 	}
 
 	bookID := spt[0]
 	page, err := strconv.Atoi(spt[1])
 	if err != nil {
-		errMsg := "invalid page, must be a number"
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(errMsg))
-		return "", 0, errors.New(errMsg)
+		return "", 0, errors.New("invalid page, must be a number")
 	}
 	if page < 0 {
-		errMsg := "invalid page, must be 0 or above"
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(errMsg))
-		return "", 0, errors.New(errMsg)
+		return "", 0, errors.New("invalid page, must be 0 or above")
 	}
 
 	return bookID, page, nil
