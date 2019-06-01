@@ -159,8 +159,8 @@ type FileInfoBasic struct {
 	*Book
 }
 
-// postDirList lists the folder content, only the folder and the manga will be shown
-func postDirList(config *Config, db *FlatDB) func(http.ResponseWriter, *http.Request) {
+// dirList lists the folder content, only the folder and the manga will be shown
+func dirList(config *Config, db *FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -615,10 +615,6 @@ func getPage(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 		w.Header().Add("Content-Length", strconv.Itoa(len(imgDat)))
 		w.Write(imgDat)
 	}
-}
-
-func listDir(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "{}")
 }
 
 func deleteBook(w http.ResponseWriter, r *http.Request) {

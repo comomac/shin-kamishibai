@@ -22,6 +22,7 @@ func startServer(config *Config, db *FlatDB) {
 	// http root path
 	h.HandleFunc("/", getPageRoot(httpSession, config, fs))
 
+	// direct main page with login follow
 	h.HandleFunc("/tablet.html", getPageMain(httpSession, config, fs))
 	h.HandleFunc("/browse.html", getPageMain(httpSession, config, fs))
 
@@ -37,7 +38,7 @@ func startServer(config *Config, db *FlatDB) {
 	h.HandleFunc("/api/lists", getBooksByTitle(db))
 	h.HandleFunc("/api/alists", getBooksByAuther(db))
 	h.HandleFunc("/api/list_sources", getSources)
-	h.HandleFunc("/api/lists_dir", postDirList(config, db))
+	h.HandleFunc("/api/lists_dir", dirList(config, db))
 	h.HandleFunc("/api/check", checkLogin(httpSession, config))
 
 	// TODO
