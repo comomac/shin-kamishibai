@@ -286,18 +286,25 @@ function checkLogin(callbackSuccess, callbackFail) {
 	ajaxGet("/api/check", null, callbackSuccess, callbackFail);
 }
 
-function doLogin(callbackSuccess) {
+function doLogin() {
 	var password = document.getElementById("password").value;
 
-	var callback;
-	if (callbackSuccess !== undefined) {
-		callback = callbackSuccess;
-	} else {
-		callback = function(txt) {
+	var callback = function(txt) {
+		if (queryParams("referer") !== undefined) {
+			// go to page
+			var referer = queryParams("referer");
+			window.location.href = window.location.origin + referer + window.location.hash;
+			// var z = window.location.origin + referer + window.location.hash;
+			// console.log(z);
+		} else if (window.location.pathname === "/login.html") {
+			window.location.pathname = "/browse.html";
+		} else {
 			// reload page without history
 			location.reload();
-		};
-	}
+
+			// window.location.replace(window.location.pathname + window.location.search + window.location.hash);
+		}
+	};
 
 	var callbackFail = function(txt) {
 		alert("invalid password or error");
@@ -312,4 +319,23 @@ function doLogin(callbackSuccess) {
 	};
 
 	ajax("/login", params);
+}
+
+// alternative to URLSearchParams
+function queryParams(key) {
+	var hash = window.location.search
+		.substr(1)
+		.split("&")
+		.reduce(function(q, query) {
+			var chunks = query.split("=");
+			var key = chunks[0];
+			var value = chunks[1];
+			return (q[key] = value), q;
+		}, {});
+
+	if (key !== undefined) {
+		return hash[key];
+	} else {
+		return hash;
+	}
 }

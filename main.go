@@ -20,7 +20,10 @@ func startServer(config *Config, db *FlatDB) {
 	// h.Handle("/", fs)
 
 	// http root path
-	h.HandleFunc("/", getRootPage(httpSession, config, fs))
+	h.HandleFunc("/", getPageRoot(httpSession, config, fs))
+
+	h.HandleFunc("/tablet.html", getPageMain(httpSession, config, fs))
+	h.HandleFunc("/browse.html", getPageMain(httpSession, config, fs))
 
 	// public api
 	h.HandleFunc("/login", login(httpSession, config))

@@ -155,10 +155,6 @@ func generateSessionID(n int) string {
 // login is for basic http login
 func login(httpSession *HTTPSession, config *Config) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" {
-			http.Redirect(w, r, "/login.html", http.StatusFound)
-			return
-		}
 		if r.Method != "POST" {
 			w.WriteHeader(http.StatusNotFound)
 			return
@@ -167,6 +163,7 @@ func login(httpSession *HTTPSession, config *Config) func(http.ResponseWriter, *
 		type LoginRequest struct {
 			Password string `json:"password"`
 			Mode     string `json:"mode"`
+			Referer  string `json:"referer"`
 		}
 
 		decoder := json.NewDecoder(r.Body)
@@ -197,13 +194,14 @@ func login(httpSession *HTTPSession, config *Config) func(http.ResponseWriter, *
 
 			http.SetCookie(w, newCookie)
 
-			// tablet mode
-			if t.Mode == "tablet" {
-				http.Redirect(w, r, "/tablet.html", http.StatusFound)
-				return
-			}
+			// // tablet mode
+			// if t.Mode == "tablet" {
+			// 	http.Redirect(w, r, "/tablet.html", http.StatusFound)
+			// 	return
+			// }
 
 			// http.Redirect(w, r, "/browse.html", http.StatusFound)
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 
@@ -234,8 +232,8 @@ func checkLogin(httpSession *HTTPSession, config *Config) func(http.ResponseWrit
 	}
 }
 
-// browse / page
-func getRootPage(httpSession *HTTPSession, config *Config, handler http.Handler) func(http.ResponseWriter, *http.Request) {
+// root page
+func getPageRoot(httpSession *HTTPSession, config *Config, handler http.Handler) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -254,8 +252,28 @@ func getRootPage(httpSession *HTTPSession, config *Config, handler http.Handler)
 			http.Redirect(w, r, "/browse.html", http.StatusFound)
 		} else {
 			handler.ServeHTTP(w, r)
+		}
+		return
+	}
+}
+
+// browse and tablet page
+func getPageMain(httpSession *HTTPSession, config *Config, handler http.Handler) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
+
+		// not logged in, show login page
+		value, err := httpSession.Get(r, "LoggedIn")
+		if err != nil || value != true {
+			http.Redirect(w, r, "/login.html?referer="+r.URL.Path, http.StatusFound)
+			return
+		}
+
+		handler.ServeHTTP(w, r)
+		return
 	}
 }
 
@@ -287,10 +305,10 @@ func BasicAuth(handler http.Handler, username, password, realm string) http.Hand
 // ref https://cryptic.io/go-http/
 func CheckAuthHandler(h http.Handler, httpSession *HTTPSession) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// TODO remove when done
-		// force auth during dev
-		h.ServeHTTP(w, r)
-		return
+		// // TODO remove when done
+		// // force auth during dev
+		// h.ServeHTTP(w, r)
+		// return
 
 		// public
 		if !strings.Contains(r.URL.Path, "/api/") {
