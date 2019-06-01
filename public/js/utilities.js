@@ -285,3 +285,27 @@ function setScreenSize() {
 function checkLogin(callbackSuccess, callbackFail) {
 	ajaxGet("/api/check", null, callbackSuccess, callbackFail);
 }
+
+function doLogin() {
+	var password = document.getElementById("password").value;
+
+	var callback = function(txt) {
+		console.log("reloading yo");
+		// reload page without history
+		location.reload();
+	};
+
+	var callbackFail = function(txt) {
+		alert("invalid password or error");
+	};
+
+	var params = {
+		post: JSON.stringify({
+			password: password
+		}),
+		callback: callback,
+		callbackFail: callbackFail
+	};
+
+	ajax("/login", params);
+}

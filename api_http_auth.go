@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/subtle"
+	"encoding/json"
 	"errors"
 	"math/rand"
 	"net/http"
@@ -155,7 +156,7 @@ func generateSessionID(n int) string {
 func login(httpSession *HTTPSession, config *Config) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
-			http.Redirect(w, r, "/public/login.html", http.StatusFound)
+			http.Redirect(w, r, "/login.html", http.StatusFound)
 			return
 		}
 		if r.Method != "POST" {
@@ -163,19 +164,24 @@ func login(httpSession *HTTPSession, config *Config) func(http.ResponseWriter, *
 			return
 		}
 
-		err := r.ParseForm()
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
-			return
+		type LoginRequest struct {
+			Password string `json:"password"`
+			Mode     string `json:"mode"`
 		}
 
-		// fmt.Printf("form: %+v\n", r.Form)
+		decoder := json.NewDecoder(r.Body)
+		var t LoginRequest
+		err := decoder.Decode(&t)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("cannot parse json data"))
+			return
+		}
 
 		// w.Header().Set("Content-Type", "application/json")
 
 		// more secure compare
-		strCrypt := SHA256Iter100k(r.FormValue("password"), config.Salt)
+		strCrypt := SHA256Iter100k(t.Password, config.Salt)
 		if subtle.ConstantTimeCompare([]byte(strCrypt), []byte(config.Crypt)) == 1 {
 			values := SessionValuesType{
 				"LoggedIn": true,
@@ -192,12 +198,12 @@ func login(httpSession *HTTPSession, config *Config) func(http.ResponseWriter, *
 			http.SetCookie(w, newCookie)
 
 			// tablet mode
-			if r.FormValue("mode") == "tablet" {
-				http.Redirect(w, r, "/public/tablet.html", http.StatusFound)
+			if t.Mode == "tablet" {
+				http.Redirect(w, r, "/tablet.html", http.StatusFound)
 				return
 			}
 
-			http.Redirect(w, r, "/public/browse.html", http.StatusFound)
+			// http.Redirect(w, r, "/browse.html", http.StatusFound)
 			return
 		}
 
@@ -239,12 +245,12 @@ func getRootPage(httpSession *HTTPSession, config *Config) func(http.ResponseWri
 		// not logged in, show login page
 		value, err := httpSession.Get(r, "LoggedIn")
 		if err != nil || value != true {
-			http.Redirect(w, r, "/public/login.html", http.StatusFound)
+			http.Redirect(w, r, "/login.html", http.StatusFound)
 			return
 		}
 
 		// logged in, show browse
-		http.Redirect(w, r, "/public/browse.html", http.StatusFound)
+		http.Redirect(w, r, "/browse.html", http.StatusFound)
 	}
 }
 

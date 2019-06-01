@@ -147,7 +147,7 @@ function parse_dir_list(files) {
 			pathup.join("/") +
 			'" rel="' +
 			pathup.join("/") +
-			'/"><img src="/public/images/folder-mini-up.png" /><span>..</span></a></li>'
+			'/"><img src="/images/folder-mini-up.png" /><span>..</span></a></li>'
 	);
 
 	for (var i in files) {
@@ -167,7 +167,7 @@ function parse_dir_list(files) {
 						full_path +
 						'" rel="' +
 						full_path +
-						'/"><img src="/public/images/"' +
+						'/"><img src="/images/"' +
 						icon +
 						'" /><span>' +
 						file.name +
@@ -180,7 +180,7 @@ function parse_dir_list(files) {
 						full_path +
 						'" rel="' +
 						full_path +
-						'/"><img src="/public/images/' +
+						'/"><img src="/images/' +
 						icon +
 						'" /><span>' +
 						file.name +
@@ -390,7 +390,7 @@ function countdownDelete(el, time) {
 				var li_trash =
 					'<li class="directory collapsed trash" id="trash"><a href="#dir=' +
 					li_link +
-					'"><img src="/public/images/trash-full-mini.png" /><span>Trash</span></a></li>';
+					'"><img src="/images/trash-full-mini.png" /><span>Trash</span></a></li>';
 				$("#ul-lists").append(li_trash);
 			} else {
 				var img = t
@@ -400,7 +400,7 @@ function countdownDelete(el, time) {
 					.pop();
 
 				if (img == "trash-empty-mini.png") {
-					t.find("img").attr("src", "/public/images/trash-full-mini.png");
+					t.find("img").attr("src", "/images/trash-full-mini.png");
 				}
 			}
 		});
