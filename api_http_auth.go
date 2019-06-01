@@ -235,22 +235,27 @@ func checkLogin(httpSession *HTTPSession, config *Config) func(http.ResponseWrit
 }
 
 // browse / page
-func getRootPage(httpSession *HTTPSession, config *Config) func(http.ResponseWriter, *http.Request) {
+func getRootPage(httpSession *HTTPSession, config *Config, handler http.Handler) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" || r.URL.Path != "/" {
+		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 
-		// not logged in, show login page
-		value, err := httpSession.Get(r, "LoggedIn")
-		if err != nil || value != true {
-			http.Redirect(w, r, "/login.html", http.StatusFound)
+		if r.URL.Path == "/" {
+			// not logged in, show login page
+			value, err := httpSession.Get(r, "LoggedIn")
+			if err != nil || value != true {
+				http.Redirect(w, r, "/login.html", http.StatusFound)
+				return
+			}
+
+			// logged in, show browse
+			http.Redirect(w, r, "/browse.html", http.StatusFound)
+		} else {
+			handler.ServeHTTP(w, r)
 			return
 		}
-
-		// logged in, show browse
-		http.Redirect(w, r, "/browse.html", http.StatusFound)
 	}
 }
 
@@ -282,6 +287,11 @@ func BasicAuth(handler http.Handler, username, password, realm string) http.Hand
 // ref https://cryptic.io/go-http/
 func CheckAuthHandler(h http.Handler, httpSession *HTTPSession) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// TODO remove when done
+		// force auth during dev
+		h.ServeHTTP(w, r)
+		return
+
 		// public
 		if !strings.Contains(r.URL.Path, "/api/") {
 			h.ServeHTTP(w, r)

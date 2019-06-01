@@ -540,11 +540,13 @@ func getPage(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
+		fmt.Println("11111")
 
 		bookID, page, err := parseURIBookIDandPage(w, r, "/cbz/")
 		if err != nil {
 			return
 		}
+		fmt.Println("22222", bookID, page)
 
 		ibook := db.IMapper[bookID]
 		if ibook == nil {
