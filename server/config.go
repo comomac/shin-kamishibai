@@ -12,12 +12,13 @@ import (
 // Config holds server config
 type Config struct {
 	Path        string   `json:"path,omitempty"` // config file path
-	Port        int      `json:"port,omitempty"`
-	Password    string   `json:"password,omitempty"`     // one time, and it will be cleared after computed
-	Iterations  int      `json:"iterations,omitempty"`   // safety, min 100,000
-	Salt        string   `json:"salt,omitempty"`         // salt for the crypt
-	Crypt       string   `json:"crypt,omitempty"`        // hashed password (password:salt)
-	AllowedDirs []string `json:"allowed_dirs,omitempty"` // directory allowed to be browse
+	Port        int      `json:"port"`           // server port
+	DBPath      string   `json:"db_path"`        // where db file is stored
+	Password    string   `json:"password"`       // one time, and it will be cleared after computed
+	Iterations  int      `json:"iterations"`     // safety, min 100,000
+	Salt        string   `json:"salt"`           // salt for the crypt
+	Crypt       string   `json:"crypt"`          // hashed password (password:salt)
+	AllowedDirs []string `json:"allowed_dirs"`   // directory allowed to be browse
 }
 
 // ConfigHashIterations how many times the password should be hashed

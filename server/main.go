@@ -87,7 +87,8 @@ func main() {
 	}
 
 	// new db
-	db := NewFlatDB(userHome("etc/shin-kamishibai/db.txt"))
+	// db := NewFlatDB(userHome("etc/shin-kamishibai/db.txt"))
+	db := NewFlatDB(config.DBPath)
 	db.Load()
 	addBooksDir(db, userHome("tmp/mangas"))
 
