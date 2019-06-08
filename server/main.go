@@ -15,7 +15,7 @@ func startServer(config *Config, db *FlatDB) {
 	h := http.NewServeMux()
 
 	// public folder access
-	fs := http.FileServer(http.Dir("./public"))
+	fs := http.FileServer(http.Dir("../public"))
 	// h.Handle("/", http.StripPrefix("/public/", fs))
 	// h.Handle("/", fs)
 
