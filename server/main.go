@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -80,7 +81,13 @@ func main() {
 	// check(err)
 	// fmt.Println(x)
 
-	config, err := ConfigRead("config.json")
+	// use config on local dir by default if no param given
+	cfgFilePath := "config.json"
+	if len(os.Args) > 1 {
+		cfgFilePath = os.Args[1]
+	}
+
+	config, err := ConfigRead(cfgFilePath)
 	if err != nil {
 		fmt.Println("faile to read config file")
 		panic(err)
