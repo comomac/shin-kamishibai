@@ -90,7 +90,9 @@ func main() {
 	// db := NewFlatDB(userHome("etc/shin-kamishibai/db.txt"))
 	db := NewFlatDB(config.DBPath)
 	db.Load()
-	addBooksDir(db, userHome("tmp/mangas"))
+	for _, dir := range config.AllowedDirs {
+		addBooksDir(db, dir)
+	}
 
 	startServer(config, db)
 }
