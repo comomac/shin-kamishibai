@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"archive/zip"
@@ -12,11 +12,18 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/comomac/shin-kamishibai/server/pkg/config"
+	"github.com/comomac/shin-kamishibai/server/pkg/fdb"
+	"github.com/comomac/shin-kamishibai/server/pkg/img"
 )
+
+// Blank use to blank sensitive or not needed data
+type Blank string
 
 // BookInfoResponse for json response on single book information
 type BookInfoResponse struct {
-	*Book
+	*fdb.Book
 	Fullpath Blank `json:"fullpath,omitempty"`
 	Inode    Blank `json:"inode,omitempty"`
 	Itime    Blank `json:"itime,omitempty"`
@@ -29,7 +36,7 @@ type BooksInfoResponse map[string]*BookInfoResponse
 type BooksResponse []*BookInfoResponse
 
 // getBookInfo return indivisual book info
-func getBookInfo(db *FlatDB) func(http.ResponseWriter, *http.Request) {
+func getBookInfo(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -57,7 +64,7 @@ func getBookInfo(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 }
 
 // getBooksInfo return several books info
-func getBooksInfo(db *FlatDB) func(http.ResponseWriter, *http.Request) {
+func getBooksInfo(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -91,16 +98,16 @@ func getBooksInfo(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 }
 
 // get list of dirs for access
-func getSources(config *Config) func(http.ResponseWriter, *http.Request) {
+func getSources(cfg *config.Config) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cookies := r.Cookies()
 		fmt.Printf("%+v\n", cookies)
-		cookie, err := r.Cookie(fmt.Sprintf("%d.order_by", config.Port))
+		cookie, err := r.Cookie(fmt.Sprintf("%d.order_by", cfg.Port))
 		if err == nil {
 			fmt.Printf("%+v %+v\n", cookie.Name, cookie.Value)
 		}
 
-		b, err := json.Marshal(config.AllowedDirs)
+		b, err := json.Marshal(cfg.AllowedDirs)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
@@ -113,7 +120,7 @@ func getSources(config *Config) func(http.ResponseWriter, *http.Request) {
 }
 
 // post books returns all the book info
-func getBooks(db *FlatDB) func(http.ResponseWriter, *http.Request) {
+func getBooks(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -174,7 +181,7 @@ func getBooks(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 }
 
 // setBookmark remember where the book is read upto
-func setBookmark(db *FlatDB) func(http.ResponseWriter, *http.Request) {
+func setBookmark(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -208,7 +215,7 @@ func setBookmark(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 }
 
 // renderThumbnail gives thumbnail on the book
-func renderThumbnail(db *FlatDB) func(http.ResponseWriter, *http.Request) {
+func renderThumbnail(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -240,7 +247,7 @@ func renderThumbnail(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 					responseError(w, err)
 					return
 				}
-				imgDat, err = imgThumb(rc)
+				imgDat, err = img.Thumb(rc)
 				if err != nil {
 					responseError(w, err)
 					return
@@ -261,7 +268,7 @@ func renderThumbnail(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 }
 
 // getPage gives the page of the book
-func getPage(db *FlatDB) func(http.ResponseWriter, *http.Request) {
+func getPage(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)

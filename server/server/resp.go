@@ -1,12 +1,9 @@
-package main
+package server
 
 import (
 	"encoding/json"
 	"net/http"
 )
-
-// Blank use to blank sensitive or not needed data
-type Blank string
 
 type responseErrorStruct struct {
 	Code    int    `json:"code"`

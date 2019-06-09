@@ -1,13 +1,15 @@
-package main
+package server
 
 import (
 	"crypto/subtle"
 	"encoding/json"
 	"errors"
-	"math/rand"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/comomac/shin-kamishibai/server/pkg/config"
+	"github.com/comomac/shin-kamishibai/server/pkg/lib"
 )
 
 //
@@ -104,7 +106,7 @@ func (ss *HTTPSession) Delete(r *http.Request, id string) error {
 
 // Add new session
 func (ss *HTTPSession) Add(r *http.Request, values SessionValuesType) Session {
-	sid := generateSessionID(20)
+	sid := lib.GenerateString(20)
 
 	newSession := Session{
 		Expiry: time.Now().AddDate(0, 1, 0), // set default to 1 month expiry
@@ -136,24 +138,8 @@ func (ss *HTTPSession) Scrub() {
 	ss.Sessions = nss
 }
 
-// valid characters for the session id
-const letterBytes = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-// generateSessionID create random new session string
-// https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-go
-func generateSessionID(n int) string {
-	// slightly less deterministic randomness
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letterBytes[r.Intn(len(letterBytes))]
-	}
-	return string(b)
-}
-
 // login is for basic http login
-func login(httpSession *HTTPSession, config *Config) func(http.ResponseWriter, *http.Request) {
+func login(httpSession *HTTPSession, cfg *config.Config) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			w.WriteHeader(http.StatusNotFound)
@@ -178,8 +164,8 @@ func login(httpSession *HTTPSession, config *Config) func(http.ResponseWriter, *
 		// w.Header().Set("Content-Type", "application/json")
 
 		// more secure compare
-		strCrypt := SHA256Iter100k(t.Password, config.Salt)
-		if subtle.ConstantTimeCompare([]byte(strCrypt), []byte(config.Crypt)) == 1 {
+		strCrypt := lib.SHA256Iter(t.Password, cfg.Salt, config.ConfigHashIterations)
+		if subtle.ConstantTimeCompare([]byte(strCrypt), []byte(cfg.Crypt)) == 1 {
 			values := SessionValuesType{
 				"LoggedIn": true,
 			}
@@ -211,7 +197,7 @@ func login(httpSession *HTTPSession, config *Config) func(http.ResponseWriter, *
 }
 
 // checkLogin so the client knows if current session is login or not
-func checkLogin(httpSession *HTTPSession, config *Config) func(http.ResponseWriter, *http.Request) {
+func checkLogin(httpSession *HTTPSession, cfg *config.Config) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -233,7 +219,7 @@ func checkLogin(httpSession *HTTPSession, config *Config) func(http.ResponseWrit
 }
 
 // root page
-func getPageRoot(httpSession *HTTPSession, config *Config, handler http.Handler) func(http.ResponseWriter, *http.Request) {
+func getPageRoot(httpSession *HTTPSession, cfg *config.Config, handler http.Handler) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -258,7 +244,7 @@ func getPageRoot(httpSession *HTTPSession, config *Config, handler http.Handler)
 }
 
 // browse and tablet page
-func getPageMain(httpSession *HTTPSession, config *Config, handler http.Handler) func(http.ResponseWriter, *http.Request) {
+func getPageMain(httpSession *HTTPSession, cfg *config.Config, handler http.Handler) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)

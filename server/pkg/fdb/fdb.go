@@ -1,4 +1,4 @@
-package main
+package fdb
 
 // flat file db
 
@@ -78,7 +78,9 @@ type FlatDB struct {
 // convert string to uint64
 func mustUint64(s string) uint64 {
 	i, err := strconv.Atoi(s)
-	check(err)
+	if err != nil {
+		panic(err)
+	}
 	return uint64(i)
 }
 
@@ -112,15 +114,15 @@ func bookCond(fp string) uint64 {
 	return 0
 }
 
-// NewFlatDB create new Flat Database
-func NewFlatDB(params ...string) *FlatDB {
+// New create new Flat Database
+func New(params ...string) *FlatDB {
 	// default path
 	dbPath := "./db.txt"
 
 	if len(params) == 1 {
 		dbPath = params[0]
 	} else if len(params) > 1 {
-		log.Fatal("Too many parameters for NewFlatDB!")
+		log.Fatal("Too many parameters for fdb.New!")
 	}
 
 	db := &FlatDB{}
@@ -155,23 +157,28 @@ func (db *FlatDB) Reload() {
 }
 
 // Import data from alternative path
-func (db *FlatDB) Import(dbPath string) {
+func (db *FlatDB) Import(dbPath string) error {
 	// make sure db exists
 	fstat, err := os.Stat(db.Path)
 	if os.IsNotExist(err) {
 		// create blank not exist
 		f, err := os.OpenFile(db.Path, os.O_CREATE, 0644)
-		check(err)
+		if err != nil {
+			return err
+		}
 		f.Close()
-		return
 	}
-	check(err)
+	if err != nil {
+		return err
+	}
 
 	// remember file last modified time, will use it later for checking
 	db.FileModDate = fstat.ModTime().Unix()
 
 	dat, err := ioutil.ReadFile(dbPath)
-	check(err)
+	if err != nil {
+		return err
+	}
 	strs := string(dat)
 	lines := strings.Split(strs, "\n")
 
@@ -183,8 +190,7 @@ func (db *FlatDB) Import(dbPath string) {
 			continue
 		}
 
-		book := csvToBook(line)
-
+		book, _ := csvToBook(line)
 		// skip incomplete record
 		if book == nil {
 			continue
@@ -206,6 +212,8 @@ func (db *FlatDB) Import(dbPath string) {
 
 		prevLen += uint64(len(line) + 1)
 	}
+
+	return nil
 }
 
 // Save dabase in default path
@@ -214,15 +222,18 @@ func (db *FlatDB) Save() {
 }
 
 // Export is save database to another path
-func (db *FlatDB) Export(dbPath string) {
+func (db *FlatDB) Export(dbPath string) error {
 	f, err := os.Create(dbPath)
-	check(err)
+	if err != nil {
+		return err
+	}
 	defer f.Close()
 
 	ibooks := db.IBooks
 	for _, ibook := range ibooks {
 		f.Write(bookToCSV(ibook.Book))
 	}
+	return nil
 }
 
 // UpdatePage change database record on page read, returns written byte size
@@ -283,7 +294,9 @@ func (db *FlatDB) AddBook(bookPath string) error {
 	}
 
 	fstat, err := os.Stat(bookPath)
-	check(err)
+	if err != nil {
+		return err
+	}
 
 	// get file inode
 	fstat2, ok := fstat.Sys().(*syscall.Stat_t)
@@ -336,7 +349,9 @@ func visit(db *FlatDB) func(string, os.FileInfo, error) error {
 
 		// get file state, e.g. size
 		fstat, err := os.Stat(fpath)
-		check(err)
+		if err != nil {
+			return err
+		}
 
 		// make sure books are unique so no duplicate db record
 		fname := path.Base(fpath)
@@ -347,17 +362,22 @@ func visit(db *FlatDB) func(string, os.FileInfo, error) error {
 		}
 
 		err = db.AddBook(fpath)
-		check(err)
+		if err != nil {
+			return err
+		}
 		fmt.Println("Added book", fpath)
 
 		return nil
 	}
 }
 
-// addBooksDir recursively add books from directory
-func addBooksDir(db *FlatDB, dir string) {
+// AddDir recursively add books from directory
+func AddDir(db *FlatDB, dir string) error {
 	err := filepath.Walk(dir, visit(db))
-	check(err)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func getAuthor(str string) string {
@@ -473,7 +493,9 @@ func getNumber(str string) string {
 
 func mustGetPages(fp string) int {
 	zr, err := zip.OpenReader(fp)
-	check(err)
+	if err != nil {
+		panic(err)
+	}
 
 	regexImageType := regexp.MustCompile(`(?i)\.(jpg|jpeg|gif|png)$`)
 	i := 0
@@ -530,14 +552,16 @@ func (db *FlatDB) SearchBookByNameAndSize(fname string, size uint64) *[]*Book {
 }
 
 // csvToBook convert string to book
-func csvToBook(line string) *Book {
+func csvToBook(line string) (*Book, error) {
 	r := csv.NewReader(strings.NewReader(line))
 	records, err := r.Read()
-	check(err)
+	if err != nil {
+		return nil, err
+	}
 
 	// incomplete record
 	if len(records) != 15 {
-		return nil
+		return nil, errors.New("incomplete line")
 	}
 
 	book := &Book{
@@ -557,7 +581,8 @@ func csvToBook(line string) *Book {
 		Itime:    mustUint64(records[9]),
 		Rtime:    mustUint64(records[10]),
 	}
-	return book
+
+	return book, nil
 }
 
 // bookToCSV convert Book to csv bytes
@@ -598,31 +623,41 @@ func bookToCSV(book *Book) []byte {
 //
 
 // convJtoF makes old json db into flat db
-func convJtoF(in, out string) {
+func convJtoF(in, out string) error {
 	dat, err := ioutil.ReadFile(in)
-	check(err)
+	if err != nil {
+		return err
+	}
 
 	var result map[string]*Book
 	err = json.Unmarshal(dat, &result)
-	check(err)
+	if err != nil {
+		return err
+	}
 
 	for id, book := range result {
 		book.ID = id
 	}
 
 	f, err := os.Create(out)
-	check(err)
+	if err != nil {
+		return err
+	}
 	defer f.Close()
 
 	for _, book := range result {
 		f.Write(bookToCSV(book))
 	}
+
+	return nil
 }
 
 // convFtoJ makes flat db to json
-func convFtoJ(in, out string) {
+func convFtoJ(in, out string) error {
 	dat, err := ioutil.ReadFile(in)
-	check(err)
+	if err != nil {
+		return err
+	}
 	strs := string(dat)
 	lines := strings.Split(strs, "\n")
 
@@ -637,7 +672,9 @@ func convFtoJ(in, out string) {
 
 		r := csv.NewReader(strings.NewReader(line))
 		records, err := r.Read()
-		check(err)
+		if err != nil {
+			return err
+		}
 
 		// skip incomplete
 		if len(records) != 14 {
@@ -686,13 +723,18 @@ func convFtoJ(in, out string) {
 
 	// fmt.Println(ibooks)
 	jstr, err := json.MarshalIndent(jbooks, "", "  ")
-	check(err)
+	if err != nil {
+		return err
+	}
 
 	f, err := os.Create(out)
 	defer f.Close()
-	check(err)
+	if err != nil {
+		return err
+	}
 	f.Write(jstr)
 
 	fmt.Println(lines[100])
 
+	return nil
 }

@@ -1,4 +1,4 @@
-package main
+package img
 
 import (
 	"bufio"
@@ -9,8 +9,8 @@ import (
 	"io"
 )
 
-// imgThumb create thumbnail while maintaining ratio
-func imgThumb(reader io.Reader) ([]byte, error) {
+// Thumb create thumbnail while maintaining ratio
+func Thumb(reader io.Reader) ([]byte, error) {
 	// clone so can use again
 	var b bytes.Buffer
 	reader2 := io.TeeReader(reader, &b)
@@ -50,11 +50,11 @@ func imgThumb(reader io.Reader) ([]byte, error) {
 		}
 	}
 
-	return imgResize(reader3, thmW, thmH)
+	return Resize(reader3, thmW, thmH)
 }
 
-// imgResize resize image to width, height
-func imgResize(reader io.Reader, owidth int, oheight int) ([]byte, error) {
+// Resize resize image to width, height
+func Resize(reader io.Reader, owidth int, oheight int) ([]byte, error) {
 	m, _, err := image.Decode(reader)
 	if err != nil {
 		return nil, err

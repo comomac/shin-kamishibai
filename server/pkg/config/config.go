@@ -1,12 +1,13 @@
-package main
+package config
 
 import (
-	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"strconv"
+
+	"github.com/comomac/shin-kamishibai/server/pkg/lib"
 )
 
 // Config holds server config
@@ -24,53 +25,53 @@ type Config struct {
 // ConfigHashIterations how many times the password should be hashed
 const ConfigHashIterations = 100000
 
-// ConfigRead read and parse configuration file
-func ConfigRead(filepath string) (*Config, error) {
+// Read read and parse configuration file
+func Read(filepath string) (*Config, error) {
 	byteDat, err := ioutil.ReadFile(filepath)
 	if err != nil {
 		return nil, err
 	}
 
-	var config Config
+	var cfg Config
 
-	err = json.Unmarshal(byteDat, &config)
+	err = json.Unmarshal(byteDat, &cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	// sanity check
-	if config.Port <= 0 || config.Port > 65535 {
-		return nil, errors.New("invalid port number " + strconv.Itoa(config.Port))
+	if cfg.Port <= 0 || cfg.Port > 65535 {
+		return nil, errors.New("invalid port number " + strconv.Itoa(cfg.Port))
 	}
-	if config.Crypt == "" && len(config.Password) < 6 {
+	if cfg.Crypt == "" && len(cfg.Password) < 6 {
 		return nil, errors.New("password too short, min of 6")
 	}
 
 	// overwrite
-	config.Path = filepath
-	config.Iterations = ConfigHashIterations
+	cfg.Path = filepath
+	cfg.Iterations = ConfigHashIterations
 
 	// hash password
-	if config.Crypt == "" {
+	if cfg.Crypt == "" {
 		// generate salt, longer because of limited character list
-		config.Salt = generateSessionID(128)
+		cfg.Salt = lib.GenerateString(128)
 		// calc password hash
-		config.Crypt = SHA256Iter100k(config.Password, config.Salt)
+		cfg.Crypt = lib.SHA256Iter(cfg.Password, cfg.Salt, ConfigHashIterations)
 		// clear password
-		config.Password = ""
-		// save new config file
-		err := ConfigSave(&config, config.Path)
+		cfg.Password = ""
+		// save new cfg file
+		err := Save(&cfg, cfg.Path)
 		if err != nil {
 			fmt.Println("failed to save config file (b)")
 			return nil, err
 		}
 	}
 
-	return &config, nil
+	return &cfg, nil
 }
 
-// ConfigSave save config to json file
-func ConfigSave(config *Config, filepath string) error {
+// Save save config to json file
+func Save(config *Config, filepath string) error {
 	// create a copy
 	config2 := config
 	// clear, setup setting
@@ -89,18 +90,4 @@ func ConfigSave(config *Config, filepath string) error {
 	}
 
 	return nil
-}
-
-// SHA256Iter100k iterate password and salt 100,000 times, return hex result
-func SHA256Iter100k(password, salt string) string {
-	str := password + ":" + salt
-	bstr := []byte(str)
-
-	var bstrx [sha256.Size]byte
-	for i := 0; i < ConfigHashIterations; i++ {
-		bstrx = sha256.Sum256(bstr)
-		bstr = bstrx[0:32]
-	}
-
-	return fmt.Sprintf("%x", bstr)
 }

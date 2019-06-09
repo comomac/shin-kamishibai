@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"encoding/json"
@@ -9,11 +9,13 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/comomac/shin-kamishibai/server/pkg/fdb"
 )
 
 // BookInfoByAuthorLite reduced book info to save space and security
 type BookInfoByAuthorLite struct {
-	*Book
+	*fdb.Book
 	Author   Blank `json:"author,omitempty"`
 	Fullpath Blank `json:"fullpath,omitempty"`
 	Inode    Blank `json:"inode,omitempty"`
@@ -31,7 +33,7 @@ type BookInfoByAuthorResponse struct {
 type BookInfoByAuthorSliceResponse []*BookInfoByAuthorResponse
 
 // getBooksByAuthor return several books info and group them by book author
-func getBooksByAuthor(db *FlatDB) func(http.ResponseWriter, *http.Request) {
+func getBooksByAuthor(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)

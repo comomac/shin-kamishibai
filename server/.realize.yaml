@@ -4,7 +4,7 @@ settings:
     interval: 0s
 schema:
   - name: shin-kamishibai
-    path: .
+    path: ../cmd/server
     commands:
       run:
         status: true
