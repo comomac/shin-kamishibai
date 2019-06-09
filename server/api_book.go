@@ -90,17 +90,26 @@ func getBooksInfo(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-// TODO
-func getSources(w http.ResponseWriter, r *http.Request) {
-	cookies := r.Cookies()
-	fmt.Printf("%+v\n", cookies)
-	cookie, err := r.Cookie("8086.order_by")
-	if err == nil {
-		fmt.Printf("%+v %+v\n", cookie.Name, cookie.Value)
-	}
+// get list of dirs for access
+func getSources(config *Config) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		cookies := r.Cookies()
+		fmt.Printf("%+v\n", cookies)
+		cookie, err := r.Cookie(fmt.Sprintf("%d.order_by", config.Port))
+		if err == nil {
+			fmt.Printf("%+v %+v\n", cookie.Name, cookie.Value)
+		}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(`["/Users/mac/tmp/mangas"]`))
+		b, err := json.Marshal(config.AllowedDirs)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(b)
+	}
 }
 
 // post books returns all the book info
