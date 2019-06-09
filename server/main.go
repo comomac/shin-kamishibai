@@ -37,7 +37,7 @@ func startServer(config *Config, db *FlatDB) {
 	h.HandleFunc("/api/books_info", getBooksInfo(db))    // /books_info?bookcodes=1,2,3,4,5
 	h.HandleFunc("/api/setbookmark/", setBookmark(db))   // /setbookmark/{bookID}/{page}
 	h.HandleFunc("/api/lists", getBooksByTitle(db))
-	h.HandleFunc("/api/alists", getBooksByAuther(db))
+	h.HandleFunc("/api/alists", getBooksByAuthor(db))
 	h.HandleFunc("/api/list_sources", getSources)
 	h.HandleFunc("/api/lists_dir", dirList(config, db))
 	h.HandleFunc("/api/check", checkLogin(httpSession, config))

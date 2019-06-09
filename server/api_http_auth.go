@@ -305,10 +305,10 @@ func BasicAuth(handler http.Handler, username, password, realm string) http.Hand
 // ref https://cryptic.io/go-http/
 func CheckAuthHandler(h http.Handler, httpSession *HTTPSession) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// // TODO remove when done
-		// // force auth during dev
-		// h.ServeHTTP(w, r)
-		// return
+		// TODO remove when done
+		// force auth during dev
+		h.ServeHTTP(w, r)
+		return
 
 		// public
 		if !strings.Contains(r.URL.Path, "/api/") {

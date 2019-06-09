@@ -65,14 +65,14 @@ type Author struct {
 
 // FlatDB is flat text file database struct
 type FlatDB struct {
-	IBooks      []*IBook
-	Authors     []*Author
-	IMapper     map[string]*IBook   // map books by id (unique)
-	FMapper     map[string]*IBook   // map books by file path (unique)
-	TMapper     map[string][]*IBook // group books by title (array)
-	AMapper     map[string][]*IBook // group books by author (array)
-	Path        string              // where the database is stored
-	FileModDate int64               // file last modified date
+	IBooks       []*IBook
+	Authors      []*Author
+	MapperID     map[string]*IBook   // map books by id (unique)
+	MapperPath   map[string]*IBook   // map books by file path (unique)
+	MapperTitle  map[string][]*IBook // group books by title (array)
+	MapperAuthor map[string][]*IBook // group books by author (array)
+	Path         string              // where the database is stored
+	FileModDate  int64               // file last modified date
 }
 
 // convert string to uint64
@@ -125,10 +125,10 @@ func NewFlatDB(params ...string) *FlatDB {
 
 	db := &FlatDB{}
 	db.Path = dbPath
-	db.IMapper = make(map[string]*IBook)
-	db.FMapper = make(map[string]*IBook)
-	db.TMapper = make(map[string][]*IBook)
-	db.AMapper = make(map[string][]*IBook)
+	db.MapperID = make(map[string]*IBook)
+	db.MapperPath = make(map[string]*IBook)
+	db.MapperTitle = make(map[string][]*IBook)
+	db.MapperAuthor = make(map[string][]*IBook)
 
 	return db
 }
@@ -137,10 +137,10 @@ func NewFlatDB(params ...string) *FlatDB {
 func (db *FlatDB) Clear() {
 	db.IBooks = nil
 	db.Authors = nil
-	db.IMapper = make(map[string]*IBook)
-	db.FMapper = make(map[string]*IBook)
-	db.TMapper = make(map[string][]*IBook)
-	db.AMapper = make(map[string][]*IBook)
+	db.MapperID = make(map[string]*IBook)
+	db.MapperPath = make(map[string]*IBook)
+	db.MapperTitle = make(map[string][]*IBook)
+	db.MapperAuthor = make(map[string][]*IBook)
 }
 
 // Load data using default file path
@@ -199,10 +199,10 @@ func (db *FlatDB) Import(dbPath string) {
 		db.IBooks = append(db.IBooks, ibook)
 
 		// setup mapping
-		db.IMapper[book.ID] = ibook
-		db.FMapper[book.Fullpath] = ibook
-		db.TMapper[book.Title] = append(db.TMapper[book.Title], ibook)
-		db.AMapper[book.Author] = append(db.AMapper[book.Author], ibook)
+		db.MapperID[book.ID] = ibook
+		db.MapperPath[book.Fullpath] = ibook
+		db.MapperTitle[book.Title] = append(db.MapperTitle[book.Title], ibook)
+		db.MapperAuthor[book.Author] = append(db.MapperAuthor[book.Author], ibook)
 
 		prevLen += uint64(len(line) + 1)
 	}
@@ -227,7 +227,7 @@ func (db *FlatDB) Export(dbPath string) {
 
 // UpdatePage change database record on page read, returns written byte size
 func (db *FlatDB) UpdatePage(id string, page int) (int, error) {
-	ibook := db.IMapper[id]
+	ibook := db.MapperID[id]
 	if ibook == nil {
 		err := errors.New("ibook is nil")
 		return 0, err
@@ -489,7 +489,7 @@ func mustGetPages(fp string) int {
 // GetBookByID get Book object by book id
 func (db *FlatDB) GetBookByID(bookID string) *Book {
 
-	ibook := db.IMapper[bookID]
+	ibook := db.MapperID[bookID]
 	if ibook == nil {
 		return nil
 	}
@@ -500,11 +500,11 @@ func (db *FlatDB) GetBookByID(bookID string) *Book {
 // GetBookByPath get Book object by file path
 func (db *FlatDB) GetBookByPath(fpath string) *Book {
 	// not working for some reason
-	ibook := db.FMapper[fpath]
+	ibook := db.MapperPath[fpath]
 	if ibook == nil {
 		return nil
 	}
-	return db.FMapper[fpath].Book
+	return db.MapperPath[fpath].Book
 
 	// for _, ibook := range db.IBooks {
 	// 	fmt.Println(111, ibook.Fullpath)

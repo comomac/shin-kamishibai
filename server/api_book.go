@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"path"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -23,51 +22,8 @@ type BookInfoResponse struct {
 	Itime    Blank `json:"itime,omitempty"`
 }
 
-// BookInfoLessTitleResponse for json response on single book information, without book title
-type BookInfoLessTitleResponse struct {
-	*Book
-	Title    Blank `json:"title,omitempty"`
-	Fullpath Blank `json:"fullpath,omitempty"`
-	Inode    Blank `json:"inode,omitempty"`
-	Itime    Blank `json:"itime,omitempty"`
-}
-
-// BookInfoLessAuthorResponse for json response on single book information, without book author
-type BookInfoLessAuthorResponse struct {
-	*Book
-	Author   Blank `json:"author,omitempty"`
-	Fullpath Blank `json:"fullpath,omitempty"`
-	Inode    Blank `json:"inode,omitempty"`
-	Itime    Blank `json:"itime,omitempty"`
-}
-
 // BooksInfoResponse for json response on multiple book information
 type BooksInfoResponse map[string]*BookInfoResponse
-
-// BooksInfoGroupByTitleResponse for json response on multiple book information which grouped by book title
-type BooksInfoGroupByTitleResponse []*BookInfoEncapsulateLessTitleResponse
-
-// BookInfoEncapsulateLessTitleResponse for books grouped by title title
-type BookInfoEncapsulateLessTitleResponse struct {
-	Title  string                       `json:"title"`
-	Author string                       `json:"author"`
-	Lists  []*BookInfoLessTitleResponse `json:"lists"`
-}
-
-type ByTitle []*BookInfoEncapsulateLessTitleResponse
-
-func (a ByTitle) Len() int {
-	return len(a)
-}
-func (a ByTitle) Swap(i, j int) {
-	a[i], a[j] = a[j], a[i]
-}
-func (a ByTitle) Less(i, j int) bool {
-	return a[i].Title < a[j].Title
-}
-
-// BooksInfoByAuthorResponse for json response on multiple book information which grouped by book author
-type BooksInfoByAuthorResponse map[string][]*BookInfoLessAuthorResponse
 
 // BooksResponse for json response on all book information
 type BooksResponse []*BookInfoResponse
@@ -147,96 +103,6 @@ func getSources(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`["/Users/mac/tmp/mangas"]`))
 }
 
-// FileList contains list of files and folders
-type FileList []*FileInfoBasic
-
-// FileInfoBasic basic FileInfo to identify file for dir list
-type FileInfoBasic struct {
-	IsDir   bool      `json:"is_dir,omitempty"`
-	Path    string    `json:"path,omitempty"`
-	Name    string    `json:"name,omitempty"`
-	ModTime time.Time `json:"mod_time,omitempty"`
-	*Book
-}
-
-// dirList lists the folder content, only the folder and the manga will be shown
-func dirList(config *Config, db *FlatDB) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-
-		query := r.URL.Query()
-
-		dir := query.Get("dir")
-
-		fmt.Println(dir)
-
-		// check if the dir is allowed to browse
-		exists := StringSliceContain(config.AllowedDirs, dir)
-		if !exists {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-
-		// listing dir
-		files, err := ioutil.ReadDir(dir)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
-			return
-		}
-
-		// add first one as the dir info to save space
-		var fileList FileList
-		fileList = append(fileList, &FileInfoBasic{
-			IsDir: true,
-			Path:  dir,
-		})
-
-		re := regexp.MustCompile(`\.cbz$`)
-
-		// fmt.Printf("%+v", db.IMapper)
-		// spew.Dump(db.FMapper)
-
-		for _, file := range files {
-			// fmt.Println(file.Name(), file.IsDir())
-			if file.IsDir() {
-				fileList = append(fileList, &FileInfoBasic{
-					IsDir:   true,
-					Name:    file.Name(),
-					ModTime: file.ModTime(),
-				})
-			} else if re.MatchString(file.Name()) {
-				fib := &FileInfoBasic{
-					Name:    file.Name(),
-					ModTime: file.ModTime(),
-				}
-
-				aaa := dir + "/" + file.Name()
-				fmt.Println(aaa)
-				book := db.GetBookByPath(aaa)
-				if book != nil {
-					fib.Book = book
-				}
-
-				fileList = append(fileList, fib)
-			}
-		}
-
-		b, err := json.Marshal(&fileList)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(b)
-	}
-}
-
 // post books returns all the book info
 func getBooks(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -298,156 +164,6 @@ func getBooks(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-// getBooksByTitle return several books info and group them by book title
-func getBooksByTitle(db *FlatDB) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-
-		filterBy := r.URL.Query().Get("filter_by")
-		page, _ := strconv.Atoi(r.URL.Query().Get("page")) // pageination, 100 per page
-		strKeyword := r.URL.Query().Get("keywords")
-		keywords := strings.Split(strKeyword, " ")
-
-		books := BooksInfoGroupByTitleResponse{}
-
-		fmt.Println("filter_by", filterBy, "page", page, "keywords", keywords)
-		// pageination counter
-		i := 0
-
-	OUTER:
-		for title, ibooks := range db.TMapper {
-			// pageination
-			// 0    1-100
-			// 1  101-200
-			// 2  201-300
-			// 3  301-400
-			i++
-			if i <= 100*(page) {
-				continue
-			}
-			if i > 100*(page+1) {
-				break
-			}
-
-			// if there is keyword, make sure title or author matches
-			if len(keywords) > 0 {
-				for _, keyword := range keywords {
-					re := regexp.MustCompile("(?i)" + keyword)
-					// always assume there is at least 1 book otherwise title wont exists
-					if re.FindStringIndex(title) == nil && re.FindStringIndex(ibooks[0].Author) == nil {
-						continue OUTER
-					}
-				}
-			}
-
-			gbooks := []*BookInfoLessTitleResponse{}
-
-			switch filterBy {
-			case "finished":
-				for _, ibook := range ibooks {
-					if ibook.Book.Page == ibook.Book.Pages {
-						gbooks = append(gbooks, &BookInfoLessTitleResponse{
-							Book: ibook.Book,
-						})
-					}
-				}
-			case "reading":
-				for _, ibook := range ibooks {
-					if ibook.Book.Page > 0 && ibook.Book.Page < ibook.Book.Pages {
-						gbooks = append(gbooks, &BookInfoLessTitleResponse{
-							Book: ibook.Book,
-						})
-					}
-				}
-			case "new":
-				for _, ibook := range ibooks {
-					if time.Unix(int64(ibook.Book.Itime)+int64(time.Second)*3600*24*3, 0).Before(time.Now()) {
-						gbooks = append(gbooks, &BookInfoLessTitleResponse{
-							Book: ibook.Book,
-						})
-					}
-				}
-			default:
-				for _, ibook := range ibooks {
-					gbooks = append(gbooks, &BookInfoLessTitleResponse{
-						Book: ibook.Book,
-					})
-				}
-			}
-
-			if len(gbooks) > 0 {
-				books = append(books, &BookInfoEncapsulateLessTitleResponse{
-					Title:  title,
-					Author: gbooks[0].Author,
-					Lists:  gbooks,
-				})
-			}
-
-		}
-
-		// sort by book titles
-		sort.Sort(ByTitle(books))
-
-		b, err := json.Marshal(&books)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(b)
-	}
-}
-
-// getBooksByAuther return several books info and group them by book author
-func getBooksByAuther(db *FlatDB) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-
-		strKeyword := r.URL.Query().Get("keywords")
-		keywords := strings.Split(strKeyword, " ")
-
-		books := BooksInfoByAuthorResponse{}
-
-	OUTER:
-		for _, ibook := range db.IBooks {
-			// TODO do pageination?
-			// if i > 3 {
-			// 	break
-			// }
-
-			// if there is keyword, make sure title or author matches
-			if len(keywords) > 0 {
-				for _, keyword := range keywords {
-					re := regexp.MustCompile("(?i)" + keyword)
-					if re.FindStringIndex(ibook.Author) == nil {
-						continue OUTER
-					}
-				}
-			}
-
-			books[ibook.Author] = append(books[ibook.Author], &BookInfoLessAuthorResponse{Book: ibook.Book})
-		}
-
-		b, err := json.Marshal(&books)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(b)
-	}
-}
-
 // setBookmark remember where the book is read upto
 func setBookmark(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -464,7 +180,7 @@ func setBookmark(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 		}
 		// fmt.Println(r.Method, r.RequestURI, bookID, page)
 
-		ibook := db.IMapper[bookID]
+		ibook := db.MapperID[bookID]
 		if ibook == nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
@@ -492,7 +208,7 @@ func renderThumbnail(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 
 		bookID := path.Base(r.RequestURI)
 
-		ibook := db.IMapper[bookID]
+		ibook := db.MapperID[bookID]
 		if ibook == nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
@@ -550,7 +266,7 @@ func getPage(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
-		ibook := db.IMapper[bookID]
+		ibook := db.MapperID[bookID]
 		if ibook == nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
