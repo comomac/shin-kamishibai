@@ -33,8 +33,9 @@ func Start(cfg *config.Config, db *fdb.FlatDB) {
 	h.HandleFunc("/", getPageRoot(httpSession, cfg, fs))
 
 	// direct main page with login follow
-	h.HandleFunc("/tablet.html", getPageMain(httpSession, cfg, fs))
-	h.HandleFunc("/browse.html", getPageMain(httpSession, cfg, fs))
+	// h.HandleFunc("/tablet.html", getPageMain(httpSession, cfg, fs))
+	// h.HandleFunc("/browse.html", getPageMain(httpSession, cfg, fs))
+	h.HandleFunc("/browse", browse(httpSession, cfg, fs))
 
 	// public api
 	h.HandleFunc("/login", login(httpSession, cfg))
@@ -56,7 +57,9 @@ func Start(cfg *config.Config, db *fdb.FlatDB) {
 	// r.Post("/delete_book", deleteBook)
 
 	// middleware
-	h1 := CheckAuthHandler(h, httpSession)
+	// h1 := CheckAuthHandler(h, httpSession)
+	// h1 := BasicAuth(h, cfg.Username, cfg.Password, "Authentication required")
+	h1 := BasicAuthSession(h, cfg, httpSession, "Authentication required")
 
 	port := ":" + strconv.Itoa(cfg.Port)
 	fmt.Println("listening on", port)

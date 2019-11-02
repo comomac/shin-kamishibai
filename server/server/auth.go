@@ -4,6 +4,7 @@ import (
 	"crypto/subtle"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -280,6 +281,64 @@ func BasicAuth(handler http.Handler, username, password, realm string) http.Hand
 			w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("Unauthorised.\n"))
+			return
+		}
+
+		handler.ServeHTTP(w, r)
+	}
+}
+
+// BasicAuthSession does basic http auth with session support
+func BasicAuthSession(handler http.Handler, cfg *config.Config, httpSession *HTTPSession, realm string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// authentication
+		if r.URL.Path == "/auth" {
+			user, pass, ok := r.BasicAuth()
+			fmt.Printf("auth: %s %s %t\n", user, pass, ok)
+
+			// more secure compare
+			strCrypt := lib.SHA256Iter(pass, cfg.Salt, cfg.Iterations)
+			if !ok || subtle.ConstantTimeCompare([]byte(user), []byte(cfg.Username)) != 1 || subtle.ConstantTimeCompare([]byte(strCrypt), []byte(cfg.Crypt)) != 1 {
+				w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
+				w.WriteHeader(http.StatusUnauthorized)
+				w.Write([]byte("Unauthorised"))
+				return
+			}
+
+			// construct new session value
+			values := SessionValuesType{
+				"LoggedIn": true,
+			}
+			// remember session in memory
+			newSession := httpSession.Add(r, values)
+
+			// set client session cookie
+			newCookie := &http.Cookie{
+				Name:  "SessionID",
+				Value: newSession.ID,
+			}
+			http.SetCookie(w, newCookie)
+
+			// force expiring the http basic auth so browser wont remember
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte("welcome"))
+			return
+		}
+
+		// private
+
+		// get session detail
+		value, err := httpSession.Get(r, "LoggedIn")
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte("Unauthorised!"))
+			return
+		}
+
+		// check if logged in
+		if value != true {
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte("Not logged in."))
 			return
 		}
 
