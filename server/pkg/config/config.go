@@ -12,14 +12,17 @@ import (
 
 // Config holds server config
 type Config struct {
-	Path        string   `json:"path,omitempty"` // config file path
-	Port        int      `json:"port"`           // server port
-	DBPath      string   `json:"db_path"`        // where db file is stored
-	Password    string   `json:"password"`       // one time, and it will be cleared after computed
-	Iterations  int      `json:"iterations"`     // safety, min 100,000
-	Salt        string   `json:"salt"`           // salt for the crypt
-	Crypt       string   `json:"crypt"`          // hashed password (password:salt)
-	AllowedDirs []string `json:"allowed_dirs"`   // directory allowed to be browse
+	Path         string   `json:"path,omitempty"`     // config file path
+	Port         int      `json:"port"`               // server port
+	DBPath       string   `json:"db_path"`            // where db file is stored
+	Username     string   `json:"username"`           // username for the http authentication
+	Password     string   `json:"password,omitempty"` // one time, and it will be cleared after computed
+	Iterations   int      `json:"iterations"`         // safety, min 100,000
+	Salt         string   `json:"salt"`               // salt for the crypt
+	Crypt        string   `json:"crypt"`              // password hash
+	AllowedDirs  []string `json:"allowed_dirs"`       // directory allowed to be browse
+	ImageResize  bool     `json:"image_resize"`       // resize images in reader
+	ImageQuality int      `json:"image_quality"`      // image quality for resized image
 }
 
 // ConfigHashIterations how many times the password should be hashed
@@ -46,6 +49,9 @@ func Read(filepath string) (*Config, error) {
 	if cfg.Crypt == "" && len(cfg.Password) < 6 {
 		return nil, errors.New("password too short, min of 6")
 	}
+	if len(cfg.Username) < 3 {
+		return nil, errors.New("username too short, min length 3")
+	}
 
 	// overwrite
 	cfg.Path = filepath
@@ -57,8 +63,8 @@ func Read(filepath string) (*Config, error) {
 		cfg.Salt = lib.GenerateString(128)
 		// calc password hash
 		cfg.Crypt = lib.SHA256Iter(cfg.Password, cfg.Salt, ConfigHashIterations)
-		// clear password
-		cfg.Password = ""
+		// clear password, hack
+		// cfg.Password = ""
 		// save new cfg file
 		err := Save(&cfg, cfg.Path)
 		if err != nil {

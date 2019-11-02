@@ -2,6 +2,7 @@ package lib
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"math/rand"
 	"os/user"
@@ -9,7 +10,8 @@ import (
 	"time"
 )
 
-func userHome(s ...string) string {
+// UserHome builds path with user home path
+func UserHome(s ...string) string {
 	user, err := user.Current()
 	if err != nil {
 		panic(err)
@@ -75,4 +77,19 @@ func SHA256Iter(password, salt string, iter int) string {
 	}
 
 	return fmt.Sprintf("%x", bstr)
+}
+
+// NewUUIDV4 generate uuid version 4
+func NewUUIDV4() (string, error) {
+
+	b := make([]byte, 16)
+	_, err := rand.Read(b)
+	if err != nil {
+		fmt.Println("Error: ", err)
+		return "", errors.New("failed to generate uuid")
+	}
+
+	uuid := fmt.Sprintf("%X-%X-%X-%X-%X", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
+
+	return uuid, nil
 }

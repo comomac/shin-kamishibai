@@ -1,11 +1,14 @@
-package server
+package main
 
 import (
+	"flag"
 	"fmt"
-	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/comomac/shin-kamishibai/server/pkg/config"
 	"github.com/comomac/shin-kamishibai/server/pkg/fdb"
+	"github.com/comomac/shin-kamishibai/server/pkg/lib"
 	svr "github.com/comomac/shin-kamishibai/server/server"
 )
 
@@ -36,9 +39,15 @@ func main() {
 	// fmt.Println(x)
 
 	// use config on local dir by default if no param given
-	cfgFilePath := "config.json"
-	if len(os.Args) > 1 {
-		cfgFilePath = os.Args[1]
+
+	xConfDir := flag.String("conf-dir", "~/etc/config.json", "full path of the configuration file")
+	flag.Parse()
+
+	cfgFilePath := *xConfDir
+
+	// use home path if ~/ exists
+	if strings.HasPrefix(cfgFilePath, "~/") {
+		cfgFilePath = filepath.Join(lib.UserHome(), cfgFilePath[2:])
 	}
 
 	cfg, err := config.Read(cfgFilePath)
