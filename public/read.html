@@ -89,32 +89,50 @@
 			function ready() {
 				updateButtons();
 
-				// set as page 1 if not set
-				if (getHashParams("p") === undefined) {
-					// history.replaceState({ page: 1 }, "Page 1", "?p=1");
+				var pg = queryParams("p");
+				pg = Number(pg);
+				if (isNaN(pg) || pg < 1) {
+					// set as page 1 if not set
 					history.replaceState({ page: 1 }, "Page 1");
+
+					pg = page;
+				} else {
+					// load the page if provided
+					history.replaceState({ page: pg }, "Page " + String(pg));
+					// load this as the initial page
+					updatePage(pg);
+
+					page = pg;
 				}
 
 				// update page info
-				document.getElementById("span-page").textContent = page;
+				document.getElementById("span-page").textContent = pg;
 				document.getElementById("span-page-total").textContent = pageTotal;
 
 				console.log("page ", page, "is ready");
 			}
 
-			function goPage(intPage, isAbsolutePage) {
+			function goPage(intStep, isAbsolutePage) {
+				if (typeof intStep !== "number") return;
+				if (isNaN(intStep)) return;
+
+				var pg = 0;
 				if (isAbsolutePage) {
-					page = intPage;
+					pg = intStep;
 				} else {
-					page = page + intPage;
+					pg = page + intStep;
 				}
+				// dont move if invalid page
+				if (pg < 1) return;
+
+				// update global page value
+				page = pg;
 
 				// update url
-				// history.pushState({ page: page }, "Page " + page, "?p=" + page);
-				history.pushState({ page: page }, "Page " + page);
+				history.pushState({ page: page }, "Page " + pg);
 
 				// update page rendering
-				updatePage(page);
+				updatePage(pg);
 			}
 
 			function onPopState(event) {
