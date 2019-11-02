@@ -215,7 +215,7 @@ function ajaxPost(url, data, callback, callbackFail) {
 	return ajax(url, {
 		post: JSON.stringify(data),
 		callback: callback,
-		callbackFail
+		callbackFail: callbackFail
 	});
 }
 

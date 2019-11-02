@@ -17,11 +17,10 @@
 			.row {
 				margin-bottom: 0.5em;
 			}
-			.a-link {
-				padding: 0.7em;
-				margin: 0.3em;
-				background: greenyellow;
-				display: inline-block;
+			.a-link-page {
+				min-width: 2em;
+				padding: 3px;
+				margin-right: 10px;
 			}
 			.div-img {
 				margin-bottom: 0.5em;
@@ -30,146 +29,168 @@
 				min-width: 300px;
 				min-height: 400px;
 				border: 1px solid black;
+				padding: 2px;
 			}
 		</style>
 	</head>
 	<body>
 		<div class="row">
 			<div><button onclick="goBrowse();">Browse</button></div>
-			<div>Path: <span id="span-folder-name">&nbsp;</span></div>
-			<div>File: <span id="span-file-name">&nbsp;</span></div>
-			<div>Page: <span id="span-page">&nbsp;</span> / <span id="span-page-total">&nbsp;</span></div>
-		</div>
-		<div class="row">
 			<div>
-				<button onclick="prevPage();">-5</button>
-				<button onclick="nextPage();">+5</button>
-				<button onclick="prevPage();">Prev</button>
-				<button onclick="nextPage();">Next</button>
+				Path: <span id="span-folder-name">{{ path }}</span>
 			</div>
-			<div id="div-links-top">
-				<a href="/?page=1" class="a-link">1</a>
+			<div>
+				File: <span id="span-file-name">{{ filename }}</span>
+			</div>
+			<div>
+				Page: <span id="span-page">{{ page }}</span> / <span id="span-page-total">{{ pageTotal }}</span>
 			</div>
 		</div>
+		<noscript>
+			<!-- hard coded page nav -->
+			<div class="row">
+				<a class="a-link-page" href="/read/xz?p={{ page - 5 }}">-5</a>
+				<a class="a-link-page" href="/read/xz?p={{ page + 5 }}">+5</a>
+				<a class="a-link-page" href="/read/xz?p={{ page - 10 }}">-10</a>
+				<a class="a-link-page" href="/read/xz?p={{ page + 10 }}">+10</a>
+				<a class="a-link-page" href="/read/xz?p={{ page - 25 }}">-25</a>
+				<a class="a-link-page" href="/read/xz?p={{ page + 25 }}">+25</a>
+				<a class="a-link-page" href="/read/xz?p={{ page - 50 }}">-50</a>
+				<a class="a-link-page" href="/read/xz?p={{ page + 50 }}">+50</a>
+				<a class="a-link-page" href="/read/xz?p={{ page - 100 }}">-100</a>
+				<a class="a-link-page" href="/read/xz?p={{ page + 100 }}">+100</a>
+			</div>
+			<div class="row">
+				<a class="a-link-page" href="/read/xz?p={{ page - 1 }}">Prev</a>
+				<a class="a-link-page" href="/read/xz?p={{ page + 1 }}">Next</a>
+			</div>
+		</noscript>
+		<div class="row" id="div-button-gopages"></div>
+		<div class="row" id="div-button-navs-1"></div>
 		<div class="row">
-			<div class="div-img" id="div-img-1"><img src="/img/1.jpg" class="img-manga" id="img-1" /></div>
-			<div class="div-img" id="div-img-2"><img src="/img/2.jpg" class="img-manga" id="img-2" /></div>
-			<div class="div-img" id="div-img-3"><img src="/img/3.jpg" class="img-manga" id="img-3" /></div>
-			<div class="div-img" id="div-img-4"><img src="/img/4.jpg" class="img-manga" id="img-4" /></div>
-			<div class="div-img" id="div-img-5"><img src="/img/5.jpg" class="img-manga" id="img-5" /></div>
-			<div class="div-img" id="div-img-6"><img src="/img/6.jpg" class="img-manga" id="img-6" /></div>
-			<div class="div-img" id="div-img-7"><img src="/img/7.jpg" class="img-manga" id="img-7" /></div>
-			<div class="div-img" id="div-img-8"><img src="/img/8.jpg" class="img-manga" id="img-8" /></div>
-			<div class="div-img" id="div-img-9"><img src="/img/9.jpg" class="img-manga" id="img-9" /></div>
-			<div class="div-img" id="div-img-10"><img src="/img/10.jpg" class="img-manga" id="img-10" /></div>
-			<div class="div-img" id="div-img-11"><img src="/img/11.jpg" class="img-manga" id="img-11" /></div>
-			<div class="div-img" id="div-img-12"><img src="/img/12.jpg" class="img-manga" id="img-12" /></div>
-			<div class="div-img" id="div-img-13"><img src="/img/13.jpg" class="img-manga" id="img-13" /></div>
-			<div class="div-img" id="div-img-14"><img src="/img/14.jpg" class="img-manga" id="img-14" /></div>
-			<div class="div-img" id="div-img-15"><img src="/img/15.jpg" class="img-manga" id="img-15" /></div>
+			<div class="div-img" id="div-img-1"><img src="images/spinner.gif" class="img-manga" id="img-1" /></div>
+			<div id="div-button-navs-2"></div>
+			<noscript>
+				<div class="row">
+					<a class="a-link-page" href="/read/xz?p=">Prev</a>
+					<a class="a-link-page" href="/read/xz?p=">Next</a>
+				</div>
+			</noscript>
 		</div>
-		<div class="row">
-			<div>Page: <span id="span-bottom-page">&nbsp;</span> / <span id="span-bottom-page-total">&nbsp;</span></div>
-		</div>
-		<div class="row">
-			<div><button onclick="prevPage();">Prev</button> <button onclick="nextPage();">Next</button></div>
-			<div id="div-links-bottom"></div>
-		</div>
+		<script src="js/utilities.js"></script>
 		<script>
-			window.onload = ready;
-
 			// these needs to be ajax
 			page = 1;
-			imageTotal = 213;
-			pageTotal = Math.ceil(imageTotal / 15);
+			pageTotal = 213;
+
+			window.onload = ready;
+			window.onpopstate = onPopState;
 
 			function ready() {
-				updatePage(page);
-				updateLinks(imageTotal);
+				updateButtons();
+
+				// set as page 1 if not set
+				if (getHashParams("p") === undefined) {
+					// history.replaceState({ page: 1 }, "Page 1", "?p=1");
+					history.replaceState({ page: 1 }, "Page 1");
+				}
+
+				// update page info
+				document.getElementById("span-page").textContent = page;
+				document.getElementById("span-page-total").textContent = pageTotal;
+
 				console.log("page ", page, "is ready");
 			}
 
-			function prevPage() {
-				if (page <= 1) return;
-				page = page - 1;
-				console.log(page);
-				updatePage(page, true);
-			}
+			function goPage(intPage, isAbsolutePage) {
+				if (isAbsolutePage) {
+					page = intPage;
+				} else {
+					page = page + intPage;
+				}
 
-			function nextPage() {
-				if (page >= pageTotal) return;
-				page = page + 1;
-				console.log(page);
+				// update url
+				// history.pushState({ page: page }, "Page " + page, "?p=" + page);
+				history.pushState({ page: page }, "Page " + page);
+
+				// update page rendering
 				updatePage(page);
 			}
 
-			function updateLinks(ttlPages) {
-				var pg = Number(ttlPages);
-				if (isNaN(pg)) return;
-
-				// clear child elements
-				var nodeTop = document.getElementById("div-links-top");
-				while (nodeTop.firstChild) {
-					nodeTop.removeChild(nodeTop.firstChild);
-				}
-				var nodeBottom = document.getElementById("div-links-bottom");
-				while (nodeBottom.firstChild) {
-					nodeBottom.removeChild(nodeBottom.firstChild);
-				}
-
-				// recreate links
-				for (var i = 1; i < pageTotal; i++) {
-					var a = document.createElement("a");
-					a.href = "/?page=" + String(i);
-					a.className = "a-link";
-					a.innerText = String(i);
-
-					var a2 = document.createElement("a");
-					a2.href = "/?page=" + String(i);
-					a2.className = "a-link";
-					a2.innerText = String(i);
-
-					nodeTop.appendChild(a);
-					nodeBottom.appendChild(a2);
-				}
-
-				console.log(elLinkTop.outerHTML);
+			function onPopState(event) {
+				// event.location
+				var state = event.state;
+				page = state.page;
+				updatePage(page);
 			}
 
-			function updatePage(p, isReverse) {
+			function updateButtons() {
+				// clear child elements
+				var nodeDiv = document.getElementById("div-button-gopages");
+				while (nodeDiv.firstChild) {
+					nodeDiv.removeChild(nodeDiv.firstChild);
+				}
+
+				// recreate buttons
+				var steps = [5, 10, 25, 50, 100];
+				var btn, btn2, step;
+				for (var i = 1; i < steps.length; i++) {
+					step = steps[i];
+
+					btn = genGoButton(-1 * step);
+					nodeDiv.appendChild(btn);
+
+					btn = genGoButton(step);
+					nodeDiv.appendChild(btn);
+				}
+
+				// add next+prev buttons
+				nodeDiv = document.getElementById("div-button-navs-1");
+				btn = genGoButton(-1);
+				nodeDiv.appendChild(btn);
+				btn = genGoButton(1);
+				nodeDiv.appendChild(btn);
+
+				nodeDiv = document.getElementById("div-button-navs-2");
+				btn = genGoButton(-1);
+				nodeDiv.appendChild(btn);
+				btn = genGoButton(1);
+				nodeDiv.appendChild(btn);
+			}
+
+			function genGoButton(intStep) {
+				if (typeof intStep !== "number") return;
+				if (isNaN(intStep)) return;
+
+				var btn = document.createElement("button");
+				if (intStep === 1) {
+					btn.innerText = "Next";
+				} else if (intStep === -1) {
+					btn.innerText = "Prev";
+				} else if (intStep > 0) {
+					btn.innerText = "+" + String(intStep);
+				} else {
+					btn.innerText = String(intStep);
+				}
+				btn.className = "a-link-page";
+				btn.addEventListener("click", function() {
+					goPage(intStep);
+				});
+
+				return btn;
+			}
+
+			function updatePage(p) {
 				var pg = Number(p);
 				if (isNaN(pg)) return;
 				if (pg < 1) return;
 
 				// update page info
 				document.getElementById("span-page").textContent = pg;
-				document.getElementById("span-page-total").textContent = pageTotal;
-				// update page info
-				document.getElementById("span-bottom-page").textContent = pg;
-				document.getElementById("span-bottom-page-total").textContent = pageTotal;
 
-				// update image srcs
-				pg = pg - 1;
-				for (var i = 1; i < 16; i++) {
-					var el = document.getElementById("img-" + String(i));
-
-					var img_pg = 15 * pg + i;
-
-					if (img_pg <= imageTotal) {
-						el.setAttribute("src", "/img/" + img_pg + ".jpg");
-					} else {
-						el.removeAttribute("src");
-					}
-				}
-
-				if (isReverse) {
-					// scroll to bottom of page
-					window.scrollTo(0, document.body.scrollHeight);
-				} else {
-					// scroll to top of page
-					document.body.scrollTop = 0; // For Safari
-					document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
-				}
+				// update image src
+				var el = document.getElementById("img-1");
+				el.setAttribute("src", "/img/" + pg + ".jpg");
 			}
 
 			function goBrowse() {
