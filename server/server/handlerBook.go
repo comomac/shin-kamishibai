@@ -341,8 +341,6 @@ func getPage(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
-		fmt.Println("looking for", getImgFileName)
-
 		for _, f := range zr.File {
 			if f.Name == getImgFileName {
 				rc, err := f.Open()
