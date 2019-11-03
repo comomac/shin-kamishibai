@@ -380,6 +380,34 @@ func AddDir(db *FlatDB, dir string) error {
 	return nil
 }
 
+// AddDirN add books from directory
+func AddDirN(db *FlatDB, dir string) error {
+	// filepath.Glob() dont work with unicode file name dir so using ioutil.ReadDir()
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+		if strings.HasPrefix(file.Name(), ".") {
+			continue
+		}
+		if !strings.HasSuffix(file.Name(), ".cbz") {
+			continue
+		}
+
+		err = visit(db)(filepath.Join(dir, file.Name()), file, err)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func getAuthor(str string) string {
 	// get first [...]
 	result := regexp.MustCompile(`\[(.+?)\]`).FindStringSubmatch(str)
