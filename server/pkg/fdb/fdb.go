@@ -340,10 +340,16 @@ func (db *FlatDB) AddBook(bookPath string) error {
 
 func visit(db *FlatDB) func(string, os.FileInfo, error) error {
 	return func(fpath string, f os.FileInfo, err error) error {
-		re := regexp.MustCompile(".cbz$")
-
+		// skip folder
+		if f.IsDir() {
+			return nil
+		}
+		// skip dot file
+		if strings.HasPrefix(fpath, ".") {
+			return nil
+		}
 		// skip non cbz extension
-		if !re.MatchString(fpath) {
+		if !strings.HasSuffix(fpath, ".cbz") {
 			return nil
 		}
 
@@ -389,16 +395,6 @@ func AddDirN(db *FlatDB, dir string) error {
 	}
 
 	for _, file := range files {
-		if file.IsDir() {
-			continue
-		}
-		if strings.HasPrefix(file.Name(), ".") {
-			continue
-		}
-		if !strings.HasSuffix(file.Name(), ".cbz") {
-			continue
-		}
-
 		err = visit(db)(filepath.Join(dir, file.Name()), file, err)
 		if err != nil {
 			return err
