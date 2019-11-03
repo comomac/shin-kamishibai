@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"path"
 	"regexp"
@@ -16,6 +17,7 @@ import (
 	"github.com/comomac/shin-kamishibai/server/pkg/config"
 	"github.com/comomac/shin-kamishibai/server/pkg/fdb"
 	"github.com/comomac/shin-kamishibai/server/pkg/img"
+	"github.com/comomac/shin-kamishibai/server/pkg/lib"
 )
 
 // Blank use to blank sensitive or not needed data
@@ -303,6 +305,7 @@ func getPage(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 			responseError(w, err)
 			return
 		}
+		defer zr.Close()
 
 		regexImageType := regexp.MustCompile(`(?i)\.(jpg|jpeg|gif|png)$`)
 		files := []string{}
@@ -312,46 +315,55 @@ func getPage(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 			}
 
 			files = append(files, f.Name)
-			fmt.Println("img!", f.Name)
+			// fmt.Println("img!", f.Name)
 		}
 
-		var imgDat []byte
-		var imgFileName string // image to show
-
+		// do natural sort
 		sort.Slice(files, func(i, j int) bool {
-			return files[i] > files[j]
+			f1 := regexImageType.ReplaceAllString(files[i], "")
+			f2 := regexImageType.ReplaceAllString(files[j], "")
+			return lib.AlphaNumCaseCompare(f1, f2)
 		})
-		fmt.Println("-------------------------- sorted --------------------------")
-		for _, file := range files {
-			fmt.Printf("%+v\n", file)
-		}
-
-		// if page == ttlImages {
-		// 	imgFileName = f.Name
-
-		// 	rc, err := f.Open()
-		// 	if err != nil {
-		// 		responseError(w, err)
-		// 		return
-		// 	}
-		// 	imgDat, err = ioutil.ReadAll(rc)
-		// 	if err != nil {
-		// 		responseError(w, err)
-		// 		return
-		// 	}
+		// fmt.Println("-------------------------- sorted --------------------------")
+		// for _, file := range files {
+		// 	fmt.Printf("%+v\n", file)
 		// }
 
-		// fmt.Println("z..", f.Name, f.CompressedSize64, f.UncompressedSize64)
+		var imgDat []byte // image data to serve
+
+		if page > len(files) {
+			responseError(w, errors.New("page beyond file #"))
+		}
+		getImgFileName := files[page] // image file to get in zip
+
+		if getImgFileName == "" {
+			http.NotFound(w, r)
+			return
+		}
+
+		fmt.Println("looking for", getImgFileName)
+
+		for _, f := range zr.File {
+			if f.Name == getImgFileName {
+				rc, err := f.Open()
+				if err != nil {
+					responseError(w, err)
+					return
+				}
+
+				imgDat, err = ioutil.ReadAll(rc)
+				if err != nil {
+					responseError(w, err)
+					return
+				}
+				break
+			}
+		}
 
 		// fmt.Println("found", ttlImages, "images")
 		// fmt.Println(page, "th image name (", imgFileName, ")")
 
 		// fmt.Fprint(w, "bytes")
-
-		if imgFileName == "" {
-			http.NotFound(w, r)
-			return
-		}
 
 		// fmt.Printf("imgDat\n%+v\n", imgDat)
 		ctype := http.DetectContentType(imgDat)
