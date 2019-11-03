@@ -210,12 +210,12 @@ function parse_dir_list(files) {
 					readstate += "5";
 				}
 
-				href = "/tablet.html#book=" + file.id + "&page=" + file.page;
+				href = "/read.html?book=" + file.id + "&page=" + file.page;
 			} else {
 				// unread
 
 				readstate += "0";
-				href = "/tablet.html#book=" + file.id;
+				href = "/read.html?book=" + file.id;
 			}
 
 			html.push(

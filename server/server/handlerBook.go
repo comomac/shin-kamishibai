@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"path"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -43,7 +43,8 @@ func getBookInfo(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
-		bookID := path.Base(r.RequestURI)
+		items := strings.Split(r.URL.Path, "/")
+		bookID := items[len(items)-1]
 
 		book := db.GetBookByID(bookID)
 		if book == nil {
@@ -290,7 +291,7 @@ func getPage(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 
 		fp := ibook.Fullpath
 
-		fmt.Println("file", page, fp)
+		fmt.Println("page", page, fp)
 
 		if uint64(page) > ibook.Pages {
 			w.WriteHeader(http.StatusNotFound)
@@ -303,33 +304,44 @@ func getPage(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
-		var ttlImages int
 		regexImageType := regexp.MustCompile(`(?i)\.(jpg|jpeg|gif|png)$`)
-		var imgDat []byte
-		var imgFileName string
+		files := []string{}
 		for _, f := range zr.File {
-
-			if regexImageType.MatchString(f.Name) {
-				// fmt.Println("img!", f.Name)
-				ttlImages++
-				if page == ttlImages {
-					imgFileName = f.Name
-
-					rc, err := f.Open()
-					if err != nil {
-						responseError(w, err)
-						return
-					}
-					imgDat, err = ioutil.ReadAll(rc)
-					if err != nil {
-						responseError(w, err)
-						return
-					}
-				}
-			} else {
-				// fmt.Println("z..", f.Name, f.CompressedSize64, f.UncompressedSize64)
+			if !regexImageType.MatchString(f.Name) {
+				continue
 			}
+
+			files = append(files, f.Name)
+			fmt.Println("img!", f.Name)
 		}
+
+		var imgDat []byte
+		var imgFileName string // image to show
+
+		sort.Slice(files, func(i, j int) bool {
+			return files[i] > files[j]
+		})
+		fmt.Println("-------------------------- sorted --------------------------")
+		for _, file := range files {
+			fmt.Printf("%+v\n", file)
+		}
+
+		// if page == ttlImages {
+		// 	imgFileName = f.Name
+
+		// 	rc, err := f.Open()
+		// 	if err != nil {
+		// 		responseError(w, err)
+		// 		return
+		// 	}
+		// 	imgDat, err = ioutil.ReadAll(rc)
+		// 	if err != nil {
+		// 		responseError(w, err)
+		// 		return
+		// 	}
+		// }
+
+		// fmt.Println("z..", f.Name, f.CompressedSize64, f.UncompressedSize64)
 
 		// fmt.Println("found", ttlImages, "images")
 		// fmt.Println(page, "th image name (", imgFileName, ")")

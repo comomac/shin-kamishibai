@@ -44,9 +44,8 @@ func Start(cfg *config.Config, db *fdb.FlatDB) {
 	h.HandleFunc("/", getPageRoot(httpSession, cfg, fs))
 
 	// direct main page with login follow
-	// hack, force load during dev
-	// h.HandleFunc("/tablet.html", getPageMain(httpSession, cfg, fs))
-	// h.HandleFunc("/browse.html", getPageMain(httpSession, cfg, fs))
+	h.HandleFunc("/read.html", getPageMain(httpSession, cfg, fs))
+	h.HandleFunc("/browse.html", getPageMain(httpSession, cfg, fs))
 
 	// public api
 	h.HandleFunc("/login", login(httpSession, cfg))

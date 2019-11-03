@@ -68,8 +68,8 @@ func Read(fpath string) (*Config, error) {
 		cfg.Salt = lib.GenerateString(128)
 		// calc password hash
 		cfg.Crypt = lib.SHA256Iter(cfg.Password, cfg.Salt, ConfigHashIterations)
-		// clear password, hack
-		// cfg.Password = ""
+		// clear password
+		cfg.Password = ""
 		// save new cfg file
 		err := Save(&cfg, cfg.Path)
 		if err != nil {

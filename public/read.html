@@ -80,8 +80,12 @@
 		<script src="js/utilities.js"></script>
 		<script>
 			// these needs to be ajax
-			page = 1;
-			pageTotal = 213;
+			book_id = queryParams("book");
+			pageTotal = 999;
+			page = Number(queryParams("page"));
+			if (isNaN(page) || page > 1) {
+				page = 1;
+			}
 
 			window.onload = ready;
 			window.onpopstate = onPopState;
@@ -89,7 +93,7 @@
 			function ready() {
 				updateButtons();
 
-				var pg = queryParams("p");
+				var pg = queryParams("page");
 				pg = Number(pg);
 				if (isNaN(pg) || pg < 1) {
 					// set as page 1 if not set
@@ -104,6 +108,8 @@
 
 					page = pg;
 				}
+
+				getUpdateBookInfo(book_id);
 
 				// update page info
 				document.getElementById("span-page").textContent = pg;
@@ -208,11 +214,25 @@
 
 				// update image src
 				var el = document.getElementById("img-1");
-				el.setAttribute("src", "/img/" + pg + ".jpg");
+				el.setAttribute("src", "/api/cbz/" + book_id + "/" + pg);
 			}
 
 			function goBrowse() {
 				console.log("hoooome");
+			}
+
+			function getUpdateBookInfo(book_id) {
+				var u = "/api/bookinfo/" + book_id;
+				var p = {
+					get: true,
+					callback: function(str) {
+						var bookInfo = JSON.parse(str);
+
+						document.getElementById("span-file-name").innerText = bookInfo.title;
+						pageTotal = bookInfo.pages;
+					}
+				};
+				ajax(u, p);
 			}
 		</script>
 	</body>
