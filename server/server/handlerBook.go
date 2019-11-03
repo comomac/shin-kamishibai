@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"path"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -218,14 +218,36 @@ func setBookmark(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 }
 
 // renderThumbnail gives thumbnail on the book
-func renderThumbnail(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
+func renderThumbnail(db *fdb.FlatDB, cfg *config.Config) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 
-		bookID := path.Base(r.RequestURI)
+		items := strings.Split(r.URL.Path, "/")
+		bookID := items[len(items)-1]
+
+		var imgDat []byte
+
+		// locally stored thumbnail file
+		outFile := filepath.Join(filepath.Dir(cfg.Path), "cache", bookID+".jpg")
+
+		isExist, _ := lib.IsFileExists(outFile)
+		if isExist {
+			imgDat, err := ioutil.ReadFile(outFile)
+			if err != nil {
+				responseError(w, err)
+				return
+			}
+
+			ctype := http.DetectContentType(imgDat)
+			w.Header().Add("Content-Type", ctype)
+			w.Header().Add("Content-Length", strconv.Itoa(len(imgDat)))
+			w.Write(imgDat)
+
+			return
+		}
 
 		ibook := db.MapperID[bookID]
 		if ibook == nil {
@@ -242,7 +264,6 @@ func renderThumbnail(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 		}
 
 		regexImageType := regexp.MustCompile(`(?i)\.(jpg|jpeg|gif|png)$`)
-		var imgDat []byte
 		for _, f := range zr.File {
 			if regexImageType.MatchString(f.Name) {
 				rc, err := f.Open()
@@ -260,6 +281,11 @@ func renderThumbnail(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 		}
 
 		if len(imgDat) > 0 {
+			err2 := ioutil.WriteFile(outFile, imgDat, 0644)
+			if err2 != nil {
+				fmt.Println("error saving thumbnail", bookID, err2)
+			}
+
 			ctype := http.DetectContentType(imgDat)
 			w.Header().Add("Content-Type", ctype)
 			w.Header().Add("Content-Length", strconv.Itoa(len(imgDat)))

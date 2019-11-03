@@ -3,7 +3,6 @@ package img
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"image"
 	"image/jpeg"
 	"io"
@@ -28,7 +27,7 @@ func Thumb(reader io.Reader) ([]byte, error) {
 	}
 	bounds := m.Bounds()
 	imgW, imgH = float64(bounds.Max.X), float64(bounds.Max.Y)
-	fmt.Println(imgW, imgH)
+	// fmt.Println(imgW, imgH)
 	// image ratio
 	ratio = float64(imgW) / float64(imgH)
 
@@ -63,13 +62,13 @@ func Resize(reader io.Reader, owidth int, oheight int) ([]byte, error) {
 	bounds := m.Bounds()
 
 	// fmt.Printf("%+v", bounds)
-	fmt.Println("dimension", bounds.Max.X, "x", bounds.Max.Y)
+	// fmt.Println("dimension", bounds.Max.X, "x", bounds.Max.Y)
 
 	// ratio
 	var rx, ry float32
 	rx = float32(owidth) / float32(bounds.Max.X)
 	ry = float32(oheight) / float32(bounds.Max.Y)
-	fmt.Println("ratio x, y", rx, ry)
+	// fmt.Println("ratio x, y", rx, ry)
 
 	newImg := image.NewRGBA(
 		image.Rectangle{

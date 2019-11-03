@@ -53,11 +53,11 @@ func Start(cfg *config.Config, db *fdb.FlatDB) {
 	// h.Handle("/public/", http.StripPrefix("/public", fs))
 
 	// private api
-	h.HandleFunc("/api/thumbnail/", renderThumbnail(db)) // /thumbnail/{bookID}
-	h.HandleFunc("/api/cbz/", getPage(db))               // /cbz/{bookID}/{page}
-	h.HandleFunc("/api/bookinfo/", getBookInfo(db))      // /bookinfo/{bookID}
-	h.HandleFunc("/api/books_info", getBooksInfo(db))    // /books_info?bookcodes=1,2,3,4,5
-	h.HandleFunc("/api/setbookmark/", setBookmark(db))   // /setbookmark/{bookID}/{page}
+	h.HandleFunc("/api/thumbnail/", renderThumbnail(db, cfg)) // /thumbnail/{bookID}
+	h.HandleFunc("/api/cbz/", getPage(db))                    // /cbz/{bookID}/{page}
+	h.HandleFunc("/api/bookinfo/", getBookInfo(db))           // /bookinfo/{bookID}
+	h.HandleFunc("/api/books_info", getBooksInfo(db))         // /books_info?bookcodes=1,2,3,4,5
+	h.HandleFunc("/api/setbookmark/", setBookmark(db))        // /setbookmark/{bookID}/{page}
 	h.HandleFunc("/api/lists", getBooksByTitle(db))
 	h.HandleFunc("/api/alists", getBooksByAuthor(db))
 	h.HandleFunc("/api/list_sources", getSources(cfg))

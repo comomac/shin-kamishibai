@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strconv"
 
@@ -76,6 +77,13 @@ func Read(fpath string) (*Config, error) {
 			fmt.Println("failed to save config file (b)")
 			return nil, err
 		}
+	}
+
+	// create thumbnail cache dir if not exists
+	cacheDir := filepath.Join(filepath.Dir(cfg.Path), "cache")
+	err = os.MkdirAll(cacheDir, os.ModePerm)
+	if err != nil {
+		return nil, err
 	}
 
 	return &cfg, nil
