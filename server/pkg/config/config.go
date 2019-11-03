@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"strconv"
 
 	"github.com/comomac/shin-kamishibai/server/pkg/lib"
@@ -29,8 +30,8 @@ type Config struct {
 const ConfigHashIterations = 100000
 
 // Read read and parse configuration file
-func Read(filepath string) (*Config, error) {
-	byteDat, err := ioutil.ReadFile(filepath)
+func Read(fpath string) (*Config, error) {
+	byteDat, err := ioutil.ReadFile(fpath)
 	if err != nil {
 		return nil, err
 	}
@@ -54,8 +55,12 @@ func Read(filepath string) (*Config, error) {
 	}
 
 	// overwrite
-	cfg.Path = filepath
+	cfg.Path = fpath
 	cfg.Iterations = ConfigHashIterations
+
+	if cfg.DBPath == "" {
+		cfg.DBPath = filepath.Dir(fpath) + "/db.txt"
+	}
 
 	// hash password
 	if cfg.Crypt == "" {
@@ -77,7 +82,7 @@ func Read(filepath string) (*Config, error) {
 }
 
 // Save save config to json file
-func Save(config *Config, filepath string) error {
+func Save(config *Config, fpath string) error {
 	// create a copy
 	config2 := config
 	// clear, setup setting
@@ -90,7 +95,7 @@ func Save(config *Config, filepath string) error {
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(filepath, byteDat2, 0644)
+	err = ioutil.WriteFile(fpath, byteDat2, 0644)
 	if err != nil {
 		return err
 	}

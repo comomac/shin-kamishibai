@@ -323,7 +323,7 @@ func (db *FlatDB) AddBook(bookPath string) error {
 
 	f, err := os.OpenFile(db.Path, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
 	if err != nil {
-		return errors.New("Unable to add book to db")
+		return err
 	}
 	defer f.Close()
 

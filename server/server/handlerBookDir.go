@@ -37,12 +37,13 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 
 		dir := query.Get("dir")
 
-		fmt.Println(dir)
+		fmt.Println("listing dir", dir)
 
 		// check if the dir is allowed to browse
 		exists := lib.StringSliceContain(cfg.AllowedDirs, dir)
 		if !exists {
-			w.WriteHeader(http.StatusNotFound)
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte("no allowed dir found"))
 			return
 		}
 

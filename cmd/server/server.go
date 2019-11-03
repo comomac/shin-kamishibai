@@ -40,7 +40,7 @@ func main() {
 
 	// use config on local dir by default if no param given
 
-	xConfDir := flag.String("conf-dir", "~/etc/config.json", "full path of the configuration file")
+	xConfDir := flag.String("conf-dir", "~/etc/shin-kamishibai/config.json", "full path of the configuration file")
 	flag.Parse()
 
 	cfgFilePath := *xConfDir
@@ -52,7 +52,7 @@ func main() {
 
 	cfg, err := config.Read(cfgFilePath)
 	if err != nil {
-		fmt.Println("faile to read config file")
+		fmt.Println("failed to read config file")
 		panic(err)
 	}
 
@@ -61,7 +61,10 @@ func main() {
 	db := fdb.New(cfg.DBPath)
 	db.Load()
 	for _, dir := range cfg.AllowedDirs {
-		fdb.AddDir(db, dir)
+		err = fdb.AddDir(db, dir)
+		if err != nil {
+			fmt.Println("failed to add dir -", err)
+		}
 	}
 
 	svr.Start(cfg, db)

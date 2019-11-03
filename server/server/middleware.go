@@ -97,7 +97,7 @@ func BasicAuthSession(handler http.Handler, cfg *config.Config, httpSession *htt
 func CheckAuthHandler(h http.Handler, httpSession *httpsession.DataStore) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// TODO remove when done
-		// force auth during dev
+		// hack, force auth during dev
 		h.ServeHTTP(w, r)
 		return
 
