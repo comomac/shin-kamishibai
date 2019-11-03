@@ -101,16 +101,18 @@
 				if (isNaN(pg) || pg < 1) {
 					// set as page 1 if not set
 					history.replaceState({ page: 1 }, "Page 1");
-
-					pg = page;
+					// reset to 1
+					pg = 1;
+					page = 1;
 				} else {
 					// load the page if provided
 					history.replaceState({ page: pg }, "Page " + String(pg));
 					// load this as the initial page
-					updatePage(pg);
-
 					page = pg;
 				}
+
+				// update image
+				updatePage(pg);
 
 				getUpdateBookInfo(book_id);
 
