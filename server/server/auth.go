@@ -2,7 +2,6 @@ package server
 
 import (
 	"crypto/subtle"
-	"encoding/json"
 	"net/http"
 
 	"github.com/comomac/shin-kamishibai/server/pkg/config"
@@ -25,16 +24,19 @@ func login(httpSession *httpsession.DataStore, cfg *config.Config) func(http.Res
 			Referer  string `json:"referer"`
 		}
 
-		decoder := json.NewDecoder(r.Body)
-		var t LoginRequest
-		err := decoder.Decode(&t)
+		err := r.ParseForm()
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("cannot parse json data"))
+			w.Write([]byte("cannot parse form data"))
 			return
 		}
 
-		// w.Header().Set("Content-Type", "application/json")
+		t := LoginRequest{
+			Username: r.Form.Get("username"),
+			Password: r.Form.Get("password"),
+			Mode:     r.Form.Get("mode"),
+			Referer:  r.Form.Get("referer"),
+		}
 
 		// more secure compare
 		strCrypt := lib.SHA256Iter(t.Password, cfg.Salt, config.ConfigHashIterations)
@@ -59,8 +61,8 @@ func login(httpSession *httpsession.DataStore, cfg *config.Config) func(http.Res
 			// 	return
 			// }
 
-			// http.Redirect(w, r, "/browse.html", http.StatusFound)
-			w.WriteHeader(http.StatusOK)
+			http.Redirect(w, r, "/browse.html", http.StatusFound)
+			// w.WriteHeader(http.StatusOK)
 			return
 		}
 

@@ -18,6 +18,16 @@ type Server struct {
 	cfg config.Config
 }
 
+type pubServe struct{}
+
+func pubFolder() http.Handler {
+	return &pubServe{}
+}
+func (pf *pubServe) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("%+v\n", r.URL)
+	w.Write([]byte("hi"))
+}
+
 // Start launches http server
 func Start(cfg *config.Config, db *fdb.FlatDB) {
 	// setup session
@@ -26,7 +36,7 @@ func Start(cfg *config.Config, db *fdb.FlatDB) {
 	h := http.NewServeMux()
 
 	// public folder access
-	fs := http.FileServer(http.Dir("../public"))
+	fs := http.FileServer(http.Dir("public"))
 	// h.Handle("/", http.StripPrefix("/public/", fs))
 	// h.Handle("/", fs)
 
@@ -36,11 +46,12 @@ func Start(cfg *config.Config, db *fdb.FlatDB) {
 	// direct main page with login follow
 	h.HandleFunc("/tablet.html", getPageMain(httpSession, cfg, fs))
 	h.HandleFunc("/browse.html", getPageMain(httpSession, cfg, fs))
-	h.HandleFunc("/login.html", getPageRoot(httpSession, cfg, fs))
 	h.HandleFunc("/browse", browse(httpSession, cfg, fs))
 
 	// public api
 	h.HandleFunc("/login", login(httpSession, cfg))
+	// h.Handle("/public/", pubFolder())
+	// h.Handle("/public/", http.StripPrefix("/public", fs))
 
 	// private api
 	h.HandleFunc("/api/thumbnail/", renderThumbnail(db)) // /thumbnail/{bookID}
@@ -52,6 +63,7 @@ func Start(cfg *config.Config, db *fdb.FlatDB) {
 	h.HandleFunc("/api/alists", getBooksByAuthor(db))
 	h.HandleFunc("/api/list_sources", getSources(cfg))
 	h.HandleFunc("/api/lists_dir", dirList(cfg, db))
+
 	h.HandleFunc("/api/check", checkLogin(httpSession, cfg))
 
 	// TODO
