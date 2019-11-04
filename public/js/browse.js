@@ -51,7 +51,13 @@ function updir() {
 function exe_order_by(str) {
 	window.localStorage.orderBy = str;
 
-	reload_dir_lists(getHashParams("dir"), document.getElementById("searchbox").value);
+	// get page
+	var page = Number(getHashParams("page"));
+	if (isNaN(page) || page < 0) {
+		page = 1;
+	}
+
+	reload_dir_lists(getHashParams("dir"), document.getElementById("searchbox").value, page);
 }
 
 function reloadSources() {
@@ -243,7 +249,59 @@ function parse_dir_list(files) {
 	return html;
 }
 
-function reload_dir_lists(dir_path, keyword) {
+function dir_lists_prev() {
+	// get dir from hash
+	var dir = getHashParams("dir");
+
+	// stop if dir not defined
+	if (dir == undefined) {
+		return;
+	}
+
+	// get keyword from searchbox
+	var keyword = document.getElementById("searchbox").value;
+
+	// get page
+	var page = Number(getHashParams("page"));
+	if (isNaN(page) || page < 0) {
+		window.location.hash = "dir=" + dir + "&page=1";
+		return;
+	}
+	if (page <= 1) {
+		return;
+	}
+
+	page = page - 1;
+
+	window.location.hash = "dir=" + dir + "&page=" + page;
+	reload_dir_lists(dir, keyword, page);
+}
+
+function dir_lists_next() {
+	// get dir from hash
+	var dir = getHashParams("dir");
+
+	// stop if dir not defined
+	if (dir == undefined) {
+		return;
+	}
+
+	// get keyword from searchbox
+	var keyword = document.getElementById("searchbox").value;
+
+	// get page
+	var page = Number(getHashParams("page"));
+	if (isNaN(page) || page < 0) {
+		page = 0;
+	}
+
+	page = page + 1;
+
+	window.location.hash = "dir=" + dir + "&page=" + page;
+	reload_dir_lists(dir, keyword, page);
+}
+
+function reload_dir_lists(dir_path, keyword, page) {
 	// set default to name for order_by
 	var order_by = "name";
 	var co = window.sessionStorage.orderBy;
@@ -271,6 +329,7 @@ function reload_dir_lists(dir_path, keyword) {
 		"/api/lists_dir",
 		{
 			dir: dir_path,
+			page: page,
 			keyword: keyword
 		},
 		function(data) {
@@ -485,6 +544,12 @@ window.addEventListener(
 		// get keyword from searchbox
 		var keyword = document.getElementById("searchbox").value;
 
+		// get page
+		var page = Number(getHashParams("page"));
+		if (isNaN(page) || page < 0) {
+			page = 1;
+		}
+
 		// save keyword used for search
 		window.sessionStorage.lastSearch = keyword;
 
@@ -492,7 +557,7 @@ window.addEventListener(
 		updatePathLabel(dir);
 
 		// reload the dir list
-		reload_dir_lists(dir, keyword);
+		reload_dir_lists(dir, keyword, page);
 	},
 	tryPassiveListner()
 );
@@ -525,8 +590,14 @@ window.onload = function() {
 			// save keyword used for search
 			window.sessionStorage.lastSearch = keyword;
 
+			// get page
+			var page = Number(getHashParams("page"));
+			if (isNaN(page) || page < 0) {
+				page = 1;
+			}
+
 			// reload the dir list
-			reload_dir_lists(dir, keyword);
+			reload_dir_lists(dir, keyword, page);
 		},
 		tryPassiveListner()
 	);
@@ -552,8 +623,14 @@ window.onload = function() {
 			// save keyword used for search
 			window.sessionStorage.lastSearch = keyword;
 
+			// get page
+			var page = Number(getHashParams("page"));
+			if (isNaN(page) || page < 0) {
+				page = 1;
+			}
+
 			// reload the dir list
-			reload_dir_lists(dir, keyword);
+			reload_dir_lists(dir, keyword, page);
 		},
 		tryPassiveListner()
 	);

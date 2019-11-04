@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/comomac/shin-kamishibai/server/pkg/config"
@@ -33,11 +34,18 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 			return
 		}
 
+		itemsPerPage := 50
+
 		query := r.URL.Query()
 
 		dir := query.Get("dir")
+		spage := query.Get("page")
+		page, err := strconv.Atoi(spage)
+		if err != nil {
+			page = 1
+		}
 
-		fmt.Println("listing dir", dir)
+		fmt.Println("listing dir (", page, ")", dir)
 
 		// check if the dir is allowed to browse
 		exists := lib.StringSliceContain(cfg.AllowedDirs, dir)
@@ -48,7 +56,7 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 		}
 
 		// add dir in case books isnt added
-		err := fdb.AddDirN(db, dir)
+		err = fdb.AddDirN(db, dir)
 		if err != nil {
 			fmt.Println("failed to add dir -", err)
 		}
@@ -73,7 +81,14 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 		// fmt.Printf("%+v", db.IMapper)
 		// spew.Dump(db.FMapper)
 
-		for _, file := range files {
+		for i, file := range files {
+			if i < (page-1)*itemsPerPage {
+				continue
+			}
+			if i > (page*itemsPerPage)-1 {
+				break
+			}
+
 			// fmt.Println(file.Name(), file.IsDir())
 			if file.IsDir() {
 				fileList = append(fileList, &FileInfoBasic{
