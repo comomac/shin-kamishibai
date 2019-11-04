@@ -273,6 +273,7 @@ function dir_lists_prev() {
 
 	page = page - 1;
 
+	document.getElementById("span-page").textContent = page;
 	window.location.hash = "dir=" + dir + "&page=" + page;
 	reload_dir_lists(dir, keyword, page);
 }
@@ -297,6 +298,7 @@ function dir_lists_next() {
 
 	page = page + 1;
 
+	document.getElementById("span-page").textContent = page;
 	window.location.hash = "dir=" + dir + "&page=" + page;
 	reload_dir_lists(dir, keyword, page);
 }
@@ -566,6 +568,10 @@ window.addEventListener(
 window.onload = function() {
 	// remember screen size
 	setScreenSize();
+
+	// display page
+	var page = getHashParams("page") || "1";
+	document.getElementById("span-page").textContent = page;
 
 	// load sources for menu
 	reloadSources();

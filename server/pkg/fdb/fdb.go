@@ -408,6 +408,21 @@ func AddDirN(db *FlatDB, dir string) error {
 	return nil
 }
 
+// AddFile add books from filepath
+func AddFile(db *FlatDB, fpath string) error {
+	file, err := os.Stat(fpath)
+	if err != nil {
+		return err
+	}
+
+	err = visit(db)(fpath, file, err)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func getAuthor(str string) string {
 	// get first [...]
 	result := regexp.MustCompile(`\[(.+?)\]`).FindStringSubmatch(str)

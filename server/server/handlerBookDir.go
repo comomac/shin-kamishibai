@@ -34,7 +34,7 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 			return
 		}
 
-		itemsPerPage := 50
+		itemsPerPage := 30
 
 		query := r.URL.Query()
 
@@ -55,11 +55,11 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 			return
 		}
 
-		// add dir in case books isnt added
-		err = fdb.AddDirN(db, dir)
-		if err != nil {
-			fmt.Println("failed to add dir -", err)
-		}
+		// // add dir in case books isnt added
+		// err = fdb.AddDirN(db, dir)
+		// if err != nil {
+		// 	fmt.Println("failed to add dir -", err)
+		// }
 
 		// listing dir
 		files, err := ioutil.ReadDir(dir)
@@ -107,6 +107,18 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 				book := db.GetBookByPath(aaa)
 				if book != nil {
 					fib.Book = book
+				} else {
+					// book not in db, add now
+					err = fdb.AddDirN(db, dir)
+					if err != nil {
+						fmt.Println("failed to add book -", err)
+					}
+
+					// try again
+					book := db.GetBookByPath(aaa)
+					if book != nil {
+						fib.Book = book
+					}
 				}
 
 				fileList = append(fileList, fib)
