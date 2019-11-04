@@ -63,6 +63,12 @@ type Author struct {
 	Books []*IBook
 }
 
+// TODO
+// explore this
+// https://golang.org/pkg/sync/#Map
+// setup sync.Map so it can handle busy map data manipulation
+// sm := sync.Map{}
+
 // FlatDB is flat text file database struct
 type FlatDB struct {
 	IBooks       []*IBook
@@ -203,8 +209,6 @@ func (db *FlatDB) Import(dbPath string) error {
 		}
 
 		db.IBooks = append(db.IBooks, ibook)
-
-		// setup mapping
 		db.MapperID[book.ID] = ibook
 		db.MapperPath[book.Fullpath] = ibook
 		db.MapperTitle[book.Title] = append(db.MapperTitle[book.Title], ibook)
