@@ -55,12 +55,6 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 			return
 		}
 
-		// // add dir in case books isnt added
-		// err = fdb.AddDirN(db, dir)
-		// if err != nil {
-		// 	fmt.Println("failed to add dir -", err)
-		// }
-
 		// listing dir
 		files, err := ioutil.ReadDir(dir)
 		if err != nil {
@@ -109,7 +103,7 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 					fib.Book = book
 				} else {
 					// book not in db, add now
-					err = fdb.AddDirN(db, dir)
+					err = fdb.AddFile(db, aaa)
 					if err != nil {
 						fmt.Println("failed to add book -", err)
 					}
