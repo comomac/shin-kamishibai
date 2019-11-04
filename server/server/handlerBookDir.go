@@ -34,7 +34,7 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 			return
 		}
 
-		itemsPerPage := 30
+		itemsPerPage := 24
 
 		query := r.URL.Query()
 
