@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/comomac/shin-kamishibai/server/pkg/fdb"
+	"github.com/comomac/shin-kamishibai/pkg/fdb"
 )
 
 // BookInfoByAuthorLite reduced book info to save space and security

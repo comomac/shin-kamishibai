@@ -6,8 +6,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/comomac/shin-kamishibai/server/pkg/config"
-	httpsession "github.com/comomac/shin-kamishibai/server/pkg/httpSession"
+	"github.com/comomac/shin-kamishibai/pkg/config"
+	httpsession "github.com/comomac/shin-kamishibai/pkg/httpSession"
 )
 
 func browse(httpSession *httpsession.DataStore, cfg *config.Config, handler http.Handler) func(http.ResponseWriter, *http.Request) {

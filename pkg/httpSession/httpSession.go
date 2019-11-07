@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/comomac/shin-kamishibai/server/pkg/lib"
+	"github.com/comomac/shin-kamishibai/pkg/lib"
 )
 
 //

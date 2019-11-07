@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/comomac/shin-kamishibai/server/pkg/config"
-	"github.com/comomac/shin-kamishibai/server/pkg/fdb"
-	httpsession "github.com/comomac/shin-kamishibai/server/pkg/httpSession"
+	"github.com/comomac/shin-kamishibai/pkg/config"
+	"github.com/comomac/shin-kamishibai/pkg/fdb"
+	httpsession "github.com/comomac/shin-kamishibai/pkg/httpSession"
 )
 
 // Server holds link to database and configuration
@@ -74,7 +74,8 @@ func Start(cfg *config.Config, db *fdb.FlatDB) {
 	// h1 := BasicAuth(h, cfg.Username, cfg.Password, "Authentication required")
 	// h1 := BasicAuthSession(h, cfg, httpSession, "Authentication required")
 
-	port := ":" + strconv.Itoa(cfg.Port)
+	// hack, to listen to localhost only
+	port := "127.0.0.1:" + strconv.Itoa(cfg.Port)
 	fmt.Println("listening on", port)
 	fmt.Println("allowed dirs: " + strings.Join(cfg.AllowedDirs, ", "))
 	log.Fatal(http.ListenAndServe(port, h1))

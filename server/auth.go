@@ -4,9 +4,9 @@ import (
 	"crypto/subtle"
 	"net/http"
 
-	"github.com/comomac/shin-kamishibai/server/pkg/config"
-	httpsession "github.com/comomac/shin-kamishibai/server/pkg/httpSession"
-	"github.com/comomac/shin-kamishibai/server/pkg/lib"
+	"github.com/comomac/shin-kamishibai/pkg/config"
+	httpsession "github.com/comomac/shin-kamishibai/pkg/httpSession"
+	"github.com/comomac/shin-kamishibai/pkg/lib"
 )
 
 // login is for basic http login

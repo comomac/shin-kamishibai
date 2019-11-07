@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/comomac/shin-kamishibai/server/pkg/config"
-	"github.com/comomac/shin-kamishibai/server/pkg/fdb"
-	"github.com/comomac/shin-kamishibai/server/pkg/lib"
+	"github.com/comomac/shin-kamishibai/pkg/config"
+	"github.com/comomac/shin-kamishibai/pkg/fdb"
+	"github.com/comomac/shin-kamishibai/pkg/lib"
 )
 
 // FileList contains list of files and folders

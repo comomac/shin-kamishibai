@@ -3,8 +3,8 @@ package server
 import (
 	"net/http"
 
-	"github.com/comomac/shin-kamishibai/server/pkg/config"
-	httpsession "github.com/comomac/shin-kamishibai/server/pkg/httpSession"
+	"github.com/comomac/shin-kamishibai/pkg/config"
+	httpsession "github.com/comomac/shin-kamishibai/pkg/httpSession"
 )
 
 // checkLogin so the client knows if current session is login or not

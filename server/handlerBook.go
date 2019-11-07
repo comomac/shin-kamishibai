@@ -14,10 +14,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/comomac/shin-kamishibai/server/pkg/config"
-	"github.com/comomac/shin-kamishibai/server/pkg/fdb"
-	"github.com/comomac/shin-kamishibai/server/pkg/img"
-	"github.com/comomac/shin-kamishibai/server/pkg/lib"
+	"github.com/comomac/shin-kamishibai/pkg/config"
+	"github.com/comomac/shin-kamishibai/pkg/fdb"
+	"github.com/comomac/shin-kamishibai/pkg/img"
+	"github.com/comomac/shin-kamishibai/pkg/lib"
 )
 
 // Blank use to blank sensitive or not needed data

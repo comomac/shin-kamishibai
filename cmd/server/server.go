@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/comomac/shin-kamishibai/server/pkg/config"
-	"github.com/comomac/shin-kamishibai/server/pkg/fdb"
-	"github.com/comomac/shin-kamishibai/server/pkg/lib"
-	svr "github.com/comomac/shin-kamishibai/server/server"
+	"github.com/comomac/shin-kamishibai/pkg/config"
+	"github.com/comomac/shin-kamishibai/pkg/fdb"
+	"github.com/comomac/shin-kamishibai/pkg/lib"
+	svr "github.com/comomac/shin-kamishibai/server"
 )
 
 func main() {
