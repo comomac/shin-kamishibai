@@ -18,6 +18,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -71,6 +72,7 @@ type Author struct {
 
 // FlatDB is flat text file database struct
 type FlatDB struct {
+	Mutex        *sync.Mutex
 	IBooks       []*IBook
 	Authors      []*Author
 	MapperID     map[string]*IBook   // map books by id (unique)
@@ -131,18 +133,23 @@ func New(params ...string) *FlatDB {
 		log.Fatal("Too many parameters for fdb.New!")
 	}
 
-	db := &FlatDB{}
-	db.Path = dbPath
-	db.MapperID = make(map[string]*IBook)
-	db.MapperPath = make(map[string]*IBook)
-	db.MapperTitle = make(map[string][]*IBook)
-	db.MapperAuthor = make(map[string][]*IBook)
+	db := &FlatDB{
+		Mutex:        &sync.Mutex{},
+		Path:         dbPath,
+		MapperID:     make(map[string]*IBook),
+		MapperPath:   make(map[string]*IBook),
+		MapperTitle:  make(map[string][]*IBook),
+		MapperAuthor: make(map[string][]*IBook),
+	}
 
 	return db
 }
 
 // Clear all data
 func (db *FlatDB) Clear() {
+	db.Mutex.Lock()
+	defer db.Mutex.Unlock()
+
 	db.IBooks = nil
 	db.Authors = nil
 	db.MapperID = make(map[string]*IBook)
@@ -208,11 +215,13 @@ func (db *FlatDB) Import(dbPath string) error {
 			Length:  uint64(len(line)),
 		}
 
+		db.Mutex.Lock()
 		db.IBooks = append(db.IBooks, ibook)
 		db.MapperID[book.ID] = ibook
 		db.MapperPath[book.Fullpath] = ibook
 		db.MapperTitle[book.Title] = append(db.MapperTitle[book.Title], ibook)
 		db.MapperAuthor[book.Author] = append(db.MapperAuthor[book.Author], ibook)
+		db.Mutex.Unlock()
 
 		prevLen += uint64(len(line) + 1)
 	}
@@ -554,6 +563,9 @@ func mustGetPages(fp string) int {
 // GetBookByID get Book object by book id
 func (db *FlatDB) GetBookByID(bookID string) *Book {
 
+	db.Mutex.Lock()
+	defer db.Mutex.Unlock()
+
 	ibook := db.MapperID[bookID]
 	if ibook == nil {
 		return nil
@@ -564,6 +576,9 @@ func (db *FlatDB) GetBookByID(bookID string) *Book {
 
 // GetBookByPath get Book object by file path
 func (db *FlatDB) GetBookByPath(fpath string) *Book {
+	db.Mutex.Lock()
+	defer db.Mutex.Unlock()
+
 	// not working for some reason
 	ibook := db.MapperPath[fpath]
 	if ibook == nil {
@@ -582,6 +597,8 @@ func (db *FlatDB) GetBookByPath(fpath string) *Book {
 
 // SearchBookByNameAndSize get Books object by filename and size
 func (db *FlatDB) SearchBookByNameAndSize(fname string, size uint64) *[]*Book {
+	db.Mutex.Lock()
+	defer db.Mutex.Unlock()
 
 	var books []*Book
 
