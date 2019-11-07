@@ -133,31 +133,18 @@ function parse_dir_list(files) {
 		return;
 	}
 
-	var html = [];
+	var path = getHashParams("dir");
 
-	var path = files.shift().path;
-	var dirs = path.split("/");
-	var pathup = [];
-	for (var di in dirs) {
-		if (Number(di) + 1 >= dirs.length) {
-			continue;
-		}
-		pathup.push(dirs[di]);
-	}
-
-	html.push('<ul id="ul-lists" class="ul-lists">');
-
-	// updir
-	html.push(
-		'<li class="directory collapsed updir"><a href="#dir=' +
-			pathup.join("/") +
-			'" rel="' +
-			pathup.join("/") +
-			'/"><img src="/images/folder-mini-up.png" /><span>..</span></a></li>'
-	);
+	var html = ['<ul id="ul-lists" class="ul-lists">'];
 
 	for (var i in files) {
+		// hack, skip first one
+		if (i === "0") continue;
+
 		var file = files[i];
+
+		// skip dot file
+		if (file.name[0] === ".") continue;
 
 		var full_path = path + "/" + file.name;
 
@@ -662,3 +649,10 @@ window.onload = function() {
 		}, 50);
 	}, 500);
 };
+
+function dir_up() {
+	var dirs = getHashParams("dir").split("/");
+	dirs.pop();
+
+	window.location.hash = "dir=" + dirs.join("/");
+}
