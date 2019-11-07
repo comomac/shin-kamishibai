@@ -1,0 +1,24 @@
+settings:
+  legacy:
+    force: true
+    interval: 2s
+schema:
+  - name: shin-kamishibai
+    path: cmd/server
+    commands:
+      run:
+        status: true
+    # args:
+    #   - -conf-dir
+    #   - ~/etc/shin-kamishibai/test.conf
+    watcher:
+      extensions:
+        - go
+      paths:
+        - ../../server
+      ignored_paths:
+        - ../../web
+        - ../../.git
+        - ../../.realize
+        - ../../.history
+        - ../../vendor
