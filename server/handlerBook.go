@@ -23,6 +23,9 @@ import (
 // Blank use to blank sensitive or not needed data
 type Blank string
 
+// ItemsPerPage use for pagination
+var ItemsPerPage = 24
+
 // BookInfoResponse for json response on single book information
 type BookInfoResponse struct {
 	*fdb.Book

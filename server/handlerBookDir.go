@@ -34,8 +34,6 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 			return
 		}
 
-		itemsPerPage := 24
-
 		query := r.URL.Query()
 
 		dir := query.Get("dir")
@@ -76,10 +74,10 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 		// spew.Dump(db.FMapper)
 
 		for i, file := range files {
-			if i < (page-1)*itemsPerPage {
+			if i < (page-1)*ItemsPerPage {
 				continue
 			}
-			if i > (page*itemsPerPage)-1 {
+			if i > (page*ItemsPerPage)-1 {
 				break
 			}
 
