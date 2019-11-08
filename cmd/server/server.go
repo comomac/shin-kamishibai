@@ -60,13 +60,13 @@ func main() {
 	// db := NewFlatDB(userHome("etc/shin-kamishibai/db.txt"))
 	db := fdb.New(cfg.DBPath)
 	db.Load()
-	// not add dir or cpu will die from overload
-	// for _, dir := range cfg.AllowedDirs {
-	// 	err = fdb.AddDirR(db, dir)
-	// 	if err != nil {
-	// 		fmt.Println("failed to add dir -", err)
-	// 	}
-	// }
+	// load all books recursively
+	for _, dir := range cfg.AllowedDirs {
+		err = fdb.AddDirR(db, dir)
+		if err != nil {
+			fmt.Println("failed to add dir -", err)
+		}
+	}
 
 	svr.Start(cfg, db)
 }
