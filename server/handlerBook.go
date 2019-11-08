@@ -27,9 +27,6 @@ type Blank string
 // ItemsPerPage use for pagination
 var ItemsPerPage = 24
 
-// RegexSupportedImageExt supported image extension
-var RegexSupportedImageExt = regexp.MustCompile(`(?i)\.(jpg|jpeg|gif|png)$`)
-
 // BookInfoResponse for json response on single book information
 type BookInfoResponse struct {
 	*fdb.Book
@@ -276,7 +273,7 @@ func renderThumbnail(db *fdb.FlatDB, cfg *config.Config) func(http.ResponseWrite
 		// get zip file list
 		files := []string{}
 		for _, f := range zr.File {
-			if !RegexSupportedImageExt.MatchString(f.Name) {
+			if !fdb.RegexSupportedImageExt.MatchString(f.Name) {
 				continue
 			}
 
@@ -285,8 +282,8 @@ func renderThumbnail(db *fdb.FlatDB, cfg *config.Config) func(http.ResponseWrite
 
 		// do natural sort
 		sort.Slice(files, func(i, j int) bool {
-			f1 := RegexSupportedImageExt.ReplaceAllString(files[i], "")
-			f2 := RegexSupportedImageExt.ReplaceAllString(files[j], "")
+			f1 := fdb.RegexSupportedImageExt.ReplaceAllString(files[i], "")
+			f2 := fdb.RegexSupportedImageExt.ReplaceAllString(files[j], "")
 			return lib.AlphaNumCaseCompare(f1, f2)
 		})
 
@@ -372,7 +369,7 @@ func getPage(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 
 		files := []string{}
 		for _, f := range zr.File {
-			if !RegexSupportedImageExt.MatchString(f.Name) {
+			if !fdb.RegexSupportedImageExt.MatchString(f.Name) {
 				continue
 			}
 
@@ -382,8 +379,8 @@ func getPage(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 
 		// do natural sort
 		sort.Slice(files, func(i, j int) bool {
-			f1 := RegexSupportedImageExt.ReplaceAllString(files[i], "")
-			f2 := RegexSupportedImageExt.ReplaceAllString(files[j], "")
+			f1 := fdb.RegexSupportedImageExt.ReplaceAllString(files[i], "")
+			f2 := fdb.RegexSupportedImageExt.ReplaceAllString(files[j], "")
 			return lib.AlphaNumCaseCompare(f1, f2)
 		})
 		// fmt.Println("-------------------------- sorted --------------------------")

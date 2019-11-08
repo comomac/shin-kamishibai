@@ -32,6 +32,9 @@ const FlatDBCharsFSize = "%010d"
 // FlatDBCharsEpoch is number of character reserved for the epoch time
 const FlatDBCharsEpoch = "%010d"
 
+// RegexSupportedImageExt supported image extension
+var RegexSupportedImageExt = regexp.MustCompile(`(?i)\.(jpg|jpeg|gif|png)$`)
+
 // Book contains all the information of book
 type Book struct {
 	ID       string `json:"id,omitempty"`   // unique id for indexing
@@ -317,6 +320,12 @@ func (db *FlatDB) AddBook(bookPath string) (*Book, error) {
 		return nil, errors.New("Not a syscall.Stat_t")
 	}
 
+	pages, err := cbzGetPages(bookPath)
+	if err != nil {
+		fmt.Println("error! failed to add book", bookPath, err)
+		return nil, err
+	}
+
 	// filename
 	fname := path.Base(bookPath)
 
@@ -327,7 +336,7 @@ func (db *FlatDB) AddBook(bookPath string) (*Book, error) {
 		Number:   getNumber(fname),
 		Fullpath: bookPath,
 		Cond:     bookCond(bookPath),
-		Pages:    uint64(mustGetPages(bookPath)),
+		Pages:    uint64(pages),
 		Size:     uint64(fstat.Size()),
 		Inode:    fstat2.Ino,
 		Mtime:    uint64(fstat.ModTime().Unix()),
@@ -569,22 +578,26 @@ func getNumber(str string) string {
 	return ""
 }
 
-func mustGetPages(fp string) int {
+// cbzGetPages find out how many pages in cbz
+func cbzGetPages(fp string) (int, error) {
 	zr, err := zip.OpenReader(fp)
-	defer zr.Close()
 	if err != nil {
-		panic(err)
+		return -1, err
 	}
+	defer zr.Close()
 
-	regexImageType := regexp.MustCompile(`(?i)\.(jpg|jpeg|gif|png)$`)
 	i := 0
 	for _, f := range zr.File {
-		if regexImageType.MatchString(f.Name) {
+		if RegexSupportedImageExt.MatchString(f.Name) {
 			i++
 		}
 	}
 
-	return i
+	if i == 0 {
+		return -1, errors.New("not a cbz")
+	}
+
+	return i, nil
 }
 
 // GetBookByID get Book object by book id
