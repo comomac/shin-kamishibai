@@ -651,6 +651,9 @@ window.onload = function() {
 };
 
 function dir_up() {
+	page = 1;
+	document.getElementById("span-page").textContent = page;
+
 	var dirs = getHashParams("dir").split("/");
 	dirs.pop();
 
