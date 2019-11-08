@@ -297,6 +297,7 @@ func renderThumbnail(db *fdb.FlatDB, cfg *config.Config) func(http.ResponseWrite
 
 			// get image data
 			rc, err = f.Open()
+			defer rc.Close()
 			if err != nil {
 				responseError(w, err)
 				return
@@ -361,11 +362,11 @@ func getPage(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 		}
 
 		zr, err := zip.OpenReader(fp)
+		defer zr.Close()
 		if err != nil {
 			responseError(w, err)
 			return
 		}
-		defer zr.Close()
 
 		files := []string{}
 		for _, f := range zr.File {
@@ -401,20 +402,23 @@ func getPage(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 		}
 
 		for _, f := range zr.File {
-			if f.Name == getImgFileName {
-				rc, err := f.Open()
-				if err != nil {
-					responseError(w, err)
-					return
-				}
-
-				imgDat, err = ioutil.ReadAll(rc)
-				if err != nil {
-					responseError(w, err)
-					return
-				}
-				break
+			if f.Name != getImgFileName {
+				continue
 			}
+
+			rc, err := f.Open()
+			defer rc.Close()
+			if err != nil {
+				responseError(w, err)
+				return
+			}
+
+			imgDat, err = ioutil.ReadAll(rc)
+			if err != nil {
+				responseError(w, err)
+				return
+			}
+			break
 		}
 
 		// fmt.Println("found", ttlImages, "images")
