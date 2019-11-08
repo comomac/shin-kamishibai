@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
@@ -25,6 +26,9 @@ type Blank string
 
 // ItemsPerPage use for pagination
 var ItemsPerPage = 24
+
+// RegexSupportedImageExt supported image extension
+var RegexSupportedImageExt = regexp.MustCompile(`(?i)\.(jpg|jpeg|gif|png)$`)
 
 // BookInfoResponse for json response on single book information
 type BookInfoResponse struct {
@@ -233,9 +237,17 @@ func renderThumbnail(db *fdb.FlatDB, cfg *config.Config) func(http.ResponseWrite
 
 		var imgDat []byte
 
+		// check if book is in db
+		ibook := db.MapperID[bookID]
+		if ibook == nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
 		// locally stored thumbnail file
 		outFile := filepath.Join(filepath.Dir(cfg.Path), "cache", bookID+".jpg")
 
+		// load existing thumbnail
 		isExist, _ := lib.IsFileExists(outFile)
 		if isExist {
 			imgDat, err := ioutil.ReadFile(outFile)
@@ -252,50 +264,69 @@ func renderThumbnail(db *fdb.FlatDB, cfg *config.Config) func(http.ResponseWrite
 			return
 		}
 
-		ibook := db.MapperID[bookID]
-		if ibook == nil {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-
-		fp := ibook.Fullpath
-
-		zr, err := zip.OpenReader(fp)
+		zr, err := zip.OpenReader(ibook.Fullpath)
+		defer zr.Close()
 		if err != nil {
 			responseError(w, err)
 			return
 		}
 
-		regexImageType := regexp.MustCompile(`(?i)\.(jpg|jpeg|gif|png)$`)
+		// get zip file list
+		files := []string{}
 		for _, f := range zr.File {
-			if regexImageType.MatchString(f.Name) {
-				rc, err := f.Open()
-				if err != nil {
-					responseError(w, err)
-					return
-				}
-				imgDat, err = img.Thumb(rc)
-				if err != nil {
-					responseError(w, err)
-					return
-				}
-				break
-			}
-		}
-
-		if len(imgDat) > 0 {
-			err2 := ioutil.WriteFile(outFile, imgDat, 0644)
-			if err2 != nil {
-				fmt.Println("error saving thumbnail", bookID, err2)
+			if !RegexSupportedImageExt.MatchString(f.Name) {
+				continue
 			}
 
-			ctype := http.DetectContentType(imgDat)
-			w.Header().Add("Content-Type", ctype)
-			w.Header().Add("Content-Length", strconv.Itoa(len(imgDat)))
-			w.Write(imgDat)
-		} else {
-			http.NotFound(w, r)
+			files = append(files, f.Name)
 		}
+
+		// do natural sort
+		sort.Slice(files, func(i, j int) bool {
+			f1 := RegexSupportedImageExt.ReplaceAllString(files[i], "")
+			f2 := RegexSupportedImageExt.ReplaceAllString(files[j], "")
+			return lib.AlphaNumCaseCompare(f1, f2)
+		})
+
+		// get first image file
+		var rc io.ReadCloser
+		for _, f := range zr.File {
+			if f.Name != files[0] {
+				continue
+			}
+
+			// get image data
+			rc, err = f.Open()
+			if err != nil {
+				responseError(w, err)
+				return
+			}
+			break
+		}
+
+		// generate thumb
+		imgDat, err = img.Thumb(rc)
+		if err != nil {
+			responseError(w, err)
+			return
+		}
+		if len(imgDat) == 0 {
+			responseError(w, errors.New("image length is zero"))
+			return
+		}
+
+		fmt.Println("created thumbnail", ibook.Fullpath)
+
+		// save thumb
+		err2 := ioutil.WriteFile(outFile, imgDat, 0644)
+		if err2 != nil {
+			fmt.Println("error! failed to save thumbnail", bookID, err2)
+		}
+
+		ctype := http.DetectContentType(imgDat)
+		w.Header().Add("Content-Type", ctype)
+		w.Header().Add("Content-Length", strconv.Itoa(len(imgDat)))
+		w.Write(imgDat)
 	}
 }
 
@@ -336,10 +367,9 @@ func getPage(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 		}
 		defer zr.Close()
 
-		regexImageType := regexp.MustCompile(`(?i)\.(jpg|jpeg|gif|png)$`)
 		files := []string{}
 		for _, f := range zr.File {
-			if !regexImageType.MatchString(f.Name) {
+			if !RegexSupportedImageExt.MatchString(f.Name) {
 				continue
 			}
 
@@ -349,8 +379,8 @@ func getPage(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 
 		// do natural sort
 		sort.Slice(files, func(i, j int) bool {
-			f1 := regexImageType.ReplaceAllString(files[i], "")
-			f2 := regexImageType.ReplaceAllString(files[j], "")
+			f1 := RegexSupportedImageExt.ReplaceAllString(files[i], "")
+			f2 := RegexSupportedImageExt.ReplaceAllString(files[j], "")
 			return lib.AlphaNumCaseCompare(f1, f2)
 		})
 		// fmt.Println("-------------------------- sorted --------------------------")
