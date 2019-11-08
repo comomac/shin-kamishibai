@@ -297,8 +297,8 @@ func (db *FlatDB) BookIDs() []string {
 	return ids
 }
 
-// AddBook by file path, returns generated book id
-func (db *FlatDB) AddBook(bookPath string) error {
+// AddBook by file path, returns generated book id. return non-pointer book because db will be reloaded
+func (db *FlatDB) AddBook(bookPath string) (*Book, error) {
 	// generate unique book id
 	id := genChar(3)
 	// make sure book id is unique
@@ -308,19 +308,19 @@ func (db *FlatDB) AddBook(bookPath string) error {
 
 	fstat, err := os.Stat(bookPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// get file inode
 	fstat2, ok := fstat.Sys().(*syscall.Stat_t)
 	if !ok {
-		return errors.New("Not a syscall.Stat_t")
+		return nil, errors.New("Not a syscall.Stat_t")
 	}
 
 	// filename
 	fname := path.Base(bookPath)
 
-	book := &Book{
+	book := Book{
 		ID:       id,
 		Title:    getTitle(fname),
 		Author:   getAuthor(fname),
@@ -336,19 +336,19 @@ func (db *FlatDB) AddBook(bookPath string) error {
 
 	f, err := os.OpenFile(db.Path, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer f.Close()
 
 	// save to db file
-	b := bookToCSV(book)
+	b := bookToCSV(&book)
 	f.Write(b)
 	f.Close()
 
 	// reload from db file
 	db.Reload()
 
-	return nil
+	return &book, nil
 }
 
 func visit(db *FlatDB) func(string, os.FileInfo, error) error {
@@ -362,7 +362,8 @@ func visit(db *FlatDB) func(string, os.FileInfo, error) error {
 			return nil
 		}
 		// skip non cbz extension
-		if !strings.HasSuffix(fpath, ".cbz") {
+		fpath2 := strings.ToLower(fpath)
+		if !strings.HasSuffix(fpath2, ".cbz") {
 			return nil
 		}
 
@@ -375,12 +376,12 @@ func visit(db *FlatDB) func(string, os.FileInfo, error) error {
 		// make sure books are unique so no duplicate db record
 		fname := path.Base(fpath)
 		books := db.SearchBookByNameAndSize(fname, uint64(fstat.Size()))
-		if len(*books) > 0 {
+		if len(books) > 0 {
 			// skip
 			return nil
 		}
 
-		err = db.AddBook(fpath)
+		_, err = db.AddBook(fpath)
 		if err != nil {
 			return err
 		}
@@ -390,8 +391,48 @@ func visit(db *FlatDB) func(string, os.FileInfo, error) error {
 	}
 }
 
-// AddDir recursively add books from directory
-func AddDir(db *FlatDB, dir string) error {
+// AddFile adds book to db
+func AddFile(db *FlatDB, fpath string) (*Book, error) {
+	var err error
+
+	// get file state, e.g. size
+	f, err := os.Stat(fpath)
+	if err != nil {
+		return nil, err
+	}
+
+	// skip folder
+	if f.IsDir() {
+		return nil, errors.New("not a file")
+	}
+	// skip dot file
+	if strings.HasPrefix(f.Name(), ".") {
+		return nil, errors.New("no dot file")
+	}
+	// skip non cbz extension
+	lname := strings.ToLower(f.Name())
+	if !strings.HasSuffix(lname, ".cbz") {
+		return nil, errors.New("not a cbz")
+	}
+
+	// make sure books are unique so no duplicate db record
+	books := db.SearchBookByNameAndSize(f.Name(), uint64(f.Size()))
+	if len(books) > 0 {
+		// skip
+		return nil, errors.New("dup book found")
+	}
+
+	book, err := db.AddBook(fpath)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("Added book", fpath)
+
+	return book, nil
+}
+
+// AddDirR recursively add books from directory
+func AddDirR(db *FlatDB, dir string) error {
 	err := filepath.Walk(dir, visit(db))
 	if err != nil {
 		return err
@@ -399,8 +440,8 @@ func AddDir(db *FlatDB, dir string) error {
 	return nil
 }
 
-// AddDirN add books from directory
-func AddDirN(db *FlatDB, dir string) error {
+// AddDir add books from directory
+func AddDir(db *FlatDB, dir string) error {
 	// filepath.Glob() dont work with unicode file name dir so using ioutil.ReadDir()
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
@@ -412,21 +453,6 @@ func AddDirN(db *FlatDB, dir string) error {
 		if err != nil {
 			return err
 		}
-	}
-
-	return nil
-}
-
-// AddFile add books from filepath
-func AddFile(db *FlatDB, fpath string) error {
-	file, err := os.Stat(fpath)
-	if err != nil {
-		return err
-	}
-
-	err = visit(db)(fpath, file, err)
-	if err != nil {
-		return err
 	}
 
 	return nil
@@ -596,7 +622,7 @@ func (db *FlatDB) GetBookByPath(fpath string) *Book {
 }
 
 // SearchBookByNameAndSize get Books object by filename and size
-func (db *FlatDB) SearchBookByNameAndSize(fname string, size uint64) *[]*Book {
+func (db *FlatDB) SearchBookByNameAndSize(fname string, size uint64) []*Book {
 	db.Mutex.Lock()
 	defer db.Mutex.Unlock()
 
@@ -608,7 +634,7 @@ func (db *FlatDB) SearchBookByNameAndSize(fname string, size uint64) *[]*Book {
 		}
 	}
 
-	return &books
+	return books
 }
 
 // csvToBook convert string to book

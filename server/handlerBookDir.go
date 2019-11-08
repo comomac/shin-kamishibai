@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"regexp"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/comomac/shin-kamishibai/pkg/config"
@@ -20,9 +21,9 @@ type FileList []*FileInfoBasic
 // FileInfoBasic basic FileInfo to identify file for dir list
 type FileInfoBasic struct {
 	IsDir   bool      `json:"is_dir,omitempty"`
-	Path    string    `json:"path,omitempty"`
-	Name    string    `json:"name,omitempty"`
-	ModTime time.Time `json:"mod_time,omitempty"`
+	Path    string    `json:"path,omitempty"` // first item, the current directory
+	Name    string    `json:"name,omitempty"` // file, dir
+	ModTime time.Time `json:"mod_time,omitentry"`
 	*fdb.Book
 }
 
@@ -68,8 +69,6 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 			Path:  dir,
 		})
 
-		re := regexp.MustCompile(`\.cbz$`)
-
 		// fmt.Printf("%+v", db.IMapper)
 		// spew.Dump(db.FMapper)
 
@@ -81,40 +80,54 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 				break
 			}
 
-			// fmt.Println(file.Name(), file.IsDir())
+			// setup file full path
+			fileFullPath := dir + "/" + file.Name()
+
+			// dir
 			if file.IsDir() {
 				fileList = append(fileList, &FileInfoBasic{
 					IsDir:   true,
 					Name:    file.Name(),
 					ModTime: file.ModTime(),
 				})
-			} else if re.MatchString(file.Name()) {
-				fib := &FileInfoBasic{
-					Name:    file.Name(),
-					ModTime: file.ModTime(),
-				}
-
-				aaa := dir + "/" + file.Name()
-				fmt.Println(aaa)
-				book := db.GetBookByPath(aaa)
-				if book != nil {
-					fib.Book = book
-				} else {
-					// book not in db, add now
-					err = fdb.AddFile(db, aaa)
-					if err != nil {
-						fmt.Println("failed to add book -", err)
-					}
-
-					// try again
-					book := db.GetBookByPath(aaa)
-					if book != nil {
-						fib.Book = book
-					}
-				}
-
-				fileList = append(fileList, fib)
+				continue
 			}
+
+			// not book, skip
+			if strings.ToLower(filepath.Ext(file.Name())) != ".cbz" {
+				continue
+			}
+
+			// create and store blank book entry
+			fib := &FileInfoBasic{
+				Name:    file.Name(),
+				ModTime: file.ModTime(),
+			}
+			fileList = append(fileList, fib)
+
+			// find book by path
+			book := db.GetBookByPath(fileFullPath)
+			if book != nil {
+				fib.Book = book
+				continue
+			}
+
+			// find book by name and size
+			books := db.SearchBookByNameAndSize(file.Name(), uint64(file.Size()))
+			if len(books) > 0 {
+				fib.Book = books[0]
+				continue
+			}
+
+			// book not found, add now
+			nbook, err := fdb.AddFile(db, fileFullPath)
+			if err == nil {
+				fib.Book = nbook
+				continue
+			}
+
+			// error? skip
+			fmt.Println("error!", err)
 		}
 
 		b, err := json.Marshal(&fileList)
