@@ -370,6 +370,9 @@ func visit(db *FlatDB) func(string, os.FileInfo, error) error {
 		if strings.HasPrefix(fpath, ".") {
 			return nil
 		}
+		if strings.HasPrefix(f.Name(), ".") {
+			return nil
+		}
 		// skip non cbz extension
 		fpath2 := strings.ToLower(fpath)
 		if !strings.HasSuffix(fpath2, ".cbz") {
