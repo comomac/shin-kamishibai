@@ -231,6 +231,10 @@ function parse_dir_list(files) {
 		}
 	}
 
+	if (files.length === 1) {
+		html.push('<li class="directory collapsed">EOF</li>');
+	}
+
 	html.push("</ul>");
 
 	return html;
