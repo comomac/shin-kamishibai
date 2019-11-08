@@ -179,10 +179,10 @@ func (db *FlatDB) Import(dbPath string) error {
 	if os.IsNotExist(err) {
 		// create blank not exist
 		f, err := os.OpenFile(db.Path, os.O_CREATE, 0644)
-		defer f.Close()
 		if err != nil {
 			return err
 		}
+		defer f.Close()
 	}
 	if err != nil {
 		return err
@@ -265,10 +265,10 @@ func (db *FlatDB) UpdatePage(id string, page int) (int, error) {
 	b := make([]byte, ibook.Length)
 
 	f, err := os.OpenFile(db.Path, os.O_RDWR, 0644)
-	defer f.Close()
 	if err != nil {
 		return 0, err
 	}
+	defer f.Close()
 
 	f.ReadAt(b, int64(ibook.Address))
 	strs := string(b)
@@ -344,10 +344,10 @@ func (db *FlatDB) AddBook(bookPath string) (*Book, error) {
 	}
 
 	f, err := os.OpenFile(db.Path, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
-	defer f.Close()
 	if err != nil {
 		return nil, err
 	}
+	defer f.Close()
 
 	// save to db file
 	b := bookToCSV(&book)
@@ -828,10 +828,10 @@ func convFtoJ(in, out string) error {
 	}
 
 	f, err := os.Create(out)
-	defer f.Close()
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 	f.Write(jstr)
 
 	fmt.Println(lines[100])

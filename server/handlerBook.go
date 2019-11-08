@@ -264,11 +264,11 @@ func renderThumbnail(db *fdb.FlatDB, cfg *config.Config) func(http.ResponseWrite
 		}
 
 		zr, err := zip.OpenReader(ibook.Fullpath)
-		defer zr.Close()
 		if err != nil {
 			responseError(w, err)
 			return
 		}
+		defer zr.Close()
 
 		// get zip file list
 		files := []string{}
@@ -296,11 +296,12 @@ func renderThumbnail(db *fdb.FlatDB, cfg *config.Config) func(http.ResponseWrite
 
 			// get image data
 			rc, err = f.Open()
-			defer rc.Close()
 			if err != nil {
+				rc.Close()
 				responseError(w, err)
 				return
 			}
+			defer rc.Close()
 			break
 		}
 
@@ -361,11 +362,11 @@ func getPage(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 		}
 
 		zr, err := zip.OpenReader(fp)
-		defer zr.Close()
 		if err != nil {
 			responseError(w, err)
 			return
 		}
+		defer zr.Close()
 
 		files := []string{}
 		for _, f := range zr.File {
@@ -406,11 +407,11 @@ func getPage(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 			}
 
 			rc, err := f.Open()
-			defer rc.Close()
 			if err != nil {
 				responseError(w, err)
 				return
 			}
+			defer rc.Close()
 
 			imgDat, err = ioutil.ReadAll(rc)
 			if err != nil {
