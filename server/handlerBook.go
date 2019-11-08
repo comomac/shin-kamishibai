@@ -238,7 +238,9 @@ func renderThumbnail(db *fdb.FlatDB, cfg *config.Config) func(http.ResponseWrite
 		var imgDat []byte
 
 		// check if book is in db
+		db.Mutex.Lock()
 		ibook := db.MapperID[bookID]
+		db.Mutex.Unlock()
 		if ibook == nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
