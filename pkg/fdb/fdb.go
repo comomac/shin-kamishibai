@@ -67,12 +67,6 @@ type Author struct {
 	Books []*IBook
 }
 
-// TODO
-// explore this
-// https://golang.org/pkg/sync/#Map
-// setup sync.Map so it can handle busy map data manipulation
-// sm := sync.Map{}
-
 // FlatDB is flat text file database struct
 type FlatDB struct {
 	Mutex        *sync.Mutex
