@@ -722,8 +722,8 @@ func bookToCSV(book *Book) []byte {
 // debug / test code ------------------------------------------------------------------------------------------------------
 //
 
-// convJtoF makes old json db into flat db
-func convJtoF(in, out string) error {
+// ConvJtoF makes old json db into flat db
+func ConvJtoF(in, out string) error {
 	dat, err := ioutil.ReadFile(in)
 	if err != nil {
 		return err
@@ -752,8 +752,8 @@ func convJtoF(in, out string) error {
 	return nil
 }
 
-// convFtoJ makes flat db to json
-func convFtoJ(in, out string) error {
+// ConvFtoJ makes flat db to json
+func ConvFtoJ(in, out string) error {
 	dat, err := ioutil.ReadFile(in)
 	if err != nil {
 		return err
