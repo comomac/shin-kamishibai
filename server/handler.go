@@ -15,11 +15,11 @@ func checkLogin(httpSession *httpsession.DataStore, cfg *config.Config) func(htt
 			return
 		}
 
-		// TODO remove when done
-		// hack, force auth off during dev
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
-		return
+		// // TODO remove when done
+		// // hack, force auth off during dev
+		// w.WriteHeader(http.StatusOK)
+		// w.Write([]byte("ok"))
+		// return
 
 		// not logged in
 		value, err := httpSession.Get(r, "LoggedIn")
@@ -43,10 +43,10 @@ func getPageRoot(httpSession *httpsession.DataStore, cfg *config.Config, handler
 			return
 		}
 
-		// TODO remove when done
-		// hack, force auth off during dev
-		handler.ServeHTTP(w, r)
-		return
+		// // TODO remove when done
+		// // hack, force auth off during dev
+		// handler.ServeHTTP(w, r)
+		// return
 
 		if r.URL.Path == "/" {
 			// not logged in, show login page
@@ -73,10 +73,10 @@ func getPageMain(httpSession *httpsession.DataStore, cfg *config.Config, handler
 			return
 		}
 
-		// TODO remove when done
-		// hack, force auth off during dev
-		handler.ServeHTTP(w, r)
-		return
+		// // TODO remove when done
+		// // hack, force auth off during dev
+		// handler.ServeHTTP(w, r)
+		// return
 
 		// not logged in, show login page
 		value, err := httpSession.Get(r, "LoggedIn")

@@ -96,10 +96,10 @@ func BasicAuthSession(handler http.Handler, cfg *config.Config, httpSession *htt
 // ref https://cryptic.io/go-http/
 func CheckAuthHandler(h http.Handler, httpSession *httpsession.DataStore) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// TODO remove when done
-		// hack, force auth off during dev
-		h.ServeHTTP(w, r)
-		return
+		// // TODO remove when done
+		// // hack, force auth off during dev
+		// h.ServeHTTP(w, r)
+		// return
 
 		// public
 		if !strings.Contains(r.URL.Path, "/api/") {
