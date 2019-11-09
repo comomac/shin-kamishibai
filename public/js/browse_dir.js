@@ -168,7 +168,11 @@ function dirParseList(files) {
 		} else if (file.more) {
 			li = document.createElement("li");
 			li.className = "directory";
-			li.innerText = "More...";
+
+			span = document.createElement("span");
+			span.innerText = "More...";
+
+			li.appendChild(span);
 			ul.appendChild(li);
 		}
 	}
@@ -177,7 +181,11 @@ function dirParseList(files) {
 	if (files.length === 1) {
 		li = document.createElement("li");
 		li.className = "directory";
-		li.innerText = "EOF";
+
+		span = document.createElement("span");
+		span.innerText = "EOF";
+
+		li.appendChild(span);
 		ul.appendChild(li);
 	}
 
@@ -282,6 +290,8 @@ function dirListReload(dir_path, keyword, page) {
 		function(data) {
 			var jdat = JSON.parse(data);
 			dirList = jdat;
+
+			updatePathLabel(dir_path);
 
 			var els = dirParseList(jdat);
 
