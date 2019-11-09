@@ -37,34 +37,39 @@
 	</head>
 	<body>
 		<div class="row">
-			<div><button onclick="goBrowse();">Browse</button></div>
+			<div id="div-go-browse"></div>
+			<noscript>
+				<div>
+					<a class="a-link-page" href="/browse.html">Browse</a>
+				</div>
+			</noscript>
 			<div>
-				Path: <span id="span-folder-name">{{ path }}</span>
+				Author: <span id="span-book-author">{{ bookAuthor }}</span>
 			</div>
 			<div>
-				File: <span id="span-file-name">{{ filename }}</span>
+				Title: <span id="span-book-title">{{ bookTitle }}</span>
 			</div>
 			<div>
-				Page: <span id="span-page">{{ page }}</span> / <span id="span-page-total">{{ pageTotal }}</span>
+				Page: <span id="span-book-page">{{ bookPage }}</span> / <span id="span-book-pages">{{ bookPages }}</span>
 			</div>
 		</div>
 		<noscript>
 			<!-- hard coded page nav -->
 			<div class="row">
-				<a class="a-link-page" href="/read/xz?p={{ page - 5 }}">-5</a>
-				<a class="a-link-page" href="/read/xz?p={{ page + 5 }}">+5</a>
-				<a class="a-link-page" href="/read/xz?p={{ page - 10 }}">-10</a>
-				<a class="a-link-page" href="/read/xz?p={{ page + 10 }}">+10</a>
-				<a class="a-link-page" href="/read/xz?p={{ page - 25 }}">-25</a>
-				<a class="a-link-page" href="/read/xz?p={{ page + 25 }}">+25</a>
-				<a class="a-link-page" href="/read/xz?p={{ page - 50 }}">-50</a>
-				<a class="a-link-page" href="/read/xz?p={{ page + 50 }}">+50</a>
-				<a class="a-link-page" href="/read/xz?p={{ page - 100 }}">-100</a>
-				<a class="a-link-page" href="/read/xz?p={{ page + 100 }}">+100</a>
+				<a class="a-link-page" href="/read/{{ bookID }}?p={{ page - 5 }}">-5</a>
+				<a class="a-link-page" href="/read/{{ bookID }}?p={{ page + 5 }}">+5</a>
+				<a class="a-link-page" href="/read/{{ bookID }}?p={{ page - 10 }}">-10</a>
+				<a class="a-link-page" href="/read/{{ bookID }}?p={{ page + 10 }}">+10</a>
+				<a class="a-link-page" href="/read/{{ bookID }}?p={{ page - 25 }}">-25</a>
+				<a class="a-link-page" href="/read/{{ bookID }}?p={{ page + 25 }}">+25</a>
+				<a class="a-link-page" href="/read/{{ bookID }}?p={{ page - 50 }}">-50</a>
+				<a class="a-link-page" href="/read/{{ bookID }}?p={{ page + 50 }}">+50</a>
+				<a class="a-link-page" href="/read/{{ bookID }}?p={{ page - 100 }}">-100</a>
+				<a class="a-link-page" href="/read/{{ bookID }}?p={{ page + 100 }}">+100</a>
 			</div>
 			<div class="row">
-				<a class="a-link-page" href="/read/xz?p={{ page - 1 }}">Prev</a>
-				<a class="a-link-page" href="/read/xz?p={{ page + 1 }}">Next</a>
+				<a class="a-link-page" href="/read/{{ bookID }}?p={{ page - 1 }}">Prev</a>
+				<a class="a-link-page" href="/read/{{ bookID }}?p={{ page + 1 }}">Next</a>
 			</div>
 		</noscript>
 		<div class="row" id="div-button-gopages"></div>
@@ -74,17 +79,16 @@
 			<div id="div-button-navs-2"></div>
 			<noscript>
 				<div class="row">
-					<a class="a-link-page" href="/read/xz?p=">Prev</a>
-					<a class="a-link-page" href="/read/xz?p=">Next</a>
+					<a class="a-link-page" href="/read/{{ bookID }}?p={{ page - 1 }}">Prev</a>
+					<a class="a-link-page" href="/read/{{ bookID }}?p={{ page + 1 }}">Next</a>
 				</div>
 			</noscript>
 		</div>
 		<script src="js/utilities.js"></script>
-		<script src="js/alphanum-sort.js"></script>
 		<script>
 			// these needs to be ajax
-			book_id = queryParams("book");
-			pageTotal = 999;
+			bookID = queryParams("book");
+			pageTotal = 9999;
 			page = Number(queryParams("page"));
 			if (isNaN(page) || page > 1) {
 				page = 1;
@@ -100,13 +104,13 @@
 				pg = Number(pg);
 				if (isNaN(pg) || pg < 1) {
 					// set as page 1 if not set
-					history.replaceState({ page: 1 }, "Page 1");
+
 					// reset to 1
 					pg = 1;
 					page = 1;
 				} else {
 					// load the page if provided
-					history.replaceState({ page: pg }, "Page " + String(pg));
+
 					// load this as the initial page
 					page = pg;
 				}
@@ -114,11 +118,11 @@
 				// update image
 				updatePage(pg);
 
-				getUpdateBookInfo(book_id);
+				getUpdateBookInfo(bookID);
 
 				// update page info
-				document.getElementById("span-page").textContent = pg;
-				document.getElementById("span-page-total").textContent = pageTotal;
+				document.getElementById("span-book-page").textContent = pg;
+				document.getElementById("span-book-pages").textContent = pageTotal;
 
 				console.log("page ", page, "is ready");
 			}
@@ -135,12 +139,14 @@
 				}
 				// dont move if invalid page
 				if (pg < 1) return;
+				if (pg > pageTotal) return;
 
 				// update global page value
 				page = pg;
 
-				// update url
-				history.pushState({ page: page }, "Page " + pg);
+				// replace url without adding history
+				var rp = window.location.pathname + "?book=" + bookID + "&page=" + page;
+				window.location.replace(rp);
 
 				// update page rendering
 				updatePage(pg);
@@ -154,6 +160,17 @@
 			}
 
 			function updateButtons() {
+				// create go browse btn
+				// clear child elements
+				var nodeGB = document.getElementById("div-go-browse");
+				while (nodeGB.firstChild) {
+					nodeGB.removeChild(nodeGB.firstChild);
+				}
+				var btnGB = document.createElement("button");
+				btnGB.innerHTML = "Browse";
+				btnGB.onclick = goBrowse;
+				nodeGB.appendChild(btnGB);
+
 				// clear child elements
 				var nodeDiv = document.getElementById("div-button-gopages");
 				while (nodeDiv.firstChild) {
@@ -210,34 +227,38 @@
 			}
 
 			function updatePage(p) {
+				console.log("updatepage", p);
 				var pg = Number(p);
 				if (isNaN(pg)) return;
 				if (pg < 1) return;
 
 				// update page info
-				document.getElementById("span-page").textContent = pg;
+				document.getElementById("span-book-page").textContent = pg;
 
 				// update image src
 				var el = document.getElementById("img-1");
-				el.setAttribute("src", "/api/read/" + book_id + "/" + pg);
+				el.setAttribute("src", "/api/read/" + bookID + "/" + pg);
 			}
 
 			function goBrowse() {
 				window.location = "/browse.html";
 			}
 
-			function getUpdateBookInfo(book_id) {
-				var u = "/api/bookinfo/" + book_id;
-				var p = {
-					get: true,
-					callback: function(str) {
-						var bookInfo = JSON.parse(str);
+			function getUpdateBookInfo(_bookID) {
+				var u = "/api/bookinfo/" + _bookID;
+				var cb = function(str) {
+					var bookInfo = JSON.parse(str);
 
-						document.getElementById("span-file-name").innerText = bookInfo.title;
-						pageTotal = bookInfo.pages;
-					}
+					// update values on page
+					document.getElementById("span-book-title").innerText = bookInfo.title;
+					document.getElementById("span-book-author").innerText = bookInfo.author;
+					document.getElementById("span-book-page").innerHTML = bookInfo.page;
+					document.getElementById("span-book-pages").innerHTML = bookInfo.pages;
+
+					// update page state
+					pageTotal = bookInfo = bookInfo.pages;
 				};
-				ajax(u, p);
+				ajaxGet(u, false, cb);
 			}
 		</script>
 	</body>
