@@ -331,8 +331,8 @@ func renderThumbnail(db *fdb.FlatDB, cfg *config.Config) func(http.ResponseWrite
 	}
 }
 
-// getPage gives the page of the book
-func getPage(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
+// getPageOnly gives the image of the page from the book
+func getPageOnly(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -346,92 +346,124 @@ func getPage(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
-		ibook := db.MapperID[bookID]
-		if ibook == nil {
+		cbzPage(w, r, db, bookID, page, false)
+	}
+}
+
+// getPageNRead gives the image of the page from the book and sets page read
+func getPageNRead(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 
-		fp := ibook.Fullpath
-
-		fmt.Println("page", page, fp)
-
-		if uint64(page) > ibook.Pages {
-			w.WriteHeader(http.StatusNotFound)
+		bookID, page, err := parseURIBookIDandPage(r.RequestURI, "/api/read/")
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
 			return
 		}
 
-		zr, err := zip.OpenReader(fp)
+		cbzPage(w, r, db, bookID, page, true)
+	}
+}
+
+// cbzPage shared function for /cbz/... and /read/...
+// updatePage == true will update bookmark page
+func cbzPage(w http.ResponseWriter, r *http.Request, db *fdb.FlatDB, bookID string, page int, updatePage bool) {
+	db.Mutex.Lock()
+	ibook := db.MapperID[bookID]
+	db.Mutex.Unlock()
+	if ibook == nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	fp := ibook.Fullpath
+
+	fmt.Println("page", page, fp)
+
+	if uint64(page) > ibook.Pages {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	zr, err := zip.OpenReader(fp)
+	if err != nil {
+		responseError(w, err)
+		return
+	}
+	defer zr.Close()
+
+	files := []string{}
+	for _, f := range zr.File {
+		if !fdb.RegexSupportedImageExt.MatchString(f.Name) {
+			continue
+		}
+
+		files = append(files, f.Name)
+		// fmt.Println("img!", f.Name)
+	}
+
+	// do natural sort
+	sort.Slice(files, func(i, j int) bool {
+		f1 := fdb.RegexSupportedImageExt.ReplaceAllString(files[i], "")
+		f2 := fdb.RegexSupportedImageExt.ReplaceAllString(files[j], "")
+		return lib.AlphaNumCaseCompare(f1, f2)
+	})
+	// fmt.Println("-------------------------- sorted --------------------------")
+	// for _, file := range files {
+	// 	fmt.Printf("%+v\n", file)
+	// }
+
+	var imgDat []byte // image data to serve
+
+	if page > len(files) {
+		responseError(w, errors.New("page beyond file #"))
+	}
+	getImgFileName := files[page] // image file to get in zip
+
+	if getImgFileName == "" {
+		http.NotFound(w, r)
+		return
+	}
+
+	for _, f := range zr.File {
+		if f.Name != getImgFileName {
+			continue
+		}
+
+		rc, err := f.Open()
 		if err != nil {
 			responseError(w, err)
 			return
 		}
-		defer zr.Close()
+		defer rc.Close()
 
-		files := []string{}
-		for _, f := range zr.File {
-			if !fdb.RegexSupportedImageExt.MatchString(f.Name) {
-				continue
-			}
-
-			files = append(files, f.Name)
-			// fmt.Println("img!", f.Name)
-		}
-
-		// do natural sort
-		sort.Slice(files, func(i, j int) bool {
-			f1 := fdb.RegexSupportedImageExt.ReplaceAllString(files[i], "")
-			f2 := fdb.RegexSupportedImageExt.ReplaceAllString(files[j], "")
-			return lib.AlphaNumCaseCompare(f1, f2)
-		})
-		// fmt.Println("-------------------------- sorted --------------------------")
-		// for _, file := range files {
-		// 	fmt.Printf("%+v\n", file)
-		// }
-
-		var imgDat []byte // image data to serve
-
-		if page > len(files) {
-			responseError(w, errors.New("page beyond file #"))
-		}
-		getImgFileName := files[page] // image file to get in zip
-
-		if getImgFileName == "" {
-			http.NotFound(w, r)
+		imgDat, err = ioutil.ReadAll(rc)
+		if err != nil {
+			responseError(w, err)
 			return
 		}
-
-		for _, f := range zr.File {
-			if f.Name != getImgFileName {
-				continue
-			}
-
-			rc, err := f.Open()
-			if err != nil {
-				responseError(w, err)
-				return
-			}
-			defer rc.Close()
-
-			imgDat, err = ioutil.ReadAll(rc)
-			if err != nil {
-				responseError(w, err)
-				return
-			}
-			break
-		}
-
-		// fmt.Println("found", ttlImages, "images")
-		// fmt.Println(page, "th image name (", imgFileName, ")")
-
-		// fmt.Fprint(w, "bytes")
-
-		// fmt.Printf("imgDat\n%+v\n", imgDat)
-		ctype := http.DetectContentType(imgDat)
-		w.Header().Add("Content-Type", ctype)
-		w.Header().Add("Content-Length", strconv.Itoa(len(imgDat)))
-		w.Write(imgDat)
+		break
 	}
+
+	// fmt.Println("found", ttlImages, "images")
+	// fmt.Println(page, "th image name (", imgFileName, ")")
+
+	// fmt.Fprint(w, "bytes")
+
+	if updatePage {
+		// updates bookmark on page read
+		db.UpdatePage(bookID, page)
+	}
+
+	// fmt.Printf("imgDat\n%+v\n", imgDat)
+	ctype := http.DetectContentType(imgDat)
+	w.Header().Add("Content-Type", ctype)
+	w.Header().Add("Content-Length", strconv.Itoa(len(imgDat)))
+	w.Write(imgDat)
 }
 
 func deleteBook(w http.ResponseWriter, r *http.Request) {

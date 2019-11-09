@@ -69,9 +69,6 @@ function dirParseList(files) {
 	// first block contains info
 	var dirInfo = files[0];
 
-	// update dir max pages
-	dirPages = dirInfo.pages;
-
 	for (var i in files) {
 		// hack, skip first one
 		if (i === "0") continue;
@@ -177,15 +174,10 @@ function dirParseList(files) {
 	}
 
 	// indicate eof or more of dir list
-	if (dirPage > dirInfo.pages) {
+	if (files.length === 1) {
 		li = document.createElement("li");
 		li.className = "directory";
 		li.innerText = "EOF";
-		ul.appendChild(li);
-	} else if (dirInfo.items === 0) {
-		li = document.createElement("li");
-		li.className = "directory";
-		li.innerText = "empty";
 		ul.appendChild(li);
 	}
 
@@ -233,7 +225,7 @@ function dirListNext() {
 	if (isNaN(dirPage) || dirPage < 0) {
 		dirPage = 0;
 	}
-	if (dirPage >= dirPages) {
+	if (dirList.length <= 1) {
 		return;
 	}
 
@@ -288,7 +280,10 @@ function dirListReload(dir_path, keyword, page) {
 			keyword: keyword
 		},
 		function(data) {
-			var els = dirParseList(JSON.parse(data));
+			var jdat = JSON.parse(data);
+			dirList = jdat;
+
+			var els = dirParseList(jdat);
 
 			if (!els) {
 				console.error("dirParseList() failed");

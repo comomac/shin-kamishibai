@@ -54,7 +54,8 @@ func Start(cfg *config.Config, db *fdb.FlatDB) {
 
 	// private api
 	h.HandleFunc("/api/thumbnail/", renderThumbnail(db, cfg)) // /thumbnail/{bookID}
-	h.HandleFunc("/api/cbz/", getPage(db))                    // /cbz/{bookID}/{page}
+	h.HandleFunc("/api/cbz/", getPageOnly(db))                // /cbz/{bookID}/{page}   get image
+	h.HandleFunc("/api/read/", getPageNRead(db))              // /read/{bookID}/{page}  get image and update page read
 	h.HandleFunc("/api/bookinfo/", getBookInfo(db))           // /bookinfo/{bookID}
 	h.HandleFunc("/api/books_info", getBooksInfo(db))         // /books_info?bookcodes=1,2,3,4,5
 	h.HandleFunc("/api/setbookmark/", setBookmark(db))        // /setbookmark/{bookID}/{page}

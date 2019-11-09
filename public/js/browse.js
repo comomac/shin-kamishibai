@@ -18,7 +18,6 @@ var isDeleteMode = false;
 var dirSources = []; // string[], sources, bookmarks
 var dirList = []; // string[], current folder listing
 var dirPage = 1; // current dir page
-var dirPages = 1; // current dir max pages
 var dirPath = "/"; // current dir path
 
 // detect os

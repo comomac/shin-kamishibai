@@ -24,11 +24,8 @@ type FileInfoBasic struct {
 	IsDir   bool      `json:"is_dir,omitempty"`
 	Path    string    `json:"path,omitempty"`     // first item, the current directory
 	Name    string    `json:"name,omitempty"`     // file, dir
-	ModTime time.Time `json:"mod_time,omitentry"` // file modified time
-	More    bool      `json:"more,omitentry"`     // indicate more files behind
-	Page    int       `json:"page"`               // page cursor
-	Pages   int       `json:"pages"`              // indicate how many pages of listing
-	Items   int       `json:"items"`              // how many items in total listing
+	ModTime time.Time `json:"mod_time,omitempty"` // file modified time
+	More    bool      `json:"more,omitempty"`     // indicate more files behind
 	*fdb.Book
 }
 
@@ -96,9 +93,6 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 		fileList = append(fileList, &FileInfoBasic{
 			IsDir: true,
 			Path:  dir,
-			Page:  page,
-			Pages: (len(files2) / ItemsPerPage) + 1,
-			Items: len(files2),
 		})
 
 		for i, file := range files2 {
@@ -139,6 +133,7 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 			// find book by path
 			book := db.GetBookByPath(fileFullPath)
 			if book != nil {
+				fmt.Println("found", book)
 				fib.Book = book
 				continue
 			}

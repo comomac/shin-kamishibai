@@ -248,6 +248,8 @@ func (db *FlatDB) Export(dbPath string) error {
 
 // UpdatePage change database record on page read, returns written byte size
 func (db *FlatDB) UpdatePage(id string, page int) (int, error) {
+	db.Mutex.Lock()
+	defer db.Mutex.Unlock()
 	ibook := db.MapperID[id]
 	if ibook == nil {
 		err := errors.New("ibook is nil")
