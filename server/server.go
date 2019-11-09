@@ -74,8 +74,7 @@ func Start(cfg *config.Config, db *fdb.FlatDB) {
 	// h1 := BasicAuth(h, cfg.Username, cfg.Password, "Authentication required")
 	// h1 := BasicAuthSession(h, cfg, httpSession, "Authentication required")
 
-	// hack, to listen to localhost only
-	port := "127.0.0.1:" + strconv.Itoa(cfg.Port)
+	port := cfg.IP + ":" + strconv.Itoa(cfg.Port)
 	fmt.Println("listening on", port)
 	fmt.Println("allowed dirs: " + strings.Join(cfg.AllowedDirs, ", "))
 	log.Fatal(http.ListenAndServe(port, h1))

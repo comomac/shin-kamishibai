@@ -15,6 +15,7 @@ import (
 // Config holds server config
 type Config struct {
 	Path         string   `json:"path,omitempty"`     // config file path
+	IP           string   `json:"ip"`                 // network ip interface to listen to
 	Port         int      `json:"port"`               // server port
 	DBPath       string   `json:"db_path"`            // where db file is stored
 	Username     string   `json:"username"`           // username for the http authentication
