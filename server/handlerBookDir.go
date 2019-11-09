@@ -28,6 +28,7 @@ type FileInfoBasic struct {
 	More    bool      `json:"more,omitentry"`     // indicate more files behind
 	Page    int       `json:"page"`               // page cursor
 	Pages   int       `json:"pages"`              // indicate how many pages of listing
+	Items   int       `json:"items"`              // how many items in total listing
 	*fdb.Book
 }
 
@@ -97,6 +98,7 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 			Path:  dir,
 			Page:  page,
 			Pages: (len(files2) / ItemsPerPage) + 1,
+			Items: len(files2),
 		})
 
 		for i, file := range files2 {

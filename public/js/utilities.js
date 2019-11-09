@@ -1,3 +1,6 @@
+/* jshint asi: true */
+/* jshint esversion: 3 */
+
 /*!
 License: refer to LICENSE file
  */

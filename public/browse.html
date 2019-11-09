@@ -11,9 +11,12 @@
 		<title>Kamishibai</title>
 		<link href="/vendor/css/pure-min.css" rel="stylesheet" type="text/css" />
 		<link href="/css/browse.css" rel="stylesheet" type="text/css" />
-		<script src="/vendor/js/lazyload.min.js"></script>
+		<link href="/css/browse_read.css" rel="stylesheet" type="text/css" />
 		<script src="/js/utilities.js"></script>
 		<script src="/js/browse.js"></script>
+		<script src="/js/browse_key.js"></script>
+		<script src="/js/browse_delete.js"></script>
+		<script src="/js/browse_dir.js"></script>
 	</head>
 	<body>
 		<div class="pure-menu pure-menu-horizontal">
@@ -67,13 +70,13 @@
 					<a href="#" class="pure-menu-link">Order by</a>
 					<ul class="pure-menu-children">
 						<li class="pure-menu-item">
-							<a href="#" class="pure-menu-link" onclick="exe_order_by('name');">&#128292; filename</a>
+							<a href="#" class="pure-menu-link" onclick="dirOrderBy('name');">&#128292; filename</a>
 						</li>
 						<li class="pure-menu-item">
-							<a href="#" class="pure-menu-link" onclick="exe_order_by('size');">&#128290; filesize</a>
+							<a href="#" class="pure-menu-link" onclick="dirOrderBy('size');">&#128290; filesize</a>
 						</li>
 						<li class="pure-menu-item">
-							<a href="#" class="pure-menu-link" onclick="exe_order_by('date');">&#128197; filedate</a>
+							<a href="#" class="pure-menu-link" onclick="dirOrderBy('date');">&#128197; filedate</a>
 						</li>
 					</ul>
 				</li>
@@ -82,10 +85,10 @@
 					<a href="#" class="pure-menu-link">Edit</a>
 					<ul class="pure-menu-children">
 						<li class="pure-menu-item">
-							<a href="#" class="pure-menu-link" onclick="delete_enable();">&#128465; Delete</a>
+							<a href="#" class="pure-menu-link" onclick="deleteEnable();">&#128465; Delete</a>
 						</li>
 						<li class="pure-menu-item">
-							<a href="#" class="pure-menu-link" onclick="delete_disable();">&#128721; Delete disable</a>
+							<a href="#" class="pure-menu-link" onclick="deleteDisable();">&#128721; Delete disable</a>
 						</li>
 					</ul>
 				</li>
@@ -99,11 +102,11 @@
 		</div>
 
 		<div style="margin:1em;">
-			<button class="pure-button" onclick="dir_up();">&nbsp;&nbsp;Up&nbsp;&nbsp;</button>
-			<button class="pure-button" onclick="dir_lists_prev();">Prev</button>
-			<button class="pure-button" onclick="dir_lists_next();">Next</button>
+			<button class="pure-button" onclick="dirUp();">&nbsp;&nbsp;Up&nbsp;&nbsp;</button>
+			<button class="pure-button" onclick="dirListPrev();">Prev</button>
+			<button class="pure-button" onclick="dirListNext();">Next</button>
 			<span id="span-page"></span>
 		</div>
-		<div id="dir_lists"></div>
+		<div id="div-dir-lists"></div>
 	</body>
 </html>
