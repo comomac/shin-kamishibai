@@ -7,7 +7,7 @@ License: refer to LICENSE file
 
 // load dir sources
 function sourcesReload() {
-	var ul = document.getElementById("ul-sources");
+	var ul = document.getElementById("div-sources");
 
 	// remove all child
 	while (ul.hasChildNodes()) {
@@ -20,23 +20,15 @@ function sourcesReload() {
 		// update global sources
 		dirSources = srcs;
 
-		var lis = [];
-
 		for (var i in srcs) {
-			lis.push(
-				'<li class="pure-menu-item">' +
-					'<a href="#dir=' +
-					encodeURIComponent(srcs[i]) +
-					'&page=1" class="pure-menu-link" onclick="dirSourceSelect(' +
-					i +
-					');">' +
-					srcs[i] +
-					"</a>" +
-					"</li>"
-			);
-		}
+			var a = document.createElement("a");
+			a.href = "#";
+			a.setAttribute("srcNum", i);
+			a.onclick = aSourceSelect;
+			a.innerText = srcs[i];
 
-		ul.innerHTML = lis.join("");
+			ul.appendChild(a);
+		}
 	});
 }
 
@@ -243,8 +235,9 @@ function dirListNext() {
 }
 
 // selection from bookmark
-function dirSourceSelect(intNum) {
-	dirListReload(dirSources[intNum], "", 1);
+function aSourceSelect(evt) {
+	var srcNum = Number(this.getAttribute("srcNum"));
+	dirListReload(dirSources[srcNum], "", 1);
 }
 
 // reload listing

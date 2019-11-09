@@ -9,9 +9,10 @@
 		<meta content="yes" name="apple-mobile-web-app-capable" />
 		<meta content="black" name="apple-mobile-web-app-status-bar-style" />
 		<title>Kamishibai</title>
-		<link href="/vendor/css/pure-min.css" rel="stylesheet" type="text/css" />
+		<!-- <link href="/vendor/css/pure-min.css" rel="stylesheet" type="text/css" /> -->
 		<link href="/css/browse.css" rel="stylesheet" type="text/css" />
 		<link href="/css/browse_read.css" rel="stylesheet" type="text/css" />
+		<link href="/css/browse_dropdown.css" rel="stylesheet" type="text/css" />
 		<script src="/js/utilities.js"></script>
 		<script src="/js/browse.js"></script>
 		<script src="/js/browse_key.js"></script>
@@ -19,88 +20,49 @@
 		<script src="/js/browse_dir.js"></script>
 	</head>
 	<body>
-		<div class="pure-menu pure-menu-horizontal">
-			<ul class="pure-menu-list" id="path">
-				<li class="pure-menu-item">
-					<a href="#dir=/" class="pure-menu-link">/</a>
-				</li>
-			</ul>
+		<div class="dropdown">
+			<button class="dropbtn">Sources</button>
+			<div class="dropdown-content" id="div-sources"></div>
 		</div>
-		<div class="pure-menu pure-menu-horizontal">
-			<ul class="pure-menu-list">
-				<li class="pure-menu-item pure-menu-has-children pure-menu-allow-hover">
-					<a href="#" class="pure-menu-link">Bookmarks</a>
-					<ul class="pure-menu-children" id="ul-sources">
-						<li class="pure-menu-item">
-							<a href="#dir=/bla/book/comedy" class="pure-menu-link">link1</a>
-						</li>
-						<li class="pure-menu-item">
-							<a href="#dir=/bla/book/rpg" class="pure-menu-link">link2</a>
-						</li>
-						<li class="pure-menu-item">
-							<a href="#dir=/bla/book/adventure" class="pure-menu-link">link3</a>
-						</li>
-					</ul>
-				</li>
 
-				<li class="pure-menu-item pure-menu-has-children pure-menu-allow-hover">
-					<a href="#" class="pure-menu-link">Menu</a>
-					<ul class="pure-menu-children">
-						<li class="pure-menu-item">
-							<a href="/read.html" class="pure-menu-link">&#128214; Simple Mode</a>
-						</li>
-						<li class="pure-menu-item">
-							<a href="/config.html" class="pure-menu-link">&#128295; Preferences</a>
-						</li>
-						<li class="pure-menu-item">
-							<a href="#" class="pure-menu-link" onclick="toggleFullScreen(document.documentElement); return false;"
-								>&#128250; Full Screen</a
-							>
-						</li>
-					</ul>
-				</li>
+		<div class="dropdown">
+			<button class="dropbtn">Menu</button>
+			<div class="dropdown-content">
+				<a href="#">&#128214; Simple Mode</a>
+				<a href="#">&#128295; Preferences</a>
+				<a href="#" onclick="toggleFullScreen(document.documentElement); return false;">&#128250; Full Screen</a>
+				<a href="#" onclick="deleteEnable();">&#128465; Delete enable</a>
+				<a href="#" onclick="deleteDisable();">&#128721; Delete disable</a>
+			</div>
+		</div>
 
-				<li class="pure-menu-item pure-menu-has-children pure-menu-allow-hover">
-					<a href="#" class="pure-menu-link">Order by</a>
-					<ul class="pure-menu-children">
-						<li class="pure-menu-item">
-							<a href="#" class="pure-menu-link" onclick="dirOrderBy('name');">&#128292; filename</a>
-						</li>
-						<li class="pure-menu-item">
-							<a href="#" class="pure-menu-link" onclick="dirOrderBy('size');">&#128290; filesize</a>
-						</li>
-						<li class="pure-menu-item">
-							<a href="#" class="pure-menu-link" onclick="dirOrderBy('date');">&#128197; filedate</a>
-						</li>
-					</ul>
-				</li>
+		<div class="dropdown">
+			<button class="dropbtn">Order by</button>
+			<div class="dropdown-content">
+				<a href="#" onclick="dirOrderBy('name');">&#128292; filename</a>
+				<a href="#" onclick="dirOrderBy('size');">&#128290; filesize</a>
+				<a href="#" onclick="dirOrderBy('date');">&#128197; filedate</a>
+			</div>
+		</div>
 
-				<li class="pure-menu-item pure-menu-has-children pure-menu-allow-hover">
-					<a href="#" class="pure-menu-link">Edit</a>
-					<ul class="pure-menu-children">
-						<li class="pure-menu-item">
-							<a href="#" class="pure-menu-link" onclick="deleteEnable();">&#128465; Delete</a>
-						</li>
-						<li class="pure-menu-item">
-							<a href="#" class="pure-menu-link" onclick="deleteDisable();">&#128721; Delete disable</a>
-						</li>
-					</ul>
-				</li>
+		<div class="dropdown">
+			<button class="dropbtn">Path</button>
+			<div class="dropdown-content" id="div-paths">
+				<a href="#dir=/" class="pure-menu-link">/</a>
+			</div>
+		</div>
 
-				<li class="pure-menu-item pure-menu-has-children">
-					<form class="pure-form">
-						<input class="form-control" id="searchbox" placeholder="search" type="text" />
-					</form>
-				</li>
-			</ul>
+		<div class="dropdown">
+			<input class="form-control" id="searchbox" placeholder="search" type="text" />
 		</div>
 
 		<div style="margin:1em;">
-			<button class="pure-button" onclick="dirUp();">&nbsp;&nbsp;Up&nbsp;&nbsp;</button>
-			<button class="pure-button" onclick="dirListPrev();">Prev</button>
-			<button class="pure-button" onclick="dirListNext();">Next</button>
+			<button class="nav-dir-button" onclick="dirUp();">&nbsp;&nbsp;Up&nbsp;&nbsp;</button>
+			<button class="nav-dir-button" onclick="dirListPrev();">Prev</button>
+			<button class="nav-dir-button" onclick="dirListNext();">Next</button>
 			<span id="span-page"></span>
 		</div>
+
 		<div id="div-dir-lists"></div>
 	</body>
 </html>

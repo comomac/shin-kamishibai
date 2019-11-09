@@ -7,6 +7,16 @@ body {
 	visibility: hidden;
 }
 
+#searchbox {
+	padding: 12px 16px;
+	min-width: 10em;
+	box-shadow: 0px 4px 8px 0px rgba(0, 0, 0, 0.2);
+}
+
+.nav-dir-button {
+	padding: 12px 16px;
+}
+
 #ul-lists {
 	left: 0px;
 	position: absolute;
@@ -19,10 +29,7 @@ li {
 	position: relative;
 }
 
-img.lazyload {
-	display: block;
-}
-
+/* book total pages */
 .badge-secondary {
 	color: #fff;
 	background-color: #6c757d;

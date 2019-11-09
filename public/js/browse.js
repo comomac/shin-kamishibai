@@ -41,81 +41,34 @@ if (!console.log) {
 function updatePathLabel(path) {
 	if (typeof path !== "string" || path.length <= 0) return;
 
-	var el = document.getElementById("path");
+	var el = document.getElementById("div-paths");
 	// remove all child
 	while (el.hasChildNodes()) {
 		el.removeChild(el.lastChild);
 	}
 
 	var dirs = path.split("/");
+	var dir = "/"; // a attr
 
-	var lis = [];
-	var dir, dir2;
+	for (var i = 0; i < dirs.length; i++) {
+		dir = dir + dirs[i];
 
-	for (var i = 1; i <= dirs.length; i++) {
-		if (i === 1) {
-			dir = "/";
-			dir2 = "/";
-		} else {
-			dir = path.split("/", i).join("/");
-			dir2 = "/ " + dirs[i - 1];
+		var a = document.createElement("a");
+		a.href = "#dir=" + dir;
+		a.setAttribute("dir", dir);
+		a.innerText = dirs[i];
+
+		el.appendChild(a);
+
+		if (i > 0) {
+			dir = dir + "/";
 		}
-
-		lis.push(
-			'<li class="pure-menu-item">' +
-				'<a href="#dir=' +
-				encodeURIComponent(dir) +
-				'" class="pure-menu-link">' +
-				dir2 +
-				"</a>" +
-				"</li>"
-		);
 	}
-
-	el.innerHTML = lis.join("");
 }
 
 function container_height_refresh() {
 	// $('#container').css('top', $('#navtop').outerHeight() - $('#navcollapse').outerHeight() );
 }
-
-function reload_path_label(dir) {
-	// set container top height
-	container_height_refresh();
-}
-
-// // change dir on hashchange
-// window.addEventListener(
-// 	"hashchange",
-// 	function() {
-// 		// get dir from hash
-// 		var dir = getHashParams("dir");
-
-// 		// stop if dir not defined
-// 		if (dir == undefined) {
-// 			return;
-// 		}
-
-// 		// get keyword from searchbox
-// 		var keyword = document.getElementById("searchbox").value;
-
-// 		// get page
-// 		var page = Number(getHashParams("page"));
-// 		if (isNaN(page) || page < 0) {
-// 			page = 1;
-// 		}
-
-// 		// save keyword used for search
-// 		window.sessionStorage.lastSearch = keyword;
-
-// 		// update path label
-// 		updatePathLabel(dir);
-
-// 		// reload the dir list
-// 		dirListReload(dir, keyword, page);
-// 	},
-// 	tryPassiveListner()
-// );
 
 // page init
 window.onload = function() {
