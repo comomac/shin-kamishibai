@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -25,6 +26,8 @@ type FileInfoBasic struct {
 	Name    string    `json:"name,omitempty"`     // file, dir
 	ModTime time.Time `json:"mod_time,omitentry"` // file modified time
 	More    bool      `json:"more,omitentry"`     // indicate more files behind
+	Page    int       `json:"page"`               // page cursor
+	Pages   int       `json:"pages"`              // indicate how many pages of listing
 	*fdb.Book
 }
 
@@ -64,26 +67,43 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 			return
 		}
 
+		// fmt.Printf("%+v", db.IMapper)
+		// spew.Dump(db.FMapper)
+
+		files2 := []os.FileInfo{}
+		for _, file := range files {
+			// no dot file/folder
+			if strings.HasPrefix(file.Name(), ".") {
+				continue
+			}
+			// no keyword match
+			if len(keyword) > 0 && !strings.Contains(file.Name(), keyword) {
+				continue
+			}
+
+			if file.IsDir() {
+				// a directory
+				files2 = append(files2, file)
+			} else if strings.ToLower(filepath.Ext(file.Name())) == ".cbz" {
+				// a book
+				files2 = append(files2, file)
+			}
+		}
+
 		// add first one as the dir info to save space
 		var fileList FileList
 		fileList = append(fileList, &FileInfoBasic{
 			IsDir: true,
 			Path:  dir,
+			Page:  page,
+			Pages: (len(files2) / ItemsPerPage) + 1,
 		})
 
-		// fmt.Printf("%+v", db.IMapper)
-		// spew.Dump(db.FMapper)
-
-		j := 0
-		for _, file := range files {
-			if len(keyword) > 0 && !strings.Contains(file.Name(), keyword) {
+		for i, file := range files2 {
+			if i < (page-1)*ItemsPerPage {
 				continue
 			}
-			j = j + 1
-			if j < (page-1)*ItemsPerPage {
-				continue
-			}
-			if j > (page*ItemsPerPage)-1 {
+			if i > (page*ItemsPerPage)-1 {
 				// indicate more files
 				fib := &FileInfoBasic{
 					More: true,
@@ -105,10 +125,7 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 				continue
 			}
 
-			// not book, skip
-			if strings.ToLower(filepath.Ext(file.Name())) != ".cbz" {
-				continue
-			}
+			// file
 
 			// create and store blank book entry
 			fib := &FileInfoBasic{
@@ -139,7 +156,7 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 			}
 
 			// error? skip
-			fmt.Println("error!", err)
+			fmt.Println("error! bottom fell out", page, keyword, dir)
 		}
 
 		b, err := json.Marshal(&fileList)
