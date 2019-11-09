@@ -75,7 +75,7 @@
 		<div class="row" id="div-button-gopages"></div>
 		<div class="row" id="div-button-navs-1"></div>
 		<div class="row">
-			<div class="div-img" id="div-img-1"><img src="images/spinner.gif" class="img-manga" id="img-1" /></div>
+			<div class="div-img" id="div-img-1"><img src="images/spinner.gif" class="img-manga" id="img-1" onclick="goPage(1);" /></div>
 			<div id="div-button-navs-2"></div>
 			<noscript>
 				<div class="row">
@@ -95,7 +95,6 @@
 			}
 
 			window.onload = ready;
-			window.onpopstate = onPopState;
 
 			function ready() {
 				updateButtons();
@@ -150,13 +149,6 @@
 
 				// update page rendering
 				updatePage(pg);
-			}
-
-			function onPopState(event) {
-				// event.location
-				var state = event.state;
-				page = state.page;
-				updatePage(page);
 			}
 
 			function updateButtons() {
