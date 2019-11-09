@@ -371,7 +371,7 @@ func getPageNRead(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 
 // cbzPage shared function for /cbz/... and /read/...
 // updatePage == true will update bookmark page
-func cbzPage(w http.ResponseWriter, r *http.Request, db *fdb.FlatDB, bookID string, page int, updatePage bool) {
+func cbzPage(w http.ResponseWriter, r *http.Request, db *fdb.FlatDB, bookID string, pg int, updatePage bool) {
 	db.Mutex.Lock()
 	ibook := db.MapperID[bookID]
 	db.Mutex.Unlock()
@@ -380,11 +380,14 @@ func cbzPage(w http.ResponseWriter, r *http.Request, db *fdb.FlatDB, bookID stri
 		return
 	}
 
+	// pg starts at 1 (0 is null)
+	// file counter starts at 0. it is still a page, just internal
+
 	fp := ibook.Fullpath
 
-	fmt.Println("page", page, fp)
+	fmt.Println("page", pg, fp)
 
-	if uint64(page) > ibook.Pages {
+	if uint64(pg) > ibook.Pages {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
@@ -419,10 +422,10 @@ func cbzPage(w http.ResponseWriter, r *http.Request, db *fdb.FlatDB, bookID stri
 
 	var imgDat []byte // image data to serve
 
-	if page > len(files) {
+	if pg > len(files) {
 		responseError(w, errors.New("page beyond file #"))
 	}
-	getImgFileName := files[page] // image file to get in zip
+	getImgFileName := files[pg-1] // image file to get in zip
 
 	if getImgFileName == "" {
 		http.NotFound(w, r)
@@ -456,7 +459,7 @@ func cbzPage(w http.ResponseWriter, r *http.Request, db *fdb.FlatDB, bookID stri
 
 	if updatePage {
 		// updates bookmark on page read
-		db.UpdatePage(bookID, page)
+		db.UpdatePage(bookID, pg)
 	}
 
 	// fmt.Printf("imgDat\n%+v\n", imgDat)
