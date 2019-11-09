@@ -144,7 +144,7 @@ function parse_dir_list(files) {
 		var file = files[i];
 
 		// skip dot file
-		if (file.name[0] === ".") continue;
+		if (file.name && file.name[0] === ".") continue;
 
 		var full_path = path + "/" + file.name;
 
@@ -180,6 +180,8 @@ function parse_dir_list(files) {
 						"</span></a></li>"
 				);
 			}
+		} else if (file.more === true) {
+			html.push('<li class="directory collapsed">More...</li>');
 		} else {
 			// file
 

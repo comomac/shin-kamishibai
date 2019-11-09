@@ -21,9 +21,10 @@ type FileList []*FileInfoBasic
 // FileInfoBasic basic FileInfo to identify file for dir list
 type FileInfoBasic struct {
 	IsDir   bool      `json:"is_dir,omitempty"`
-	Path    string    `json:"path,omitempty"` // first item, the current directory
-	Name    string    `json:"name,omitempty"` // file, dir
-	ModTime time.Time `json:"mod_time,omitentry"`
+	Path    string    `json:"path,omitempty"`     // first item, the current directory
+	Name    string    `json:"name,omitempty"`     // file, dir
+	ModTime time.Time `json:"mod_time,omitentry"` // file modified time
+	More    bool      `json:"more,omitentry"`     // indicate more files behind
 	*fdb.Book
 }
 
@@ -77,6 +78,11 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 				continue
 			}
 			if i > (page*ItemsPerPage)-1 {
+				// indicate more files
+				fib := &FileInfoBasic{
+					More: true,
+				}
+				fileList = append(fileList, fib)
 				break
 			}
 
