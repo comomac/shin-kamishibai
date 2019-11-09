@@ -97,12 +97,9 @@ function dirParseList(files) {
 			li.className = "directory";
 
 			a = document.createElement("a");
+			a.setAttribute("dir", full_path);
 			a.href = "#dir=" + full_path + "&page=1";
-			a.onclick = function() {
-				dirListReload(this.fp, "", 1);
-			}.bind({
-				fp: full_path
-			});
+			a.onclick = dirClicked;
 
 			img = document.createElement("img");
 			img.src = "/images/" + icon;
@@ -149,7 +146,7 @@ function dirParseList(files) {
 			a = document.createElement("a");
 			a.setAttribute("bookcode", file.id);
 			a.href = href;
-			a.onclick = rememberLastItem;
+			a.onclick = bookClicked;
 
 			img = document.createElement("img");
 			img.className = "lazy";
@@ -274,7 +271,8 @@ function dirListReload(dir_path, keyword, page) {
 	dirPage = page;
 	document.getElementById("span-page").textContent = dirPage;
 	// replace url without adding history
-	window.location.replace(window.location.href.replace(window.location.href + "#dir=" + dirPath + "&page=" + dirPage));
+	var rp = window.location.href + "#dir=" + dirPath + "&page=" + dirPage;
+	window.location.replace(rp);
 
 	var el = document.getElementById("div-dir-lists");
 	// delete all child
@@ -355,4 +353,14 @@ function dirUp() {
 			return;
 		}
 	}
+}
+
+function dirClicked(evt) {
+	dirListReload(this.getAttribute("dir"), "", 1);
+}
+
+function bookClicked(evt) {
+	// console.log(777, evt, this.getAttribute("bookcode"), this.getAttribute("dir"));
+	// window.sessionStorage.lastSelectedItem = this.innerText;
+	// return false;
 }

@@ -85,12 +85,6 @@ function reload_path_label(dir) {
 	container_height_refresh();
 }
 
-function rememberLastItem(evt) {
-	console.log(777, evt);
-	return false;
-	// window.sessionStorage.lastSelectedItem = this.innerText;
-}
-
 // // change dir on hashchange
 // window.addEventListener(
 // 	"hashchange",
@@ -150,14 +144,16 @@ window.onload = function() {
 
 		setTimeout(function() {
 			// load in this order
-			// given path in hash
-			// remembered page
-			// default
+			//   1 hash dir path
+			//   2 remembered page
+			//   3 default
+
+			if (dirSources.length < 1) {
+				return;
+			}
 
 			var _path = getHashParams("dir") || window.sessionStorage.lastPath || dirSources[0];
 			var _page = Number(getHashParams("page")) || window.sessionStorage.lastPage || 1;
-
-			console.log(111, _path, _page);
 
 			dirListReload(_path, "", _page);
 		}, 50);
