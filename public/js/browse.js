@@ -388,6 +388,10 @@ function reload_dir_lists(dir_path, keyword, page) {
 			if (isDeleteMode) {
 				delete_enable();
 			}
+		},
+		function(dat) {
+			// fail callback
+			el.innerHTML = dat;
 		}
 	);
 }

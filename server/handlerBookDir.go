@@ -52,7 +52,7 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 		exists := lib.StringSliceContain(cfg.AllowedDirs, dir)
 		if !exists {
 			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte("no allowed dir found"))
+			w.Write([]byte("not allowed to browse"))
 			return
 		}
 
