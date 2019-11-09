@@ -39,6 +39,7 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 		query := r.URL.Query()
 
 		dir := query.Get("dir")
+		keyword := query.Get("keyword")
 		spage := query.Get("page")
 		page, err := strconv.Atoi(spage)
 		if err != nil {
@@ -73,11 +74,16 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 		// fmt.Printf("%+v", db.IMapper)
 		// spew.Dump(db.FMapper)
 
-		for i, file := range files {
-			if i < (page-1)*ItemsPerPage {
+		j := 0
+		for _, file := range files {
+			if len(keyword) > 0 && !strings.Contains(file.Name(), keyword) {
 				continue
 			}
-			if i > (page*ItemsPerPage)-1 {
+			j = j + 1
+			if j < (page-1)*ItemsPerPage {
+				continue
+			}
+			if j > (page*ItemsPerPage)-1 {
 				// indicate more files
 				fib := &FileInfoBasic{
 					More: true,
