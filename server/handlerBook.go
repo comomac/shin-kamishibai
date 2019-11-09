@@ -25,7 +25,7 @@ import (
 type Blank string
 
 // ItemsPerPage use for pagination
-var ItemsPerPage = 24
+var ItemsPerPage = 18
 
 // BookInfoResponse for json response on single book information
 type BookInfoResponse struct {
