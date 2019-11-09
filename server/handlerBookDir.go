@@ -47,6 +47,9 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 			page = 1
 		}
 
+		// have clean path, prevent .. bypass
+		dir = filepath.Clean(dir)
+
 		fmt.Println("listing dir (", page, ")", dir)
 
 		// check if the dir is allowed to browse
