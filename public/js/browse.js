@@ -52,7 +52,7 @@ window.onload = function() {
 
 	var tryDirSources = function() {
 		if (dirList.length === 0) {
-			setTimeout(tryDirlist, tryTimeout);
+			setTimeout(tryDirSources, tryTimeout);
 			return;
 		}
 		// load sources for menu

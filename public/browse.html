@@ -289,16 +289,15 @@
 			// add support to console.log if the browser doesn't support it
 			window.console || (console = { log: function() {} });
 
-			// download dir sources
+			// download dir sources, avoid anonymous function to allow profiling
 			function dlDirSources() {
 				ajaxGet("/api/list_sources", null, function(dat) {
 					dirSources = JSON.parse(dat);
-					console.log("cached dir sources", dirSources);
 				});
 			}
 			dlDirSources();
 
-			// download dir lists
+			// download dir lists, avoid anonymous function to allow profiling
 			function dlDirList() {
 				// load in this order
 				//   1 hash dir path
@@ -307,10 +306,8 @@
 				var _path = getHashParams("dir") || window.sessionStorage.lastPath || dirSources[0];
 				var _page = Number(getHashParams("page")) || window.sessionStorage.lastPage || 1;
 
-				console.log("download dir list");
 				ajaxGet("/api/lists_dir?dir=" + _path + "&page=" + _page, null, function(dat) {
 					dirList = JSON.parse(dat);
-					console.log("cached dir list", dirList);
 				});
 			}
 			dlDirList();

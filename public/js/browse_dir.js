@@ -29,7 +29,6 @@ function sourcesReload(reloadFromCache) {
 
 	// just reload locally, no retrive from server
 	if (reloadFromCache === true) {
-		console.log("reload sources");
 		rebuild(dirSources);
 		return;
 	}
@@ -272,7 +271,6 @@ function dirListReload(dir_path, keyword, page, loadFromCache) {
 		while (el.hasChildNodes()) {
 			el.removeChild(el.lastChild);
 		}
-		console.log("loading...", dirList, els);
 
 		el.appendChild(els);
 		return;
