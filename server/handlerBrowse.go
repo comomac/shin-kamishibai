@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -24,8 +23,6 @@ func browse(httpSession *httpsession.DataStore, cfg *config.Config, handler http
 		}
 
 		for _, f := range files {
-			fmt.Println(f.Name())
-
 			w.Write([]byte(f.Name()))
 		}
 	}

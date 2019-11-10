@@ -136,7 +136,6 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 			// find book by path
 			book := db.GetBookByPath(fileFullPath)
 			if book != nil {
-				fmt.Println("found", book)
 				fib.Book = book
 				continue
 			}
