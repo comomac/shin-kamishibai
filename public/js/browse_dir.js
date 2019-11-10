@@ -89,6 +89,7 @@ function dirParseList(files) {
 			img.alt = "folder";
 
 			text = document.createElement("div");
+			text.className = "text";
 			text.innerText = file.name;
 
 			item.appendChild(a);
@@ -138,7 +139,7 @@ function dirParseList(files) {
 			img.alt = "book";
 
 			text = document.createElement("div");
-			text.className = readstate;
+			text.className = "text " + readstate;
 			text.innerText = file.name;
 
 			span = document.createElement("span");
@@ -157,6 +158,7 @@ function dirParseList(files) {
 			item.className = "directory";
 
 			text = document.createElement("div");
+			text.className = "text";
 			text.innerText = "More...";
 
 			item.appendChild(text);
@@ -170,6 +172,7 @@ function dirParseList(files) {
 		item.className = "directory";
 
 		text = document.createElement("div");
+		text.className = "text";
 		text.innerText = "EOF";
 
 		item.appendChild(text);
