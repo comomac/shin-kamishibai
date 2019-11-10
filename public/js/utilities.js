@@ -7,7 +7,7 @@ License: refer to LICENSE file
 
 // function to format the hash to object
 // example: #book=abc.zip&page=7 -> $['book']='abc.zip', $['page']=7
-function getHashParams(key) {
+function hashParamGet(key) {
 	var hashParams = {};
 	var e,
 		a = /\+/g, // Regex for replacing addition symbol with a space
@@ -27,9 +27,26 @@ function getHashParams(key) {
 	return hashParams;
 }
 
+// replace hash without adding history
+function hashParamSet(key, val) {
+	var clone = JSON.parse(JSON.stringify(hashParamGet()));
+
+	clone[key] = val;
+
+	var rp = window.location.protocol + "//" + window.location.host + window.location.pathname + window.location.search + "#";
+
+	for (var k in clone) {
+		rp += k + "=" + encodeURIComponent(clone[k]) + "&";
+	}
+	rp = rp.substring(0, rp.length - 1);
+
+	// replace without adding history
+	window.location.replace(rp);
+}
+
 // return fully formatted hash
 function fullhash(page) {
-	return "book=" + getHashParams("book") + "&page=" + page;
+	return "book=" + hashParamGet("book") + "&page=" + page;
 }
 
 function uport() {
@@ -342,3 +359,10 @@ function queryParams(key) {
 		return hash;
 	}
 }
+
+// // set value, incomplete
+// function queryParamSet(key, val) {
+// 	var clone = JSON.parse(JSON.stringify(queryParams()));
+
+// 	clone[key] = val;
+// }

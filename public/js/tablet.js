@@ -42,9 +42,9 @@ function domready() {
 	initReaderUI();
 
 	// load book immediately if detected
-	if (getHashParams("book")) {
-		var p = getHashParams("page") || 1;
-		readBook(getHashParams("book"), p);
+	if (hashParamGet("book")) {
+		var p = hashParamGet("page") || 1;
+		readBook(hashParamGet("book"), p);
 		return;
 	}
 

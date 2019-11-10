@@ -340,7 +340,7 @@ function staggerImages(page) {
 		i = page - 1;
 	}
 	// read page from hash if not exists
-	if (!!!page) page = Number(getHashParams("page"));
+	if (!!!page) page = Number(hashParamGet("page"));
 	if (isNaN(page)) page = 1;
 
 	// global
@@ -418,7 +418,7 @@ function loadImage() {
 
 // get the page from hash
 function getpage() {
-	var i = parseInt(getHashParams("page"));
+	var i = parseInt(hashParamGet("page"));
 	if (typeof i == "number" && !isNaN(i)) {
 		return i;
 	}

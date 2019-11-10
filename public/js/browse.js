@@ -22,7 +22,7 @@ function updatePathLabel(path) {
 		dir = dir + dirs[i];
 
 		var a = document.createElement("a");
-		a.href = "#dir=" + dir;
+		a.href = "?dir=" + dir;
 		a.setAttribute("dir", dir);
 		a.innerText = dirs[i];
 
@@ -50,13 +50,24 @@ window.onload = function() {
 
 	var tryTimeout = 5;
 
+	var tryDirSourcesCount = 0;
 	var tryDirSources = function() {
-		if (dirList.length === 0) {
+		// seconds / ...
+		var maxRetry = 1000 / tryTimeout;
+
+		if (dirList.length === 0 && tryDirSourcesCount <= maxRetry) {
 			setTimeout(tryDirSources, tryTimeout);
+			tryDirSourcesCount += 1;
 			return;
 		}
-		// load sources for menu
-		sourcesReload(true);
+
+		if (tryDirSourcesCount > maxRetry) {
+			// no cache found, reload from scratch
+			sourcesReload();
+		} else {
+			// load sources for menu
+			sourcesReload(true);
+		}
 	};
 
 	var tryDirlist = function() {
@@ -68,8 +79,8 @@ window.onload = function() {
 		//   1 hash dir path
 		//   2 remembered page
 		//   3 default
-		var _path = getHashParams("dir") || window.sessionStorage.lastPath || dirSources[0];
-		var _page = Number(getHashParams("page")) || window.sessionStorage.lastPage || 1;
+		var _path = hashParamGet("dir") || window.sessionStorage.lastPath || dirSources[0];
+		var _page = Number(hashParamGet("page")) || window.sessionStorage.lastPage || 1;
 		dirListReload(_path, "", _page, true);
 	};
 

@@ -276,7 +276,7 @@
 			// ##### global variables #####
 			var hasTouch = "ontouchstart" in window; //find out if device is touch device or not
 			var items_in_row = 0; // number of items in a row (inside #container)
-			var lastbook = getHashParams("lastbook");
+			var lastbook = hashParamGet("lastbook");
 			if (!lastbook) lastbook = "";
 			var isBookSelectMode = false;
 			var primary_list;
@@ -303,8 +303,12 @@
 				//   1 hash dir path
 				//   2 remembered page
 				//   3 default
-				var _path = getHashParams("dir") || window.sessionStorage.lastPath || dirSources[0];
-				var _page = Number(getHashParams("page")) || window.sessionStorage.lastPage || 1;
+				var _path = hashParamGet("dir") || window.sessionStorage.lastPath || dirSources[0];
+				var _page = Number(hashParamGet("page")) || window.sessionStorage.lastPage || 1;
+
+				if (!_path) {
+					return;
+				}
 
 				ajaxGet("/api/lists_dir?dir=" + _path + "&page=" + _page, null, function(dat) {
 					dirList = JSON.parse(dat);

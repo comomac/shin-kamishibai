@@ -286,8 +286,8 @@ function dirListReload(dir_path, keyword, page, loadFromCache) {
 	dirPage = page;
 	document.getElementById("span-page").textContent = dirPage;
 	// replace url without adding history
-	var rp = window.location.href + "#dir=" + dirPath + "&page=" + dirPage;
-	window.location.replace(rp);
+	hashParamSet("dir", dirPath);
+	hashParamSet("page", dirPage);
 
 	var el = document.getElementById("dir-lists");
 	// delete all child
