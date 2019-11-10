@@ -310,6 +310,10 @@
 					return;
 				}
 
+				// update dir path
+				dirPath = _path;
+				dirPage = _page;
+
 				ajaxGet("/api/lists_dir?dir=" + _path + "&page=" + _page, null, function(dat) {
 					dirList = JSON.parse(dat);
 				});
