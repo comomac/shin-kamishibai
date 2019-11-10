@@ -70,6 +70,25 @@ function container_height_refresh() {
 	// $('#container').css('top', $('#navtop').outerHeight() - $('#navcollapse').outerHeight() );
 }
 
+var rtime;
+var timeout = false;
+var delta = 500;
+function resizeEnd() {
+	if (new Date() - rtime < delta) {
+		setTimeout(resizeEnd, delta);
+	} else {
+		timeout = false;
+		console.log("Done resizing");
+	}
+}
+window.onresize = function() {
+	rtime = new Date();
+	if (timeout === false) {
+		timeout = true;
+		setTimeout(resizeEnd, delta);
+	}
+};
+
 // page init
 window.onload = function() {
 	// remember screen size
@@ -87,27 +106,16 @@ window.onload = function() {
 		document.getElementById("searchbox").value = window.sessionStorage.lastSearch;
 	}
 
-	// load dir and file list
-	setTimeout(function() {
-		setTimeout(function() {
-			// set container top height, make sure it runs after everything
-			container_height_refresh();
-		}, 1000);
+	// setTimeout(function() {
+	// 	// set container top height, make sure it runs after everything
+	// 	container_height_refresh();
+	// }, 1000);
 
-		setTimeout(function() {
-			// load in this order
-			//   1 hash dir path
-			//   2 remembered page
-			//   3 default
-
-			if (dirSources.length < 1) {
-				return;
-			}
-
-			var _path = getHashParams("dir") || window.sessionStorage.lastPath || dirSources[0];
-			var _page = Number(getHashParams("page")) || window.sessionStorage.lastPage || 1;
-
-			dirListReload(_path, "", _page);
-		}, 50);
-	}, 500);
+	// load in this order
+	//   1 hash dir path
+	//   2 remembered page
+	//   3 default
+	var _path = getHashParams("dir") || window.sessionStorage.lastPath || dirSources[0];
+	var _page = Number(getHashParams("page")) || window.sessionStorage.lastPage || 1;
+	dirListReload(_path, "", _page);
 };

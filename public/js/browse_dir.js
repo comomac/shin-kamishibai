@@ -6,7 +6,7 @@ License: refer to LICENSE file
  */
 
 // load dir sources
-function sourcesReload() {
+function sourcesReload(boolLoadFirstSrc) {
 	var ul = document.getElementById("div-sources");
 
 	// remove all child
@@ -39,31 +39,25 @@ function dirOrderBy(str) {
 }
 
 // used for construct dir listing from data
-// returns ul element
+// returns file/dir elements
 function dirParseList(files) {
 	// not files
 	if (files instanceof Array === false) {
 		console.error("input not array");
 		return;
 	}
-	// zero length
-	if (files.length < 1) {
-		console.error("zero length array");
-		return;
-	}
 
-	var ul = document.createElement("ul");
-	ul.id = "ul-lists";
-	ul.className = "ul-lists";
+	// return value
+	var fragment = document.createDocumentFragment();
 
-	var li, a, img, span;
+	var item, a, img, text, span;
 
 	// first block contains info
 	var dirInfo = files[0];
 
-	for (var i in files) {
+	for (var i = 0; i < files.length; i++) {
 		// hack, skip first one
-		if (i === "0") continue;
+		if (i === 0) continue;
 
 		var file = files[i];
 
@@ -79,11 +73,11 @@ function dirParseList(files) {
 
 			if (file.name === "Trash") {
 				// trash
-				icon = "folder-trash.png";
+				// icon = "folder-trash.png";
 			}
 
-			li = document.createElement("li");
-			li.className = "directory";
+			item = document.createElement("div");
+			item.className = "directory";
 
 			a = document.createElement("a");
 			a.setAttribute("dir", full_path);
@@ -92,15 +86,16 @@ function dirParseList(files) {
 
 			img = document.createElement("img");
 			img.src = "/images/" + icon;
+			img.alt = "folder";
 
-			span = document.createElement("span");
-			span.innerText = file.name;
+			text = document.createElement("div");
+			text.innerText = file.name;
 
-			li.appendChild(a);
+			item.appendChild(a);
 			a.appendChild(img);
-			a.appendChild(span);
+			a.appendChild(text);
 
-			ul.appendChild(li);
+			fragment.appendChild(item);
 		} else if (file.name) {
 			// file
 
@@ -129,8 +124,8 @@ function dirParseList(files) {
 				href = "/read.html?book=" + file.id;
 			}
 
-			li = document.createElement("li");
-			li.className = "file";
+			item = document.createElement("div");
+			item.className = "file";
 
 			a = document.createElement("a");
 			a.setAttribute("bookcode", file.id);
@@ -140,48 +135,48 @@ function dirParseList(files) {
 			img = document.createElement("img");
 			img.className = "lazy";
 			img.src = "/api/thumbnail/" + file.id;
-			img.alt = "loading...";
+			img.alt = "book";
+
+			text = document.createElement("div");
+			text.className = readstate;
+			text.innerText = file.name;
 
 			span = document.createElement("span");
-			span.className = readstate;
-			span.innerText = file.name;
-
-			span2 = document.createElement("span");
-			span2.className = "badge badge-secondary bookpages";
-			span2.innerHTML = file.pages;
+			span.className = "book-pages";
+			span.innerHTML = file.pages;
 
 			a.appendChild(img);
+			a.appendChild(text);
 			a.appendChild(span);
-			a.appendChild(span2);
 
-			li.appendChild(a);
+			item.appendChild(a);
 
-			ul.appendChild(li);
+			fragment.appendChild(item);
 		} else if (file.more) {
-			li = document.createElement("li");
-			li.className = "directory";
+			item = document.createElement("div");
+			item.className = "directory";
 
-			span = document.createElement("span");
-			span.innerText = "More...";
+			text = document.createElement("div");
+			text.innerText = "More...";
 
-			li.appendChild(span);
-			ul.appendChild(li);
+			item.appendChild(text);
+			fragment.appendChild(item);
 		}
 	}
 
 	// indicate eof or more of dir list
 	if (files.length === 1) {
-		li = document.createElement("li");
-		li.className = "directory";
+		item = document.createElement("div");
+		item.className = "directory";
 
-		span = document.createElement("span");
-		span.innerText = "EOF";
+		text = document.createElement("div");
+		text.innerText = "EOF";
 
-		li.appendChild(span);
-		ul.appendChild(li);
+		item.appendChild(text);
+		fragment.appendChild(item);
 	}
 
-	return ul;
+	return fragment;
 }
 
 function dirListPrev() {
@@ -267,7 +262,7 @@ function dirListReload(dir_path, keyword, page) {
 	var rp = window.location.href + "#dir=" + dirPath + "&page=" + dirPage;
 	window.location.replace(rp);
 
-	var el = document.getElementById("div-dir-lists");
+	var el = document.getElementById("dir-lists");
 	// delete all child
 	while (el.hasChildNodes()) {
 		el.removeChild(el.lastChild);

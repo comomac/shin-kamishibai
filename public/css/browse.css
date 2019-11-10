@@ -1,3 +1,9 @@
+/*
+ * ---------------
+ * global
+ * ---------------
+ */
+
 body {
 	padding: 0;
 	margin: 0;
@@ -6,6 +12,12 @@ body {
 .hidden {
 	visibility: hidden;
 }
+
+/*
+ * ---------------
+ * basic elements
+ * ---------------
+ */
 
 #searchbox {
 	padding: 12px 16px;
@@ -17,229 +29,12 @@ body {
 	padding: 12px 16px;
 }
 
-#ul-lists {
+#div-lists {
 	left: 0px;
-	position: absolute;
+	/* position: relative; */
 	width: 100%;
 	margin: 0px;
 	padding: 0px;
-}
-
-li {
-	position: relative;
-}
-
-/* book total pages */
-.badge-secondary {
-	color: #fff;
-	background-color: #6c757d;
-}
-.badge {
-	display: inline-block;
-	padding: 0.25em 0.4em;
-	font-size: 75%;
-	font-weight: 700;
-	line-height: 1;
-	text-align: center;
-	white-space: nowrap;
-	vertical-align: baseline;
-	border-radius: 0.25rem;
-	transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out,
-		box-shadow 0.15s ease-in-out;
-}
-
-/* Portrait tablet to landscape and desktop */
-@media (min-width: 768px) {
-	/*@media all and (min-width: 801px) {*/
-	.directory,
-	.file {
-		width: 160px;
-		height: 220px;
-	}
-	.directory a,
-	.file a {
-		min-width: 100%;
-		min-height: 220px;
-	}
-	.directory span,
-	.file a span:first-of-type {
-		position: absolute;
-		margin-left: auto;
-		margin-right: auto;
-		bottom: 5px;
-		font-size: smaller;
-		height: 52px;
-		width: 95%;
-		padding: 5px;
-		overflow: hidden;
-		display: block;
-		color: #000;
-	}
-	.directory img,
-	.file img {
-		min-height: 100px;
-		min-width: 50px;
-		max-width: 140px;
-		max-height: 140px;
-
-		position: relative;
-		top: 5px;
-		margin-left: auto;
-		margin-right: auto;
-		display: block;
-		border-style: solid;
-		border-width: 1px;
-		border-color: #000;
-		box-shadow: 0px 0px 5px #999;
-
-		transition: max-width 0.2s ease, max-height 0.2s ease;
-	}
-	.bookpages {
-		position: absolute;
-		top: 0px;
-		right: 0px;
-	}
-	.file .countdown p {
-		position: absolute;
-		right: 0px;
-		bottom: 0px;
-		font-size: 14em;
-		line-height: 1em;
-		text-align: center;
-		color: black;
-	}
-}
-
-/* Landscape phone to portrait tablet */
-@media (max-width: 767px) {
-	#navtop2 {
-		padding-left: 20px;
-		padding-right: 20px;
-	}
-	#searchbox2 {
-		width: 93%;
-	}
-	.directory,
-	.file {
-		min-width: 24.9%;
-		height: 220px;
-	}
-	.directory a,
-	.file a {
-		min-width: 100%;
-		height: 220px;
-	}
-	.directory span,
-	.file a span:first-of-type {
-		position: absolute;
-		margin-left: auto;
-		margin-right: auto;
-		bottom: 5px;
-		font-size: smaller;
-		height: 52px;
-		width: 95%;
-		padding: 5px;
-		overflow: hidden;
-		display: block;
-		color: #000;
-	}
-	.directory img,
-	.file img {
-		min-height: 100px;
-		min-width: 50px;
-		max-width: 140px;
-		max-height: 140px;
-
-		position: relative;
-		top: 5px;
-		/* too small, just let image move itself */
-		/*margin-left: auto;*/
-		/*margin-right: auto;*/
-		display: block;
-		border-style: solid;
-		border-width: 1px;
-		border-color: #000;
-		box-shadow: 0px 0px 5px #999;
-
-		transition: max-width 0.2s ease, max-height 0.2s ease;
-	}
-	.bookpages {
-		position: absolute;
-		top: 0px;
-		right: 0px;
-	}
-	.file .countdown p {
-		position: absolute;
-		right: 0px;
-		bottom: 0px;
-		font-size: 14em;
-		line-height: 1em;
-		text-align: center;
-		color: black;
-	}
-}
-
-/* Landscape phones and down */
-@media (max-width: 480px) {
-	#navtop2 {
-		padding-left: 20px;
-		padding-right: 20px;
-	}
-	#searchbox2 {
-		width: 93%;
-	}
-	.directory,
-	.file {
-		min-width: 100%;
-		height: 60px;
-	}
-	.directory a,
-	.file a {
-		min-width: 100%;
-		height: 60px;
-	}
-	.directory span,
-	.file a span:first-of-type {
-		position: absolute;
-		top: 0px;
-		font-size: smaller;
-		width: 85%;
-		height: 55px;
-		left: 50px;
-		overflow: hidden;
-		display: block;
-		color: #000;
-		/* covers up the .last-selected-item bg-color, so disabled */
-		/*background-color: #eee;*/
-	}
-	.directory img,
-	.file img {
-		min-height: 10px;
-		min-width: 10px;
-		max-width: 50px;
-		max-height: 50px;
-
-		position: relative;
-		border-style: solid;
-		border-width: 1px;
-		border-color: #000;
-
-		transition: max-width 0.2s ease, max-height 0.2s ease;
-	}
-	.bookpages {
-		position: absolute;
-		top: 0px;
-		right: 0px;
-	}
-	.file .countdown p {
-		position: absolute;
-		right: 50px;
-		bottom: 0px;
-		font-size: 3em;
-		line-height: 1em;
-		text-align: center;
-		color: black;
-	}
 }
 
 .last-selected-item {
@@ -247,32 +42,67 @@ li {
 	background-color: #cdcdcd !important;
 }
 
+/*
+ * ---------------
+ * file / directory rendering
+ * ---------------
+ */
+
 .directory,
 .file {
+	position: relative;
 	float: left;
-	/*width: 160px;*/
-	/*height: 220px;*/
-	/*margin: 10px;*/
-	margin: 0px;
+	min-height: 240px;
 	padding: 0px;
-	list-style: none;
-	/*background-color: #ccc;*/
+	transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out,
+		box-shadow 0.15s ease-in-out;
+
+	/* @media adjust */
+	min-width: 24%;
+	margin: 0.5%;
 }
 
 .directory a,
 .file a {
-	/*width: 160px;*/
-	/*height: 220px;*/
+	width: 100%;
+	height: 100%;
 	display: inline-block;
-	position: relative;
+	position: absolute;
 	background-color: #eee;
+	border: 1px dashed black;
 }
 
-.directory img {
-	border: none !important;
-	box-shadow: none !important;
+.directory img,
+.file img {
+	border: none;
+	box-shadow: none;
+	margin: 1% 2.5% 1% 2.5%;
+	width: 95%;
 }
 
+/* book total pages */
+.book-pages {
+	position: absolute;
+	top: 0px;
+	right: 0px;
+	color: #fff;
+	background-color: #6c757d;
+	display: inline-block;
+	padding: 0.3em 0.5em;
+	font-size: 100%;
+	font-weight: 700;
+	line-height: 1;
+	text-align: center;
+	white-space: nowrap;
+	vertical-align: baseline;
+	border-radius: 0.25rem;
+}
+
+/*
+ * ---------------
+ * delete mode
+ * ---------------
+ */
 .file .countdown {
 	position: absolute;
 	bottom: 0px;

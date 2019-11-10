@@ -1,15 +1,17 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 	<head>
 		<meta charset="utf-8" />
 		<meta
-			content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
+			content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=1.0, maximum-scale=5.0"
 			name="viewport"
 		/>
 		<meta content="yes" name="apple-mobile-web-app-capable" />
 		<meta content="black" name="apple-mobile-web-app-status-bar-style" />
+		<meta name="description" content="Manga / Comic Reader" />
 		<title>Kamishibai</title>
 		<link href="/css/browse.css" rel="stylesheet" type="text/css" />
+		<link href="/css/browse_dir.css" rel="stylesheet" type="text/css" />
 		<link href="/css/browse_read.css" rel="stylesheet" type="text/css" />
 		<link href="/css/browse_dropdown.css" rel="stylesheet" type="text/css" />
 		<script src="/js/utilities.js"></script>
@@ -19,6 +21,11 @@
 		<script src="/js/browse_dir.js"></script>
 	</head>
 	<body>
+		<div>
+			<div id="media-768" style="display:none">768</div>
+			<div id="media-767" style="display:none">--767--</div>
+			<div id="media-480" style="display:none">480</div>
+		</div>
 		<div class="dropdown">
 			<button class="dropbtn">Sources</button>
 			<div class="dropdown-content" id="div-sources"></div>
@@ -52,7 +59,10 @@
 		</div>
 
 		<div class="dropdown">
-			<input class="form-control" id="searchbox" placeholder="search" type="text" />
+			<form>
+				<label for="searchbox">search</label>
+				<input id="searchbox" placeholder="search" type="text" />
+			</form>
 		</div>
 
 		<div style="margin:1em;">
@@ -62,6 +72,6 @@
 			<span id="span-page"></span>
 		</div>
 
-		<div id="div-dir-lists"></div>
+		<div id="dir-lists"></div>
 	</body>
 </html>
