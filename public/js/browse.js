@@ -66,29 +66,6 @@ function updatePathLabel(path) {
 	}
 }
 
-function container_height_refresh() {
-	// $('#container').css('top', $('#navtop').outerHeight() - $('#navcollapse').outerHeight() );
-}
-
-var rtime;
-var timeout = false;
-var delta = 500;
-function resizeEnd() {
-	if (new Date() - rtime < delta) {
-		setTimeout(resizeEnd, delta);
-	} else {
-		timeout = false;
-		console.log("Done resizing");
-	}
-}
-window.onresize = function() {
-	rtime = new Date();
-	if (timeout === false) {
-		timeout = true;
-		setTimeout(resizeEnd, delta);
-	}
-};
-
 // page init
 window.onload = function() {
 	// remember screen size
@@ -105,11 +82,6 @@ window.onload = function() {
 	if (window.sessionStorage.lastSearch) {
 		document.getElementById("searchbox").value = window.sessionStorage.lastSearch;
 	}
-
-	// setTimeout(function() {
-	// 	// set container top height, make sure it runs after everything
-	// 	container_height_refresh();
-	// }, 1000);
 
 	// load in this order
 	//   1 hash dir path

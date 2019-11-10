@@ -6,7 +6,7 @@ License: refer to LICENSE file
  */
 
 // load dir sources
-function sourcesReload(boolLoadFirstSrc) {
+function sourcesReload() {
 	var ul = document.getElementById("div-sources");
 
 	// remove all child
@@ -20,7 +20,7 @@ function sourcesReload(boolLoadFirstSrc) {
 		// update global sources
 		dirSources = srcs;
 
-		for (var i in srcs) {
+		for (var i = 0; i < srcs.length; i++) {
 			var a = document.createElement("a");
 			a.href = "#";
 			a.setAttribute("srcNum", i);
@@ -120,7 +120,6 @@ function dirParseList(files) {
 				href = "/read.html?book=" + file.id + "&page=" + file.page;
 			} else {
 				// unread
-
 				readstate += "0";
 				href = "/read.html?book=" + file.id;
 			}
@@ -134,7 +133,6 @@ function dirParseList(files) {
 			a.onclick = bookClicked;
 
 			img = document.createElement("img");
-			img.className = "lazy";
 			img.src = "/api/thumbnail/" + file.id;
 			img.alt = "book";
 
@@ -293,27 +291,6 @@ function dirListReload(dir_path, keyword, page) {
 
 			// add
 			el.appendChild(els);
-
-			// // make li evenly horizontally filled
-			// var window_width = window.innerWidth;
-			// var li_width = $(".updir")
-			// 	.eq(0)
-			// 	.innerWidth();
-			// var num = parseInt(window_width / li_width);
-			// num = parseInt(window_width / num);
-			// $(".directory, .file").css("width", num + "px");
-
-			// // set container top height
-			// container_height_refresh();
-
-			// make images load only when scrolled into view
-			// var images = document.querySelectorAll("img.lazyload");
-			// lazyload();
-			// new LazyLoad(images, {
-			// 	root: null,
-			// 	rootMargin: "0px",
-			// 	threshold: 0.5
-			// });
 
 			// // get to the last selected item
 			// var el_lsi = $('span:contains("' + window.sessionStorage.lastSelectedItem + '")').parent();
