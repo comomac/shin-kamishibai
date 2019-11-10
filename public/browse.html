@@ -12,10 +12,6 @@
 		<title>Kamishibai</title>
 		<link href="/css/browse_dropdown.css" rel="stylesheet" type="text/css" />
 		<script src="/js/utilities.js"></script>
-		<script src="/js/browse.js"></script>
-		<script src="/js/browse_key.js"></script>
-		<script src="/js/browse_delete.js"></script>
-		<script src="/js/browse_dir.js"></script>
 		<style>
 			/****** global ******/
 			body {
@@ -228,11 +224,6 @@
 		</style>
 	</head>
 	<body>
-		<div>
-			<div id="media-768" style="display:none">768</div>
-			<div id="media-767" style="display:none">--767--</div>
-			<div id="media-480" style="display:none">480</div>
-		</div>
 		<div class="dropdown">
 			<button class="dropbtn">Sources</button>
 			<div class="dropdown-content" id="div-sources"></div>
@@ -280,5 +271,53 @@
 		</div>
 
 		<div id="dir-lists"></div>
+
+		<script>
+			// ##### global variables #####
+			var hasTouch = "ontouchstart" in window; //find out if device is touch device or not
+			var items_in_row = 0; // number of items in a row (inside #container)
+			var lastbook = getHashParams("lastbook");
+			if (!lastbook) lastbook = "";
+			var isBookSelectMode = false;
+			var primary_list;
+			var isDeleteMode = false;
+			var dirSources = []; // string[], sources, bookmarks
+			var dirList = []; // string[], current folder listing
+			var dirPage = 1; // current dir page
+			var dirPath = "/"; // current dir path
+
+			// add support to console.log if the browser doesn't support it
+			window.console || (console = { log: function() {} });
+
+			// download dir sources
+			function dlDirSources() {
+				ajaxGet("/api/list_sources", null, function(dat) {
+					dirSources = JSON.parse(dat);
+					console.log("cached dir sources", dirSources);
+				});
+			}
+			dlDirSources();
+
+			// download dir lists
+			function dlDirList() {
+				// load in this order
+				//   1 hash dir path
+				//   2 remembered page
+				//   3 default
+				var _path = getHashParams("dir") || window.sessionStorage.lastPath || dirSources[0];
+				var _page = Number(getHashParams("page")) || window.sessionStorage.lastPage || 1;
+
+				console.log("download dir list");
+				ajaxGet("/api/lists_dir?dir=" + _path + "&page=" + _page, null, function(dat) {
+					dirList = JSON.parse(dat);
+					console.log("cached dir list", dirList);
+				});
+			}
+			dlDirList();
+		</script>
+		<script src="/js/browse_key.js"></script>
+		<script src="/js/browse_delete.js"></script>
+		<script src="/js/browse_dir.js"></script>
+		<script src="/js/browse.js"></script>
 	</body>
 </html>

@@ -6,19 +6,15 @@ License: refer to LICENSE file
  */
 
 // load dir sources
-function sourcesReload() {
-	var ul = document.getElementById("div-sources");
+function sourcesReload(reloadFromCache) {
+	// internal func to rebuild dom
+	var rebuild = function(srcs) {
+		var ul = document.getElementById("div-sources");
 
-	// remove all child
-	while (ul.hasChildNodes()) {
-		ul.removeChild(ul.lastChild);
-	}
-
-	ajaxGet("/api/list_sources", {}, function(dat) {
-		var srcs = JSON.parse(dat);
-
-		// update global sources
-		dirSources = srcs;
+		// remove all child
+		while (ul.hasChildNodes()) {
+			ul.removeChild(ul.lastChild);
+		}
 
 		for (var i = 0; i < srcs.length; i++) {
 			var a = document.createElement("a");
@@ -29,6 +25,20 @@ function sourcesReload() {
 
 			ul.appendChild(a);
 		}
+	};
+
+	// just reload locally, no retrive from server
+	if (reloadFromCache === true) {
+		console.log("reload sources");
+		rebuild(dirSources);
+		return;
+	}
+
+	ajaxGet("/api/list_sources", {}, function(dat) {
+		// update global sources
+		dirSources = JSON.parse(dat);
+
+		rebuild(dirSources);
 	});
 }
 
@@ -237,7 +247,7 @@ function aSourceSelect(evt) {
 }
 
 // reload listing
-function dirListReload(dir_path, keyword, page) {
+function dirListReload(dir_path, keyword, page, loadFromCache) {
 	// set default to name for order_by
 	var order_by = "name";
 	var co = window.sessionStorage.orderBy;
@@ -250,6 +260,24 @@ function dirListReload(dir_path, keyword, page) {
 				break;
 		}
 	}
+
+	// load from cache
+	if (loadFromCache === true) {
+		updatePathLabel(dir_path);
+
+		var els = dirParseList(dirList);
+		if (!els) return;
+
+		var el = document.getElementById("dir-lists");
+		while (el.hasChildNodes()) {
+			el.removeChild(el.lastChild);
+		}
+		console.log("loading...", dirList, els);
+
+		el.appendChild(els);
+		return;
+	}
+
 	// remember on cookie
 	window.sessionStorage.lastPath = dir_path;
 	window.sessionStorage.lastPage = page;
@@ -277,12 +305,11 @@ function dirListReload(dir_path, keyword, page) {
 			keyword: keyword
 		},
 		function(data) {
-			var jdat = JSON.parse(data);
-			dirList = jdat;
+			dirList = JSON.parse(data);
 
 			updatePathLabel(dir_path);
 
-			var els = dirParseList(jdat);
+			var els = dirParseList(dirList);
 
 			if (!els) {
 				console.error("dirParseList() failed");
