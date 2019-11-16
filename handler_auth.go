@@ -2,7 +2,7 @@ package main
 
 import (
 	"crypto/subtle"
-	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -41,7 +41,7 @@ func login(httpSession *SessionStore, cfg *Config) func(http.ResponseWriter, *ht
 			// create new session
 			httpSession.Set(w, r, LoggedIn, true)
 
-			fmt.Println("logged in")
+			log.Println("logged in")
 
 			// take referer page if provided
 			if len(t.Referer) > 0 {

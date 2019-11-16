@@ -33,14 +33,6 @@ func UserHome(s ...string) string {
 	return dir + s[0]
 }
 
-// BookInfoBasic contains basic book information
-type BookInfoBasic struct {
-	Title  string
-	Author string
-	Volume int
-	Images int
-}
-
 // StringSliceContain search the string slice and see if it contains the searched word, match from first character
 func StringSliceContain(strSlice []string, strSearch string) bool {
 	for _, str := range strSlice {
@@ -52,12 +44,12 @@ func StringSliceContain(strSlice []string, strSearch string) bool {
 	return false
 }
 
-// valid characters for the session id
-const letterBytes = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-// GenerateString create random new string
+// GenerateString create random new string for a certain length
 // https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-go
 func GenerateString(n int) string {
+	// only alpha-numeric
+	const letterBytes = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
 	// slightly less deterministic randomness
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
@@ -88,7 +80,6 @@ func NewUUIDV4() (string, error) {
 	b := make([]byte, 16)
 	_, err := rand.Read(b)
 	if err != nil {
-		fmt.Println("Error: ", err)
 		return "", errors.New("failed to generate uuid")
 	}
 
