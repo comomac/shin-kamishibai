@@ -8,14 +8,19 @@ import (
 	"io"
 )
 
-// ImageThumb create thumbnail while maintaining ratio
+// ImageThumb create thumbnail image
 func ImageThumb(reader io.Reader) ([]byte, error) {
+	return ImageScale(reader, 320, 320)
+}
+
+// ImageScale resize image while maintaining ratio
+func ImageScale(reader io.Reader, miW, miH int) ([]byte, error) {
 	// clone so can use again
 	var b bytes.Buffer
 	reader2 := io.TeeReader(reader, &b)
 	reader3 := bufio.NewReader(&b)
 
-	maxW, maxH := float64(320), float64(320) // maximum allowed thumbnail dimension
+	maxW, maxH := float64(miW), float64(miH) // maximum allowed thumbnail dimension
 	var imgW, imgH float64                   // original image width, height
 	var thmW, thmH int                       // thumbnail width, height
 	var ratio float64                        // image w/h ratio
@@ -70,6 +75,7 @@ func ImageResize(reader io.Reader, owidth int, oheight int) ([]byte, error) {
 	ry = float32(oheight) / float32(bounds.Max.Y)
 	// fmt.Println("ratio x, y", rx, ry)
 
+	// new blank canvas
 	newImg := image.NewRGBA(
 		image.Rectangle{
 			image.Point{0, 0},
@@ -77,6 +83,7 @@ func ImageResize(reader io.Reader, owidth int, oheight int) ([]byte, error) {
 		},
 	)
 
+	// fill canvas using skip pixel (nearest neighbour)
 	for x := 0; x < owidth; x++ {
 		for y := 0; y < oheight; y++ {
 			// imported image cord
