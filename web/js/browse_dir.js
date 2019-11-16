@@ -126,11 +126,11 @@ function dirParseList(files) {
 					readstate += "5";
 				}
 
-				href = "/read.html?book=" + file.id + "&page=" + file.page;
+				href = "/read.html#book=" + file.id + "&page=" + file.page;
 			} else {
 				// unread
 				readstate += "0";
-				href = "/read.html?book=" + file.id;
+				href = "/read.html#book=" + file.id;
 			}
 
 			item = document.createElement("div");
