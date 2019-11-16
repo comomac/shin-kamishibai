@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 )
@@ -15,7 +16,7 @@ import (
 
 // SessionStore holds all the http sessions and other details
 type SessionStore struct {
-	Sessions []*session
+	sessions []*session
 }
 
 // session http session state
@@ -31,6 +32,15 @@ var ErrSessionExpired = errors.New("expired session")
 // ErrNoSession session does not exist
 var ErrNoSession = errors.New("no session")
 
+// Print hack, print all current sessions
+func (ss *SessionStore) Print(r *http.Request) {
+	sid, _ := r.Cookie("SessionID")
+	fmt.Println("session id", sid)
+	for _, s := range ss.sessions {
+		fmt.Printf("%+v\n", s)
+	}
+}
+
 // find session in request
 func (ss *SessionStore) find(r *http.Request) (*session, error) {
 	// parse cookie
@@ -40,7 +50,7 @@ func (ss *SessionStore) find(r *http.Request) (*session, error) {
 		return nil, err
 	}
 
-	for _, s := range ss.Sessions {
+	for _, s := range ss.sessions {
 		if s.ID == sid.Value && s.Expiry.After(time.Now()) {
 			return s, nil
 		}
@@ -59,7 +69,7 @@ func (ss *SessionStore) create(w http.ResponseWriter, r *http.Request) *session 
 		Values: make(map[string]interface{}),
 	}
 
-	ss.Sessions = append(ss.Sessions, newSession)
+	ss.sessions = append(ss.sessions, newSession)
 
 	// set browser session cookie
 	cki := &http.Cookie{
@@ -73,6 +83,8 @@ func (ss *SessionStore) create(w http.ResponseWriter, r *http.Request) *session 
 
 // ready makes sure session exist, if not it will create one on the spot
 func (ss *SessionStore) ready(w http.ResponseWriter, r *http.Request) *session {
+	ss.Print(r)
+
 	// parse cookie
 	_ = r.Cookies()
 	_, err := r.Cookie("SessionID")
@@ -135,18 +147,18 @@ func (ss *SessionStore) Delete(w http.ResponseWriter, r *http.Request) {
 
 // Clear all sessions
 func (ss *SessionStore) Clear() {
-	ss.Sessions = []*session{}
+	ss.sessions = []*session{}
 }
 
 // Scrub clear all expired sessions
 func (ss *SessionStore) Scrub() {
 	nss := []*session{}
 
-	for _, s := range ss.Sessions {
+	for _, s := range ss.sessions {
 		if s.Expiry.After(time.Now()) {
 			nss = append(nss, s)
 		}
 	}
 
-	ss.Sessions = nss
+	ss.sessions = nss
 }

@@ -14,42 +14,23 @@ type Server struct {
 	Config   *Config
 }
 
-type pubServe struct{}
-
-func pubFolder() http.Handler {
-	return &pubServe{}
-}
-func (pf *pubServe) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("%+v\n", r.URL)
-	w.Write([]byte("hi"))
-}
-
 // Start launches http server
 func (svr *Server) Start() {
-	// setup session
-	httpSession := &SessionStore{}
-
 	cfg := svr.Config
 	db := svr.Database
+
+	// setup session
+	httpSession := &SessionStore{}
 
 	h := http.NewServeMux()
 
 	// public folder access
-	fs := http.FileServer(http.Dir("public"))
-	// h.Handle("/", http.StripPrefix("/public/", fs))
-	// h.Handle("/", fs)
-
-	// http root path
-	h.HandleFunc("/", getPageRoot(httpSession, cfg, fs))
-
-	// direct main page with login follow
-	h.HandleFunc("/read.html", getPageMain(httpSession, cfg, fs))
-	h.HandleFunc("/browse.html", getPageMain(httpSession, cfg, fs))
+	fs := http.FileServer(http.Dir("web"))
+	h.HandleFunc("/", handlerFS(fs))
 
 	// public api
 	h.HandleFunc("/login", login(httpSession, cfg))
-	// h.Handle("/public/", pubFolder())
-	// h.Handle("/public/", http.StripPrefix("/public", fs))
+	h.HandleFunc("/check", loginCheck(httpSession, cfg))
 
 	// private api
 	h.HandleFunc("/api/thumbnail/", renderThumbnail(db, cfg)) // /thumbnail/{bookID}
@@ -63,16 +44,12 @@ func (svr *Server) Start() {
 	h.HandleFunc("/api/list_sources", getSources(cfg))
 	h.HandleFunc("/api/lists_dir", dirList(cfg, db))
 
-	h.HandleFunc("/api/check", checkLogin(httpSession, cfg))
-
 	// TODO
 	// http.HandleFunc("/alists", postBooksAuthor(db))
 	// r.Post("/delete_book", deleteBook)
 
 	// middleware
-	h1 := CheckAuthHandler(h, httpSession)
-	// h1 := BasicAuth(h, cfg.Username, cfg.Password, "Authentication required")
-	// h1 := BasicAuthSession(h, cfg, httpSession, "Authentication required")
+	h1 := CheckAuthHandler(h, httpSession, cfg)
 
 	port := cfg.IP + ":" + strconv.Itoa(cfg.Port)
 	fmt.Println("listening on", port)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/subtle"
+	"fmt"
 	"net/http"
 )
 
@@ -38,13 +39,15 @@ func login(httpSession *SessionStore, cfg *Config) func(http.ResponseWriter, *ht
 		strCrypt := SHA256Iter(t.Password, cfg.Salt, ConfigHashIterations)
 		if subtle.ConstantTimeCompare([]byte(strCrypt), []byte(cfg.Crypt)) == 1 {
 			// create new session
-			httpSession.Set(w, r, "LoggedIn", true)
+			httpSession.Set(w, r, LoggedIn, true)
 
 			// // tablet mode
 			// if t.Mode == "tablet" {
 			// 	http.Redirect(w, r, "/tablet.html", http.StatusFound)
 			// 	return
 			// }
+
+			fmt.Println("logged in")
 
 			http.Redirect(w, r, "/browse.html", http.StatusFound)
 			// w.WriteHeader(http.StatusOK)
@@ -53,5 +56,27 @@ func login(httpSession *SessionStore, cfg *Config) func(http.ResponseWriter, *ht
 
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("wrong username or password"))
+	}
+}
+
+// loginCheck so the client knows if current session is login or not
+func loginCheck(httpSession *SessionStore, cfg *Config) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		// not logged in
+		value := httpSession.Get(w, r, LoggedIn)
+		if value != true {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte("failed"))
+			return
+		}
+
+		// logged in
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
 	}
 }

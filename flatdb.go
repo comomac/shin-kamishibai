@@ -120,14 +120,12 @@ func bookCond(fp string) uint64 {
 
 // New initialize new Flat Database
 func (db *FlatDB) New(dbPath string) {
-
 	db.Mutex = &sync.Mutex{}
 	db.Path = dbPath
 	db.MapperID = make(map[string]*IBook)
 	db.MapperPath = make(map[string]*IBook)
 	db.MapperTitle = make(map[string][]*IBook)
 	db.MapperAuthor = make(map[string][]*IBook)
-
 }
 
 // Clear all data
