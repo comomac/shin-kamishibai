@@ -41,16 +41,16 @@ func login(httpSession *SessionStore, cfg *Config) func(http.ResponseWriter, *ht
 			// create new session
 			httpSession.Set(w, r, LoggedIn, true)
 
-			// // tablet mode
-			// if t.Mode == "tablet" {
-			// 	http.Redirect(w, r, "/tablet.html", http.StatusFound)
-			// 	return
-			// }
-
 			fmt.Println("logged in")
 
+			// take referer page if provided
+			fmt.Println("referer", t.Referer)
+			if len(t.Referer) > 0 {
+				http.Redirect(w, r, t.Referer, http.StatusFound)
+				return
+			}
+
 			http.Redirect(w, r, "/browse.html", http.StatusFound)
-			// w.WriteHeader(http.StatusOK)
 			return
 		}
 

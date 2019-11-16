@@ -1,12 +1,33 @@
 <html>
 	<head>
 		<title>Shin-Kamishibai Login</title>
+		<style>
+			* {
+				font-size: larger;
+			}
+			#form {
+				display: block;
+				margin-left: auto;
+				margin-right: auto;
+				width: fit-content;
+			}
+		</style>
 	</head>
 	<body>
-		<form method="post" action="/login">
+		<form method="post" action="/login" id="form">
 			<div>Username: <input type="text" name="username" /></div>
-			<div>Password:<input type="password" name="password" /></div>
+			<div>Password: <input type="password" name="password" /></div>
+			<input type="hidden" name="referer" id="referer" />
 			<div><input type="submit" value="Login" /></div>
 		</form>
+		<script>
+			// set hiddne referer value
+			var regex = /referer=(.+?)($|&)/i;
+			var found = location.search.match(regex);
+			if (found && found.length > 1) {
+				var el = document.getElementById("referer");
+				el.value = found[1];
+			}
+		</script>
 	</body>
 </html>
