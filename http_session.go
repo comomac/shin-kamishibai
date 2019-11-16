@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 )
@@ -32,19 +31,8 @@ var ErrSessionExpired = errors.New("expired session")
 // ErrNoSession session does not exist
 var ErrNoSession = errors.New("no session")
 
-// Print hack, print all current sessions
-func (ss *SessionStore) Print(r *http.Request) {
-	sid, _ := r.Cookie("SessionID")
-	fmt.Println("session id", sid)
-	for _, s := range ss.sessions {
-		fmt.Printf("%+v\n", s)
-	}
-}
-
 // find session in request
 func (ss *SessionStore) find(r *http.Request) (*session, error) {
-	// parse cookie
-	_ = r.Cookies()
 	sid, err := r.Cookie("SessionID")
 	if err != nil {
 		return nil, err
@@ -73,23 +61,24 @@ func (ss *SessionStore) create(w http.ResponseWriter, r *http.Request) *session 
 
 	// set browser session cookie
 	cki := &http.Cookie{
-		Name:  "SessionID",
-		Value: newSession.ID,
+		Name:     "SessionID",
+		Value:    newSession.ID,
+		Path:     "/",
+		SameSite: http.SameSiteStrictMode,
 	}
 	http.SetCookie(w, cki)
+	// remember to stop other .create(), making multiple session id
+	r.AddCookie(cki)
 
 	return newSession
 }
 
 // ready makes sure session exist, if not it will create one on the spot
 func (ss *SessionStore) ready(w http.ResponseWriter, r *http.Request) *session {
-	ss.Print(r)
-
-	// parse cookie
-	_ = r.Cookies()
+	// find cookie
 	_, err := r.Cookie("SessionID")
 	if err != nil {
-		// no session id in cookie
+		// cookie with session id
 
 		// create
 		ns := ss.create(w, r)

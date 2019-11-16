@@ -17,7 +17,9 @@ func CheckAuthHandler(h http.Handler, httpSession *SessionStore, cfg *Config) ht
 		// h.ServeHTTP(w, r)
 		// return
 
-		// fmt.Println("method:", r.Method, "url: ", r.URL.Path)
+		// initialise session
+		_ = httpSession.ID(w, r)
+		// fmt.Println("method:", r.Method, "url: ", r.URL.Path, "session", sid)
 
 		// http root path
 		switch r.URL.Path {
@@ -41,13 +43,6 @@ func CheckAuthHandler(h http.Handler, httpSession *SessionStore, cfg *Config) ht
 			if value != true {
 				w.WriteHeader(http.StatusUnauthorized)
 				w.Write([]byte("Unauthorised!"))
-				return
-			}
-
-			// check if logged in
-			if value != true {
-				w.WriteHeader(http.StatusForbidden)
-				w.Write([]byte("Not logged in."))
 				return
 			}
 

@@ -44,7 +44,6 @@ func login(httpSession *SessionStore, cfg *Config) func(http.ResponseWriter, *ht
 			fmt.Println("logged in")
 
 			// take referer page if provided
-			fmt.Println("referer", t.Referer)
 			if len(t.Referer) > 0 {
 				http.Redirect(w, r, t.Referer, http.StatusFound)
 				return
