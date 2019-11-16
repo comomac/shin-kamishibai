@@ -303,7 +303,7 @@ function setScreenSize() {
 }
 
 function checkLogin(callbackSuccess, callbackFail) {
-	ajaxGet("/api/check", null, callbackSuccess, callbackFail);
+	ajaxGet("/check", null, callbackSuccess, callbackFail);
 }
 
 function doLogin() {
