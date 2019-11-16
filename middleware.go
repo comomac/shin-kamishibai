@@ -1,13 +1,9 @@
-package server
+package main
 
 import (
 	"crypto/subtle"
 	"net/http"
 	"strings"
-
-	"github.com/comomac/shin-kamishibai/pkg/config"
-	httpsession "github.com/comomac/shin-kamishibai/pkg/httpSession"
-	"github.com/comomac/shin-kamishibai/pkg/lib"
 )
 
 // BasicAuth does basic http auth
@@ -35,14 +31,14 @@ func BasicAuth(handler http.Handler, username, password, realm string) http.Hand
 }
 
 // BasicAuthSession does basic http auth with session support
-func BasicAuthSession(handler http.Handler, cfg *config.Config, httpSession *httpsession.DataStore, realm string) http.HandlerFunc {
+func BasicAuthSession(handler http.Handler, cfg *Config, httpSession *SessionStore, realm string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// authentication
 		if r.URL.Path == "/auth" {
 			user, pass, ok := r.BasicAuth()
 
 			// generate crypt hash
-			strCrypt := lib.SHA256Iter(pass, cfg.Salt, cfg.Iterations)
+			strCrypt := SHA256Iter(pass, cfg.Salt, cfg.Iterations)
 			// more secure compare hash
 			if !ok || subtle.ConstantTimeCompare([]byte(user), []byte(cfg.Username)) != 1 || subtle.ConstantTimeCompare([]byte(strCrypt), []byte(cfg.Crypt)) != 1 {
 				w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
@@ -51,19 +47,8 @@ func BasicAuthSession(handler http.Handler, cfg *config.Config, httpSession *htt
 				return
 			}
 
-			// construct new session value
-			values := httpsession.Values{
-				"LoggedIn": true,
-			}
 			// remember new session in memory
-			newSession := httpSession.Add(r, values)
-
-			// set client session cookie
-			newCookie := &http.Cookie{
-				Name:  "SessionID",
-				Value: newSession.ID,
-			}
-			http.SetCookie(w, newCookie)
+			httpSession.Set(w, r, "LoggedIn", true)
 
 			// force expiring the http basic auth so browser wont remember user/pass
 			w.WriteHeader(http.StatusUnauthorized)
@@ -74,8 +59,8 @@ func BasicAuthSession(handler http.Handler, cfg *config.Config, httpSession *htt
 		// private
 
 		// get session detail
-		value, err := httpSession.Get(r, "LoggedIn")
-		if err != nil {
+		value := httpSession.Get(w, r, "LoggedIn")
+		if value != true {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("Unauthorised!"))
 			return
@@ -94,7 +79,7 @@ func BasicAuthSession(handler http.Handler, cfg *config.Config, httpSession *htt
 
 // CheckAuthHandler is middleware to check and make sure user is logged in
 // ref https://cryptic.io/go-http/
-func CheckAuthHandler(h http.Handler, httpSession *httpsession.DataStore) http.Handler {
+func CheckAuthHandler(h http.Handler, httpSession *SessionStore) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// // TODO remove when done
 		// // hack, force auth off during dev
@@ -111,8 +96,8 @@ func CheckAuthHandler(h http.Handler, httpSession *httpsession.DataStore) http.H
 		// fmt.Println("api: ", r.URL.Path)
 
 		// get session detail
-		value, err := httpSession.Get(r, "LoggedIn")
-		if err != nil {
+		value := httpSession.Get(w, r, "LoggedIn")
+		if value != true {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("Unauthorised!"))
 			return

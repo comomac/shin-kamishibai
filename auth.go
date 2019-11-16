@@ -1,16 +1,12 @@
-package server
+package main
 
 import (
 	"crypto/subtle"
 	"net/http"
-
-	"github.com/comomac/shin-kamishibai/pkg/config"
-	httpsession "github.com/comomac/shin-kamishibai/pkg/httpSession"
-	"github.com/comomac/shin-kamishibai/pkg/lib"
 )
 
 // login is for basic http login
-func login(httpSession *httpsession.DataStore, cfg *config.Config) func(http.ResponseWriter, *http.Request) {
+func login(httpSession *SessionStore, cfg *Config) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			w.WriteHeader(http.StatusNotFound)
@@ -39,21 +35,10 @@ func login(httpSession *httpsession.DataStore, cfg *config.Config) func(http.Res
 		}
 
 		// more secure compare
-		strCrypt := lib.SHA256Iter(t.Password, cfg.Salt, config.ConfigHashIterations)
+		strCrypt := SHA256Iter(t.Password, cfg.Salt, ConfigHashIterations)
 		if subtle.ConstantTimeCompare([]byte(strCrypt), []byte(cfg.Crypt)) == 1 {
-			values := httpsession.Values{
-				"LoggedIn": true,
-			}
-
-			newSession := httpSession.Add(r, values)
-			// fmt.Printf("sess dat: %+v\n", sess)
-
-			newCookie := &http.Cookie{
-				Name:  "SessionID",
-				Value: newSession.ID,
-			}
-
-			http.SetCookie(w, newCookie)
+			// create new session
+			httpSession.Set(w, r, "LoggedIn", true)
 
 			// // tablet mode
 			// if t.Mode == "tablet" {

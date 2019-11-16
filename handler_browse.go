@@ -1,15 +1,12 @@
-package server
+package main
 
 import (
 	"io/ioutil"
 	"log"
 	"net/http"
-
-	"github.com/comomac/shin-kamishibai/pkg/config"
-	httpsession "github.com/comomac/shin-kamishibai/pkg/httpSession"
 )
 
-func browse(httpSession *httpsession.DataStore, cfg *config.Config, handler http.Handler) func(http.ResponseWriter, *http.Request) {
+func browse(httpSession *SessionStore, cfg *Config, handler http.Handler) func(http.ResponseWriter, *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {

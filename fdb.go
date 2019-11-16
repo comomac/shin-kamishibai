@@ -1,4 +1,4 @@
-package fdb
+package main
 
 // flat file db
 
@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"os"
 	"path"
@@ -119,27 +118,16 @@ func bookCond(fp string) uint64 {
 	return 0
 }
 
-// New create new Flat Database
-func New(params ...string) *FlatDB {
-	// default path
-	dbPath := "./db.txt"
+// New initialize new Flat Database
+func (db *FlatDB) New(dbPath string) {
 
-	if len(params) == 1 {
-		dbPath = params[0]
-	} else if len(params) > 1 {
-		log.Fatal("Too many parameters for fdb.New!")
-	}
+	db.Mutex = &sync.Mutex{}
+	db.Path = dbPath
+	db.MapperID = make(map[string]*IBook)
+	db.MapperPath = make(map[string]*IBook)
+	db.MapperTitle = make(map[string][]*IBook)
+	db.MapperAuthor = make(map[string][]*IBook)
 
-	db := &FlatDB{
-		Mutex:        &sync.Mutex{},
-		Path:         dbPath,
-		MapperID:     make(map[string]*IBook),
-		MapperPath:   make(map[string]*IBook),
-		MapperTitle:  make(map[string][]*IBook),
-		MapperAuthor: make(map[string][]*IBook),
-	}
-
-	return db
 }
 
 // Clear all data
@@ -400,7 +388,7 @@ func visit(db *FlatDB) func(string, os.FileInfo, error) error {
 }
 
 // AddFile adds book to db
-func AddFile(db *FlatDB, fpath string) (*Book, error) {
+func (db *FlatDB) AddFile(fpath string) (*Book, error) {
 	var err error
 
 	// get file state, e.g. size
@@ -440,16 +428,12 @@ func AddFile(db *FlatDB, fpath string) (*Book, error) {
 }
 
 // AddDirR recursively add books from directory
-func AddDirR(db *FlatDB, dir string) error {
-	err := filepath.Walk(dir, visit(db))
-	if err != nil {
-		return err
-	}
-	return nil
+func (db *FlatDB) AddDirR(dir string) error {
+	return filepath.Walk(dir, visit(db))
 }
 
 // AddDir add books from directory
-func AddDir(db *FlatDB, dir string) error {
+func (db *FlatDB) AddDir(dir string) error {
 	// filepath.Glob() dont work with unicode file name dir so using ioutil.ReadDir()
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {

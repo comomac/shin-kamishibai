@@ -1,4 +1,4 @@
-package server
+package main
 
 import (
 	"archive/zip"
@@ -14,11 +14,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/comomac/shin-kamishibai/pkg/config"
-	"github.com/comomac/shin-kamishibai/pkg/fdb"
-	"github.com/comomac/shin-kamishibai/pkg/img"
-	"github.com/comomac/shin-kamishibai/pkg/lib"
 )
 
 // Blank use to blank sensitive or not needed data
@@ -29,7 +24,7 @@ var ItemsPerPage = 18
 
 // BookInfoResponse for json response on single book information
 type BookInfoResponse struct {
-	*fdb.Book
+	*Book
 	Fullpath Blank `json:"fullpath,omitempty"`
 	Inode    Blank `json:"inode,omitempty"`
 	Itime    Blank `json:"itime,omitempty"`
@@ -42,7 +37,7 @@ type BooksInfoResponse map[string]*BookInfoResponse
 type BooksResponse []*BookInfoResponse
 
 // getBookInfo return indivisual book info
-func getBookInfo(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
+func getBookInfo(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -71,7 +66,7 @@ func getBookInfo(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 }
 
 // getBooksInfo return several books info
-func getBooksInfo(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
+func getBooksInfo(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -105,7 +100,7 @@ func getBooksInfo(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 }
 
 // get list of dirs for access
-func getSources(cfg *config.Config) func(http.ResponseWriter, *http.Request) {
+func getSources(cfg *Config) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cookies := r.Cookies()
 		fmt.Printf("%+v\n", cookies)
@@ -127,7 +122,7 @@ func getSources(cfg *config.Config) func(http.ResponseWriter, *http.Request) {
 }
 
 // post books returns all the book info
-func getBooks(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
+func getBooks(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -188,7 +183,7 @@ func getBooks(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 }
 
 // setBookmark remember where the book is read upto
-func setBookmark(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
+func setBookmark(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -222,7 +217,7 @@ func setBookmark(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 }
 
 // renderThumbnail gives thumbnail on the book
-func renderThumbnail(db *fdb.FlatDB, cfg *config.Config) func(http.ResponseWriter, *http.Request) {
+func renderThumbnail(db *FlatDB, cfg *Config) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -247,7 +242,7 @@ func renderThumbnail(db *fdb.FlatDB, cfg *config.Config) func(http.ResponseWrite
 		outFile := filepath.Join(filepath.Dir(cfg.Path), "cache", bookID+".jpg")
 
 		// load existing thumbnail
-		isExist, _ := lib.IsFileExists(outFile)
+		isExist, _ := IsFileExists(outFile)
 		if isExist {
 			imgDat, err := ioutil.ReadFile(outFile)
 			if err != nil {
@@ -273,7 +268,7 @@ func renderThumbnail(db *fdb.FlatDB, cfg *config.Config) func(http.ResponseWrite
 		// get zip file list
 		files := []string{}
 		for _, f := range zr.File {
-			if !fdb.RegexSupportedImageExt.MatchString(f.Name) {
+			if !RegexSupportedImageExt.MatchString(f.Name) {
 				continue
 			}
 
@@ -282,9 +277,9 @@ func renderThumbnail(db *fdb.FlatDB, cfg *config.Config) func(http.ResponseWrite
 
 		// do natural sort
 		sort.Slice(files, func(i, j int) bool {
-			f1 := fdb.RegexSupportedImageExt.ReplaceAllString(files[i], "")
-			f2 := fdb.RegexSupportedImageExt.ReplaceAllString(files[j], "")
-			return lib.AlphaNumCaseCompare(f1, f2)
+			f1 := RegexSupportedImageExt.ReplaceAllString(files[i], "")
+			f2 := RegexSupportedImageExt.ReplaceAllString(files[j], "")
+			return AlphaNumCaseCompare(f1, f2)
 		})
 
 		// get first image file
@@ -306,7 +301,7 @@ func renderThumbnail(db *fdb.FlatDB, cfg *config.Config) func(http.ResponseWrite
 		}
 
 		// generate thumb
-		imgDat, err = img.Thumb(rc)
+		imgDat, err = ImageThumb(rc)
 		if err != nil {
 			responseError(w, err)
 			return
@@ -332,7 +327,7 @@ func renderThumbnail(db *fdb.FlatDB, cfg *config.Config) func(http.ResponseWrite
 }
 
 // getPageOnly gives the image of the page from the book
-func getPageOnly(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
+func getPageOnly(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -351,7 +346,7 @@ func getPageOnly(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 }
 
 // getPageNRead gives the image of the page from the book and sets page read
-func getPageNRead(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
+func getPageNRead(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -371,7 +366,7 @@ func getPageNRead(db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
 
 // cbzPage shared function for /cbz/... and /read/...
 // updatePage == true will update bookmark page
-func cbzPage(w http.ResponseWriter, r *http.Request, db *fdb.FlatDB, bookID string, pg int, updatePage bool) {
+func cbzPage(w http.ResponseWriter, r *http.Request, db *FlatDB, bookID string, pg int, updatePage bool) {
 	db.Mutex.Lock()
 	ibook := db.MapperID[bookID]
 	db.Mutex.Unlock()
@@ -401,7 +396,7 @@ func cbzPage(w http.ResponseWriter, r *http.Request, db *fdb.FlatDB, bookID stri
 
 	files := []string{}
 	for _, f := range zr.File {
-		if !fdb.RegexSupportedImageExt.MatchString(f.Name) {
+		if !RegexSupportedImageExt.MatchString(f.Name) {
 			continue
 		}
 
@@ -411,9 +406,9 @@ func cbzPage(w http.ResponseWriter, r *http.Request, db *fdb.FlatDB, bookID stri
 
 	// do natural sort
 	sort.Slice(files, func(i, j int) bool {
-		f1 := fdb.RegexSupportedImageExt.ReplaceAllString(files[i], "")
-		f2 := fdb.RegexSupportedImageExt.ReplaceAllString(files[j], "")
-		return lib.AlphaNumCaseCompare(f1, f2)
+		f1 := RegexSupportedImageExt.ReplaceAllString(files[i], "")
+		f2 := RegexSupportedImageExt.ReplaceAllString(files[j], "")
+		return AlphaNumCaseCompare(f1, f2)
 	})
 	// fmt.Println("-------------------------- sorted --------------------------")
 	// for _, file := range files {

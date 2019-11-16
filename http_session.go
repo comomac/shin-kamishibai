@@ -1,11 +1,9 @@
-package httpsession
+package main
 
 import (
 	"errors"
 	"net/http"
 	"time"
-
-	"github.com/comomac/shin-kamishibai/pkg/lib"
 )
 
 //
@@ -15,26 +13,26 @@ import (
 // Browser session state stored in server memory
 //
 
-// DataStore holds data for http sessions
-type DataStore struct {
-	Sessions []Session
+// SessionStore holds all the http sessions and other details
+type SessionStore struct {
+	Sessions []*session
 }
 
-// Values generic key:value for the session data
-type Values map[string]interface{}
-
-// Session http session state
-type Session struct {
-	Expiry time.Time // expiry time that this cookie becomes invalid
-	ID     string    // session id
-	Values Values    // holds data in key:value
+// session http session state
+type session struct {
+	Expiry time.Time              // expiry time that this cookie becomes invalid
+	ID     string                 // session id
+	Values map[string]interface{} // holds data in key:value
 }
 
 // ErrSessionExpired session is expired
 var ErrSessionExpired = errors.New("expired session")
 
+// ErrNoSession session does not exist
+var ErrNoSession = errors.New("no session")
+
 // find session in request
-func (ss *DataStore) find(r *http.Request) (*Session, error) {
+func (ss *SessionStore) find(r *http.Request) (*session, error) {
 	// parse cookie
 	_ = r.Cookies()
 	sid, err := r.Cookie("SessionID")
@@ -43,82 +41,106 @@ func (ss *DataStore) find(r *http.Request) (*Session, error) {
 	}
 
 	for _, s := range ss.Sessions {
-		if s.ID == sid.Value {
-			return &s, nil
+		if s.ID == sid.Value && s.Expiry.After(time.Now()) {
+			return s, nil
 		}
 	}
 
-	return nil, ErrSessionExpired
+	return nil, ErrNoSession
+}
+
+// create construct session one session immediately and add to session store
+func (ss *SessionStore) create(w http.ResponseWriter, r *http.Request) *session {
+	cid := GenerateString(20)
+
+	newSession := &session{
+		Expiry: time.Now().AddDate(0, 1, 0), // set default to 1 month expiry
+		ID:     cid,
+		Values: make(map[string]interface{}),
+	}
+
+	ss.Sessions = append(ss.Sessions, newSession)
+
+	// set browser session cookie
+	cki := &http.Cookie{
+		Name:  "SessionID",
+		Value: newSession.ID,
+	}
+	http.SetCookie(w, cki)
+
+	return newSession
+}
+
+// ready makes sure session exist, if not it will create one on the spot
+func (ss *SessionStore) ready(w http.ResponseWriter, r *http.Request) *session {
+	// parse cookie
+	_ = r.Cookies()
+	_, err := r.Cookie("SessionID")
+	if err != nil {
+		// no session id in cookie
+
+		// create
+		ns := ss.create(w, r)
+
+		return ns
+	}
+
+	// find session
+	s, err := ss.find(r)
+	if err != nil {
+		// no session
+
+		// create
+		ns := ss.create(w, r)
+
+		return ns
+	}
+
+	// existing session
+	return s
+}
+
+// ID get current session id
+func (ss *SessionStore) ID(w http.ResponseWriter, r *http.Request) string {
+	s := ss.ready(w, r)
+
+	return s.ID
 }
 
 // Set session data
-func (ss *DataStore) Set(r *http.Request, key string, value interface{}) error {
-	s, err := ss.find(r)
-	if err != nil {
-		return err
-	}
-
-	if s.Expiry.Before(time.Now()) {
-		return ErrSessionExpired
-	}
+func (ss *SessionStore) Set(w http.ResponseWriter, r *http.Request, key string, value interface{}) {
+	s := ss.ready(w, r)
 
 	s.Values[key] = value
-
-	return nil
 }
 
-// Get session data
-func (ss *DataStore) Get(r *http.Request, key string) (interface{}, error) {
-	s, err := ss.find(r)
-	if err != nil {
-		return nil, err
-	}
+// Get current session data
+func (ss *SessionStore) Get(w http.ResponseWriter, r *http.Request, key string) interface{} {
+	s := ss.ready(w, r)
 
-	if s.Expiry.Before(time.Now()) {
-		return nil, errors.New("expired session")
-	}
-
-	return s.Values[key], nil
+	return s.Values[key]
 }
 
 // Delete force delete session
-func (ss *DataStore) Delete(r *http.Request, id string) error {
-	s, err := ss.find(r)
-	if err != nil {
-		return err
-	}
+func (ss *SessionStore) Delete(w http.ResponseWriter, r *http.Request) {
+	s := ss.ready(w, r)
 
 	s.Expiry = time.Unix(0, 0)
 
 	ss.Scrub()
 
-	return nil
-}
-
-// Add new session
-func (ss *DataStore) Add(r *http.Request, values Values) Session {
-	sid := lib.GenerateString(20)
-
-	newSession := Session{
-		Expiry: time.Now().AddDate(0, 1, 0), // set default to 1 month expiry
-		ID:     sid,
-		Values: values,
-	}
-
-	ss2 := append(ss.Sessions, newSession)
-	ss.Sessions = ss2
-
-	return newSession
+	// create new session
+	ss.create(w, r)
 }
 
 // Clear all sessions
-func (ss *DataStore) Clear() {
-	ss = nil
+func (ss *SessionStore) Clear() {
+	ss.Sessions = []*session{}
 }
 
 // Scrub clear all expired sessions
-func (ss *DataStore) Scrub() {
-	nss := []Session{}
+func (ss *SessionStore) Scrub() {
+	nss := []*session{}
 
 	for _, s := range ss.Sessions {
 		if s.Expiry.After(time.Now()) {

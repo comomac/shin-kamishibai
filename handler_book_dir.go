@@ -1,4 +1,4 @@
-package server
+package main
 
 import (
 	"encoding/json"
@@ -10,10 +10,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/comomac/shin-kamishibai/pkg/config"
-	"github.com/comomac/shin-kamishibai/pkg/fdb"
-	"github.com/comomac/shin-kamishibai/pkg/lib"
 )
 
 // FileList contains list of files and folders
@@ -26,11 +22,11 @@ type FileInfoBasic struct {
 	Name    string    `json:"name,omitempty"`     // file, dir
 	ModTime time.Time `json:"mod_time,omitempty"` // file modified time
 	More    bool      `json:"more,omitempty"`     // indicate more files behind
-	*fdb.Book
+	*Book
 }
 
 // dirList lists the folder content, only the folder and the manga will be shown
-func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http.Request) {
+func dirList(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -53,7 +49,7 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 		fmt.Println("listing dir (", page, ")", dir)
 
 		// check if the dir is allowed to browse
-		exists := lib.StringSliceContain(cfg.AllowedDirs, dir)
+		exists := StringSliceContain(cfg.AllowedDirs, dir)
 		if !exists {
 			w.WriteHeader(http.StatusForbidden)
 			w.Write([]byte("not allowed to browse"))
@@ -148,7 +144,7 @@ func dirList(cfg *config.Config, db *fdb.FlatDB) func(http.ResponseWriter, *http
 			}
 
 			// book not found, add now
-			nbook, err := fdb.AddFile(db, fileFullPath)
+			nbook, err := db.AddFile(fileFullPath)
 			if err == nil {
 				fib.Book = nbook
 				continue

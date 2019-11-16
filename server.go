@@ -1,4 +1,4 @@
-package server
+package main
 
 import (
 	"fmt"
@@ -6,16 +6,12 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-
-	"github.com/comomac/shin-kamishibai/pkg/config"
-	"github.com/comomac/shin-kamishibai/pkg/fdb"
-	httpsession "github.com/comomac/shin-kamishibai/pkg/httpSession"
 )
 
 // Server holds link to database and configuration
 type Server struct {
-	db  fdb.FlatDB
-	cfg config.Config
+	Database *FlatDB
+	Config   *Config
 }
 
 type pubServe struct{}
@@ -29,9 +25,12 @@ func (pf *pubServe) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // Start launches http server
-func Start(cfg *config.Config, db *fdb.FlatDB) {
+func (svr *Server) Start() {
 	// setup session
-	httpSession := &httpsession.DataStore{}
+	httpSession := &SessionStore{}
+
+	cfg := svr.Config
+	db := svr.Database
 
 	h := http.NewServeMux()
 

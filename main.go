@@ -5,16 +5,11 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-
-	"github.com/comomac/shin-kamishibai/pkg/config"
-	"github.com/comomac/shin-kamishibai/pkg/fdb"
-	"github.com/comomac/shin-kamishibai/pkg/lib"
-	svr "github.com/comomac/shin-kamishibai/server"
 )
 
-func loadDirs(db *fdb.FlatDB, allowedDirs []string) {
+func loadDirs(db *FlatDB, allowedDirs []string) {
 	for _, dir := range allowedDirs {
-		err := fdb.AddDirR(db, dir)
+		err := db.AddDirR(dir)
 		if err != nil {
 			fmt.Println("failed to add dir -", err)
 		}
@@ -31,20 +26,26 @@ func main() {
 
 	// use home path if ~/ exists
 	if strings.HasPrefix(cfgFilePath, "~/") {
-		cfgFilePath = filepath.Join(lib.UserHome(), cfgFilePath[2:])
+		cfgFilePath = filepath.Join(UserHome(), cfgFilePath[2:])
 	}
 
-	cfg, err := config.Read(cfgFilePath)
+	config := &Config{}
+	err := config.Read(cfgFilePath)
 	if err != nil {
 		fmt.Println("failed to read config file")
 		panic(err)
 	}
 
 	// new db
-	db := fdb.New(cfg.DBPath)
+	db := &FlatDB{}
+	db.New(config.DBPath)
 	db.Load()
 	// load all books recursively
-	go loadDirs(db, cfg.AllowedDirs)
+	go loadDirs(db, config.AllowedDirs)
 
-	svr.Start(cfg, db)
+	svr := Server{
+		Database: db,
+		Config:   config,
+	}
+	svr.Start()
 }

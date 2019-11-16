@@ -1,4 +1,4 @@
-package config
+package main
 
 import (
 	"encoding/json"
@@ -8,8 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-
-	"github.com/comomac/shin-kamishibai/pkg/lib"
 )
 
 // Config holds server config
@@ -32,28 +30,26 @@ type Config struct {
 const ConfigHashIterations = 100000
 
 // Read read and parse configuration file
-func Read(fpath string) (*Config, error) {
+func (cfg *Config) Read(fpath string) error {
 	byteDat, err := ioutil.ReadFile(fpath)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	var cfg Config
 
 	err = json.Unmarshal(byteDat, &cfg)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// sanity check
 	if cfg.Port <= 0 || cfg.Port > 65535 {
-		return nil, errors.New("invalid port number " + strconv.Itoa(cfg.Port))
+		return errors.New("invalid port number " + strconv.Itoa(cfg.Port))
 	}
 	if cfg.Crypt == "" && len(cfg.Password) < 6 {
-		return nil, errors.New("password too short, min of 6")
+		return errors.New("password too short, min of 6")
 	}
 	if len(cfg.Username) < 3 {
-		return nil, errors.New("username too short, min length 3")
+		return errors.New("username too short, min length 3")
 	}
 
 	// overwrite
@@ -67,16 +63,16 @@ func Read(fpath string) (*Config, error) {
 	// hash password
 	if cfg.Crypt == "" {
 		// generate salt, longer because of limited character list
-		cfg.Salt = lib.GenerateString(128)
+		cfg.Salt = GenerateString(128)
 		// calc password hash
-		cfg.Crypt = lib.SHA256Iter(cfg.Password, cfg.Salt, ConfigHashIterations)
+		cfg.Crypt = SHA256Iter(cfg.Password, cfg.Salt, ConfigHashIterations)
 		// clear password
 		cfg.Password = ""
 		// save new cfg file
-		err := Save(&cfg, cfg.Path)
+		err := cfg.Save(cfg.Path)
 		if err != nil {
 			fmt.Println("failed to save config file (b)")
-			return nil, err
+			return err
 		}
 	}
 
@@ -84,23 +80,23 @@ func Read(fpath string) (*Config, error) {
 	cacheDir := filepath.Join(filepath.Dir(cfg.Path), "cache")
 	err = os.MkdirAll(cacheDir, os.ModePerm)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &cfg, nil
+	return nil
 }
 
 // Save save config to json file
-func Save(config *Config, fpath string) error {
+func (cfg *Config) Save(fpath string) error {
 	// create a copy
-	config2 := config
+	config2 := cfg
 	// clear, setup setting
 	config2.Path = ""
 	config2.Password = ""
 	config2.Iterations = ConfigHashIterations
 
 	// save to file
-	byteDat2, err := json.MarshalIndent(config, "", "  ")
+	byteDat2, err := json.MarshalIndent(config2, "", "  ")
 	if err != nil {
 		return err
 	}

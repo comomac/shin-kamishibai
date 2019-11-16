@@ -1,14 +1,11 @@
-package server
+package main
 
 import (
 	"net/http"
-
-	"github.com/comomac/shin-kamishibai/pkg/config"
-	httpsession "github.com/comomac/shin-kamishibai/pkg/httpSession"
 )
 
 // checkLogin so the client knows if current session is login or not
-func checkLogin(httpSession *httpsession.DataStore, cfg *config.Config) func(http.ResponseWriter, *http.Request) {
+func checkLogin(httpSession *SessionStore, cfg *Config) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -22,8 +19,8 @@ func checkLogin(httpSession *httpsession.DataStore, cfg *config.Config) func(htt
 		// return
 
 		// not logged in
-		value, err := httpSession.Get(r, "LoggedIn")
-		if err != nil || value != true {
+		value := httpSession.Get(w, r, "LoggedIn")
+		if value != true {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte("failed"))
 			return
@@ -36,7 +33,7 @@ func checkLogin(httpSession *httpsession.DataStore, cfg *config.Config) func(htt
 }
 
 // root page
-func getPageRoot(httpSession *httpsession.DataStore, cfg *config.Config, handler http.Handler) func(http.ResponseWriter, *http.Request) {
+func getPageRoot(httpSession *SessionStore, cfg *Config, handler http.Handler) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -50,8 +47,8 @@ func getPageRoot(httpSession *httpsession.DataStore, cfg *config.Config, handler
 
 		if r.URL.Path == "/" {
 			// not logged in, show login page
-			value, err := httpSession.Get(r, "LoggedIn")
-			if err != nil || value != true {
+			value := httpSession.Get(w, r, "LoggedIn")
+			if value != true {
 				http.Redirect(w, r, "/login.html", http.StatusFound)
 				return
 			}
@@ -66,7 +63,7 @@ func getPageRoot(httpSession *httpsession.DataStore, cfg *config.Config, handler
 }
 
 // browse and tablet page
-func getPageMain(httpSession *httpsession.DataStore, cfg *config.Config, handler http.Handler) func(http.ResponseWriter, *http.Request) {
+func getPageMain(httpSession *SessionStore, cfg *Config, handler http.Handler) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -79,8 +76,8 @@ func getPageMain(httpSession *httpsession.DataStore, cfg *config.Config, handler
 		// return
 
 		// not logged in, show login page
-		value, err := httpSession.Get(r, "LoggedIn")
-		if err != nil || value != true {
+		value := httpSession.Get(w, r, "LoggedIn")
+		if value != true {
 			http.Redirect(w, r, "/login.html?referer="+r.URL.Path, http.StatusFound)
 			return
 		}
