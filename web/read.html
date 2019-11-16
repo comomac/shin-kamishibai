@@ -55,9 +55,7 @@
 				<div>Title: <span id="span-book-title">{{ bookTitle }}</span></div>
 				<div>Page: <span id="span-book-page">{{ bookPage }}</span> / <span id="span-book-pages">{{ bookPages }}</span></div>
 			</div>
-			<div>
-				<button onclick="toggleFullScreen();">Full</button>
-			</div>
+			<div id="div-toggle-fullscreen"></div>
 			<noscript>
 				<div>
 					<a class="a-link-page" href="/browse.html">Browse</a>
@@ -201,6 +199,15 @@
 				nodeDiv.appendChild(btn);
 				btn = genGoButton(1);
 				nodeDiv.appendChild(btn);
+
+				// add full screen button
+				nodeDev = document.getElementById("div-toggle-fullscreen");
+				btn = document.createElement("button");
+				btn.onclick = function() {
+					toggleFullScreen();
+				};
+				btn.textContent = "Full";
+				nodeDev.appendChild(btn);
 			}
 
 			function genGoButton(intStep) {
