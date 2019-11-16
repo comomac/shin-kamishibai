@@ -28,11 +28,10 @@ func CheckAuthHandler(h http.Handler, httpSession *SessionStore, cfg *Config) ht
 			return
 		case "/read.html":
 			// direct main page with login follow
-			getPage(httpSession, cfg, h)
+			getPage(httpSession, cfg, h)(w, r)
 			return
 		case "/browse.html":
-			doit := getPage(httpSession, cfg, h)
-			doit(w, r)
+			getPage(httpSession, cfg, h)(w, r)
 			return
 		}
 
