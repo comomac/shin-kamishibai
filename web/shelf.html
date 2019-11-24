@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta
+			content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=1.0, maximum-scale=5.0"
+			name="viewport"
+		/>
+		<meta content="yes" name="apple-mobile-web-app-capable" />
+		<meta content="black" name="apple-mobile-web-app-status-bar-style" />
+		<meta name="description" content="Manga / Comic Reader" />
+		<title>Kamishibai</title>
+		<link href="/css/browse_dropdown.css" rel="stylesheet" type="text/css" />
+		<script src="/js/utilities.js"></script>
+		<style>
+			/****** global ******/
+			body {
+				padding: 0;
+				margin: 0;
+			}
+			.hidden {
+				visibility: hidden;
+			}
+			/****** layout elements ******/
+			#category-lists {
+				background-color: aqua;
+				min-height: 10em;
+				top: 3em;
+			}
+			#book-lists {
+				background-color: burlywood;
+				min-height: 10em;
+				top: 20em;
+			}
+			/****** list elements ******/
+			.category,
+			.book {
+				display: inline-block;
+				position: relative;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="row">
+			<button>Title</button>
+			<button>Artist</button>
+			<button>Rating</button>
+			<button>Read</button>
+			<button>Completed</button>
+		</div>
+
+		<div class="row" style="margin:1em;">
+			<form>
+				<label for="searchbox">search</label>
+				<input id="searchbox" placeholder="search" type="text" />
+				<input type="button" value="search" />
+			</form>
+			<button class="nav-dir-button" onclick="dirListPrev();">Prev</button>
+			<button class="nav-dir-button" onclick="dirListNext();">Next</button>
+			<span id="span-page"></span>
+		</div>
+
+		<div class="row" id="category-lists">
+			<div class="category">
+				<a dir="/Users/mac/tmp/111amdhackintosh" href="#dir=/Users/mac/tmp/111amdhackintosh&amp;page=1"
+					><img src="/images/folder-mini.png" alt="folder" />
+					<div class="text">selected: love hina</div></a
+				>
+			</div>
+			<div class="category">
+				<a dir="/Users/mac/tmp/111amdhackintosh" href="#dir=/Users/mac/tmp/111amdhackintosh&amp;page=1"
+					><img src="/images/folder-mini.png" alt="folder" />
+					<div class="text">negima</div></a
+				>
+			</div>
+		</div>
+
+		<div class="row" id="book-lists">
+			<div class="book">
+				<a dir="/Users/mac/tmp/111amdhackintosh" href="#dir=/Users/mac/tmp/111amdhackintosh&amp;page=1"
+					><img src="/images/folder-mini.png" alt="folder" />
+					<div class="text">vol 1</div></a
+				>
+			</div>
+			<div class="book">
+				<a dir="/Users/mac/tmp/111amdhackintosh" href="#dir=/Users/mac/tmp/111amdhackintosh&amp;page=1"
+					><img src="/images/folder-mini.png" alt="folder" />
+					<div class="text">vol 2</div></a
+				>
+			</div>
+			<div class="book">
+				<a dir="/Users/mac/tmp/111amdhackintosh" href="#dir=/Users/mac/tmp/111amdhackintosh&amp;page=1"
+					><img src="/images/folder-mini.png" alt="folder" />
+					<div class="text">vol 3</div></a
+				>
+			</div>
+			<div class="book">
+				<a dir="/Users/mac/tmp/111amdhackintosh" href="#dir=/Users/mac/tmp/111amdhackintosh&amp;page=1"
+					><img src="/images/folder-mini.png" alt="folder" />
+					<div class="text">vol 4</div></a
+				>
+			</div>
+			<div class="book">
+				<a dir="/Users/mac/tmp/111amdhackintosh" href="#dir=/Users/mac/tmp/111amdhackintosh&amp;page=1"
+					><img src="/images/folder-mini.png" alt="folder" />
+					<div class="text">vol 5</div></a
+				>
+			</div>
+		</div>
+
+		<script></script>
+	</body>
+</html>
