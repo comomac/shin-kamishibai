@@ -1,4 +1,7 @@
+cache
 config*.json
 *.code-workspace
 *.log
 go.sum
+/shin-kamishibai
+/shin-kamishibai_*

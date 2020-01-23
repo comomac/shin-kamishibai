@@ -1,0 +1,12 @@
+{
+  "port": 2525,
+  "username": "user",
+  "password": "pass",
+  "iterations": 100000,
+  "allowed_dirs": [
+    "/Users/mac/books",
+    "/Users/Shared/shelf"
+  ],
+  "image_resize": true,
+  "image_quality": 60
+}
