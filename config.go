@@ -12,10 +12,12 @@ import (
 
 // Config holds server config
 type Config struct {
-	Path         string   `json:"path,omitempty"`     // config file path
 	IP           string   `json:"ip"`                 // network ip interface to listen to
 	Port         int      `json:"port"`               // server port
-	DBPath       string   `json:"db_path"`            // where db file is stored
+	PathConfig   string   `json:"-"`                  // runtime value; config file path
+	PathDir      string   `json:"-"`                  // runtime value; config dir path
+	PathCache    string   `json:"-"`                  // runtime value; book cover cache dir path
+	PathDB       string   `json:"-"`                  // runtime value; db file path
 	Username     string   `json:"username"`           // username for the http authentication
 	Password     string   `json:"password,omitempty"` // one time, and it will be cleared after computed
 	Iterations   int      `json:"iterations"`         // safety, min 100,000
@@ -53,12 +55,11 @@ func (cfg *Config) Read(fpath string) error {
 	}
 
 	// overwrite
-	cfg.Path = fpath
+	cfg.PathConfig = fpath
+	cfg.PathDir = filepath.Dir(fpath)
+	cfg.PathCache = filepath.Join(cfg.PathDir, "cache")
+	cfg.PathDB = filepath.Join(cfg.PathDir, "/db.txt")
 	cfg.Iterations = ConfigHashIterations
-
-	if cfg.DBPath == "" {
-		cfg.DBPath = filepath.Dir(fpath) + "/db.txt"
-	}
 
 	// hash password
 	if cfg.Crypt == "" {
@@ -69,7 +70,7 @@ func (cfg *Config) Read(fpath string) error {
 		// clear password
 		cfg.Password = ""
 		// save new cfg file
-		err := cfg.Save(cfg.Path)
+		err := cfg.Save(cfg.PathConfig)
 		if err != nil {
 			fmt.Println("failed to save config file (b)")
 			return err
@@ -77,8 +78,7 @@ func (cfg *Config) Read(fpath string) error {
 	}
 
 	// create thumbnail cache dir if not exists
-	cacheDir := filepath.Join(filepath.Dir(cfg.Path), "cache")
-	err = os.MkdirAll(cacheDir, os.ModePerm)
+	err = os.MkdirAll(cfg.PathCache, os.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -91,7 +91,6 @@ func (cfg *Config) Save(fpath string) error {
 	// create a copy
 	config2 := cfg
 	// clear, setup setting
-	config2.Path = ""
 	config2.Password = ""
 	config2.Iterations = ConfigHashIterations
 

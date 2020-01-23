@@ -25,7 +25,7 @@ func (svr *Server) Start() {
 	h := http.NewServeMux()
 
 	// public folder access
-	fs := http.FileServer(http.Dir("web"))
+	fs := http.FileServer(http.Dir(svr.Config.PathDir + "/web"))
 	h.HandleFunc("/", handlerFS(fs))
 
 	// public api

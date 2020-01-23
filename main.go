@@ -36,9 +36,11 @@ func main() {
 		panic(err)
 	}
 
+	fmt.Printf("%+v", config)
+
 	// new db
 	db := &FlatDB{}
-	db.New(config.DBPath)
+	db.New(config.PathDB)
 	db.Load()
 	// load all books recursively
 	go loadDirs(db, config.AllowedDirs)

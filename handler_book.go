@@ -239,7 +239,7 @@ func renderThumbnail(db *FlatDB, cfg *Config) func(http.ResponseWriter, *http.Re
 		}
 
 		// locally stored thumbnail file
-		outFile := filepath.Join(filepath.Dir(cfg.Path), "cache", bookID+".jpg")
+		outFile := filepath.Join(cfg.PathCache, bookID+".jpg")
 
 		// load existing thumbnail
 		isExist, _ := IsFileExists(outFile)
