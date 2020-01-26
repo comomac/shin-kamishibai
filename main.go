@@ -36,8 +36,6 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Printf("%+v", config)
-
 	// new db
 	db := &FlatDB{}
 	db.New(config.PathDB)
