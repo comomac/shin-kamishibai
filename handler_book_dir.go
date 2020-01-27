@@ -37,6 +37,7 @@ func dirList(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request) {
 
 		dir := query.Get("dir")
 		keyword := query.Get("keyword")
+		keyword = strings.ToLower(keyword)
 		spage := query.Get("page")
 		page, err := strconv.Atoi(spage)
 		if err != nil {
@@ -73,8 +74,10 @@ func dirList(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request) {
 			if strings.HasPrefix(file.Name(), ".") {
 				continue
 			}
-			// no keyword match
-			if len(keyword) > 0 && !strings.Contains(file.Name(), keyword) {
+			// case insensitive keyword search
+			fname := strings.ToLower(file.Name())
+			if len(keyword) > 0 && !strings.Contains(fname, keyword) {
+				// no match, next
 				continue
 			}
 
