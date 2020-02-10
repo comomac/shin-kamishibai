@@ -21,7 +21,7 @@ Optional: GNU Make ver > 3.81
 
 ## Build
 
-`go -o shin-kamishibai`
+`go build -o shin-kamishibai`
 
 ## Build (using Make)
 
