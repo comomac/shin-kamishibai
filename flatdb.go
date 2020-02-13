@@ -18,7 +18,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 )
 
@@ -297,11 +296,11 @@ func (db *FlatDB) AddBook(bookPath string) (*Book, error) {
 		return nil, err
 	}
 
-	// get file inode
-	fstat2, ok := fstat.Sys().(*syscall.Stat_t)
-	if !ok {
-		return nil, errors.New("Not a syscall.Stat_t")
-	}
+	// // get file inode
+	// fstat2, ok := fstat.Sys().(*syscall.Stat_t)
+	// if !ok {
+	// 	return nil, errors.New("Not a syscall.Stat_t")
+	// }
 
 	pages, err := cbzGetPages(bookPath)
 	if err != nil {
@@ -321,9 +320,9 @@ func (db *FlatDB) AddBook(bookPath string) (*Book, error) {
 		Cond:     bookCond(bookPath),
 		Pages:    uint64(pages),
 		Size:     uint64(fstat.Size()),
-		Inode:    fstat2.Ino,
-		Mtime:    uint64(fstat.ModTime().Unix()),
-		Itime:    uint64(time.Now().Unix()),
+		// Inode:    fstat2.Ino,
+		Mtime: uint64(fstat.ModTime().Unix()),
+		Itime: uint64(time.Now().Unix()),
 	}
 
 	f, err := os.OpenFile(db.Path, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
