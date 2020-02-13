@@ -40,14 +40,14 @@ type Book struct {
 	Title    string `json:"title"`          // book title
 	Author   string `json:"author"`         // book author, seperated by comma
 	Number   string `json:"number"`         // volume, chapter, etc
-	Fullpath string `json:"fullpath"`       // book file path
+	Fullpath string `json:"-"`              // book file path
 	Ranking  uint64 `json:"ranking"`        // 1-5 ranking, least to most liked
 	Fav      uint64 `json:"fav"`            // favourite, 0 false, 1 true
 	Cond     uint64 `json:"cond,omitempty"` // 0 unknown, 1 exists, 2 not exist, 3 deleted, 4 inaccessible
 	Pages    uint64 `json:"pages"`          // total pages
 	Page     uint64 `json:"page"`           // read upto
 	Size     uint64 `json:"size"`           // fs file size
-	Inode    uint64 `json:"inode"`          // fs inode
+	Inode    uint64 `json:"-"`              // fs inode
 	Mtime    uint64 `json:"mtime"`          // fs modified time
 	Itime    uint64 `json:"itime"`          // import time
 	Rtime    uint64 `json:"rtime"`          // read time
@@ -69,6 +69,7 @@ type Author struct {
 // FlatDB is flat text file database struct
 type FlatDB struct {
 	Mutex        *sync.Mutex
+	Books        []*Book
 	IBooks       []*IBook
 	Authors      []*Author
 	MapperID     map[string]*IBook   // map books by id (unique)

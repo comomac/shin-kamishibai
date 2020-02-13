@@ -9,32 +9,18 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
-	"regexp"
-	"sort"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // Blank use to blank sensitive or not needed data
 type Blank string
 
-// ItemsPerPage use for pagination
-var ItemsPerPage = 18
+// BooksResponse for json response on multiple books information
+type BooksResponse []*Book
 
-// BookInfoResponse for json response on single book information
-type BookInfoResponse struct {
-	*Book
-	Fullpath Blank `json:"fullpath,omitempty"`
-	Inode    Blank `json:"inode,omitempty"`
-	Itime    Blank `json:"itime,omitempty"`
-}
-
-// BooksInfoResponse for json response on multiple book information
-type BooksInfoResponse map[string]*BookInfoResponse
-
-// BooksResponse for json response on all book information
-type BooksResponse []*BookInfoResponse
+// MapBooksResponse string mapped book(s) information
+type MapBooksResponse map[string]*Book
 
 // getBookInfo return indivisual book info
 func getBookInfo(db *FlatDB) func(http.ResponseWriter, *http.Request) {
@@ -53,7 +39,7 @@ func getBookInfo(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
-		b, err := json.Marshal(&BookInfoResponse{Book: book})
+		b, err := json.Marshal(book)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
@@ -76,15 +62,16 @@ func getBooksInfo(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 		bookcodes := r.URL.Query().Get("bookcodes")
 		bookIDs := strings.Split(bookcodes, ",")
 
-		books := BooksInfoResponse{}
+		books := MapBooksResponse{}
 
 		for _, bookID := range bookIDs {
+			bookID = strings.TrimSpace(bookID)
 			book := db.GetBookByID(bookID)
 			if book == nil {
 				continue
 			}
 
-			books[bookID] = &BookInfoResponse{Book: book}
+			books[bookID] = book
 		}
 
 		b, err := json.Marshal(books)
@@ -121,7 +108,7 @@ func getSources(cfg *Config) func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-// post books returns all the book info
+// post books returns paginated the book info
 func getBooks(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
@@ -130,44 +117,30 @@ func getBooks(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 		}
 
 		filterBy := r.URL.Query().Get("filter_by")
-		strKeyword := r.URL.Query().Get("keywords")
-		keywords := strings.Split(strKeyword, " ")
+		page, _ := strconv.Atoi(r.URL.Query().Get("page")) // pageination, 100 per page
+		keywords := r.URL.Query().Get("keywords")
+
+		fmt.Println("filter_by", filterBy, "page", page, "keywords", keywords)
+
+		filtered := filterByTitle(db.Books, keywords)
+		sorted := sortByTitle(filtered)
+
+		from := 100 * page
+		to := 100 * (page + 1)
+
+		if from > len(sorted) {
+			// exceeded range
+			from = 0
+			to = 0
+		} else if to > len(sorted)-1 {
+			to = len(sorted) - 1
+		}
+
+		filtered2 := sorted[from:to]
 
 		books := BooksResponse{}
-
-	OUTER:
-		for _, ibook := range db.IBooks {
-			// TODO do pageination?
-			// if i > 3 {
-			// 	break
-			// }
-
-			// if there is keyword, make sure title or author matches
-			if len(keywords) > 0 {
-				for _, keyword := range keywords {
-					re := regexp.MustCompile("(?i)" + keyword)
-					if re.FindStringIndex(ibook.Title) == nil && re.FindStringIndex(ibook.Author) == nil {
-						continue OUTER
-					}
-				}
-			}
-
-			switch filterBy {
-			case "finished":
-				if ibook.Book.Page == ibook.Book.Pages {
-					books = append(books, &BookInfoResponse{Book: ibook.Book})
-				}
-			case "reading":
-				if ibook.Book.Page > 0 && ibook.Book.Page < ibook.Book.Pages {
-					books = append(books, &BookInfoResponse{Book: ibook.Book})
-				}
-			case "new":
-				if time.Unix(int64(ibook.Book.Itime)+int64(time.Second)*3600*24*3, 0).Before(time.Now()) {
-					books = append(books, &BookInfoResponse{Book: ibook.Book})
-				}
-			default:
-				books = append(books, &BookInfoResponse{Book: ibook.Book})
-			}
+		for _, book := range filtered2 {
+			books = append(books, book)
 		}
 
 		b, err := json.Marshal(&books)
@@ -276,11 +249,7 @@ func renderThumbnail(db *FlatDB, cfg *Config) func(http.ResponseWriter, *http.Re
 		}
 
 		// do natural sort
-		sort.Slice(files, func(i, j int) bool {
-			f1 := RegexSupportedImageExt.ReplaceAllString(files[i], "")
-			f2 := RegexSupportedImageExt.ReplaceAllString(files[j], "")
-			return AlphaNumCaseCompare(f1, f2)
-		})
+		sortNatural(files, RegexSupportedImageExt)
 
 		// get first image file
 		var rc io.ReadCloser
@@ -405,11 +374,8 @@ func cbzPage(w http.ResponseWriter, r *http.Request, db *FlatDB, bookID string, 
 	}
 
 	// do natural sort
-	sort.Slice(files, func(i, j int) bool {
-		f1 := RegexSupportedImageExt.ReplaceAllString(files[i], "")
-		f2 := RegexSupportedImageExt.ReplaceAllString(files[j], "")
-		return AlphaNumCaseCompare(f1, f2)
-	})
+	sortNatural(files, RegexSupportedImageExt)
+
 	// fmt.Println("-------------------------- sorted --------------------------")
 	// for _, file := range files {
 	// 	fmt.Printf("%+v\n", file)

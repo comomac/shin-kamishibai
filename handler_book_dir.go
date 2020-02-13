@@ -25,6 +25,9 @@ type FileInfoBasic struct {
 	*Book
 }
 
+// ItemsPerPage use for pagination
+var ItemsPerPage = 18
+
 // dirList lists the folder content, only the folder and the manga will be shown
 func dirList(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
