@@ -45,6 +45,7 @@ func main() {
 	fptr, err := os.OpenFile("binfile.go", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 	check(err)
 	fptr.Write(tmplStr)
+	fptr.WriteString("\n")
 
 	allowedExt := []string{"jpg", "jpeg", "png", "gif", "htm", "html", "css", "js"}
 
@@ -64,6 +65,10 @@ func main() {
 		}
 		// no . file
 		if strings.HasPrefix(info.Name(), ".") {
+			return nil
+		}
+		// no raw asset
+		if strings.HasPrefix(fpath, "web/raw/") {
 			return nil
 		}
 		// only allowed file ext
@@ -106,7 +111,7 @@ func main() {
 
 		bdat := bf.Data64
 		max := int(math.Ceil(float64(len(bdat)) / 100))
-		fptr.WriteString(`Data64:  `)
+		fptr.WriteString(`Data64: `)
 		for i := 0; i < max; i++ {
 			head := i * 100
 			tail := (i + 1) * 100
