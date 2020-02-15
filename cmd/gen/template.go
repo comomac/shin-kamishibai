@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/base64"
 	"errors"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -11,6 +10,7 @@ import (
 )
 
 // BinFile is structure of file in source
+// copied here because go1.4 dont support glob when go build
 type BinFile struct {
 	Name    string
 	Size    int64
@@ -22,6 +22,14 @@ type BinFile struct {
 	data    []byte // used during program runtime
 	Data64  string // used during generate
 }
+
+// Seek whence values
+// copied from os package for support deprecated const
+const (
+	SeekStart   = 0 // seek relative to the origin of the file
+	SeekCurrent = 1 // seek relative to the current offset
+	SeekEnd     = 2 // seek relative to the end
+)
 
 type fileSystem struct {
 	BinFileMap map[string]*BinFile
@@ -74,11 +82,11 @@ func (h httpFile) Close() error {
 }
 func (h httpFile) Seek(offset int64, whence int) (int64, error) {
 	switch whence {
-	case io.SeekStart:
+	case SeekStart:
 		h.position += offset
-	case io.SeekCurrent:
+	case SeekCurrent:
 		h.position = offset
-	case io.SeekEnd:
+	case SeekEnd:
 		h.position = h.binFile.Size - offset
 	default:
 		return -1, errors.New("unknown whence")

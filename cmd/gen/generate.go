@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // lazy check, exit if error
@@ -31,6 +32,19 @@ const binfileTemplate = `&BinFile{
 const binmapTemplate = `var __binmapName = map[string]*BinFile{
 {{range $k, $v := .}}{{printf "\t"}}"{{$k}}": __binfile{{$v}},
 {{end}}`
+
+// BinFile is structure of file in source
+type BinFile struct {
+	Name    string
+	Size    int64
+	Mode    os.FileMode
+	ModTime time.Time
+	IsDir   bool
+	Sys     interface{}
+	ready   bool   // is the data filled and ready to serve?
+	data    []byte // used during program runtime
+	Data64  string // used during generate
+}
 
 func main() {
 	fmt.Println("starting...")
@@ -59,6 +73,8 @@ func main() {
 		if err != nil {
 			return err
 		}
+		// revert windows path to / instead of \
+		fpath = strings.Replace(fpath, `\`, "/", -1)
 		// no dir
 		if info.IsDir() {
 			return nil
@@ -85,7 +101,7 @@ func main() {
 
 		i++
 		fpath2 := "**" + fpath
-		fpath2 = strings.ReplaceAll(fpath2, "**web/", "/")
+		fpath2 = strings.Replace(fpath2, "**web/", "/", -1)
 		binMap[fpath2] = i
 
 		// convert binary to base64
