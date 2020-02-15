@@ -3,5 +3,6 @@ config*.json
 *.code-workspace
 *.log
 go.sum
+binfile.go
 /shin-kamishibai
 /shin-kamishibai_*
