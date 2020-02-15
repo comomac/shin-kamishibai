@@ -25,8 +25,15 @@ func (svr *Server) Start() {
 	h := http.NewServeMux()
 
 	// public folder access
-	fs := http.FileServer(http.Dir(svr.Config.PathDir + "/web"))
-	h.HandleFunc("/", handlerFS(fs))
+
+	// debug
+	// fserv := http.FileServer(http.Dir(svr.Config.PathDir + "/web"))
+
+	// generated and packed
+	fs := fileSystem{__binmapName}
+	fserv := http.FileServer(fs)
+
+	h.HandleFunc("/", handlerFS(fserv))
 
 	// public api
 	h.HandleFunc("/login", login(httpSession, cfg))

@@ -3,30 +3,19 @@ package main
 // this generate binfile.go
 
 import (
+	"encoding/base64"
 	"fmt"
 	"html/template"
+	"io/ioutil"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 )
-
-// BinFile contains individual file data and meta-data
-type BinFile struct {
-	Name    string
-	Size    int64
-	Mode    os.FileMode
-	ModTime time.Time
-	IsDir   bool
-	Sys     interface{}
-	Data    []byte // used during program runtime
-	Data64  string // used during generate
-}
 
 // lazy check, exit if error
 func check(err error) {
 	if err != nil {
-		fmt.Println("### exited with failer!")
 		panic(err)
 	}
 }
@@ -37,60 +26,25 @@ const binfileTemplate = `&BinFile{
 	Mode:    0644,
 	ModTime: time.Unix({{.ModTime.Unix}}, 0),
 	IsDir:   {{.IsDir}},
-}
+	`
 
-`
+const binmapTemplate = `var __binmapName = map[string]*BinFile{
+{{range $k, $v := .}}{{printf "\t"}}"{{$k}}": __binfile{{$v}},
+{{end}}`
 
 func main() {
 	fmt.Println("starting...")
 
 	var err error
 
-	// 	b1 := []byte(`package main`)
-	// 	b2 := []byte(`
-	// import "fmt"
-	// func main() {
-	//   fmt.Println("hello")
-	// }`)
-
-	// 	b := append(b1, b2...)
-
-	// 	err := ioutil.WriteFile("hello.go", b, 0644)
-	// 	if err != nil {
-	// 		fmt.Println("failed to write file", err)
-	// 		return
-	// 	}
-
-	// txt := []byte("the quick brown fox")
-	// bs := base64.StdEncoding.EncodeToString(txt)
-	// fmt.Println(bs)
+	tmplStr, err := ioutil.ReadFile("cmd/gen/template.go")
+	if err != nil {
+		panic("failed to load template")
+	}
 
 	fptr, err := os.OpenFile("binfile.go", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 	check(err)
-	fptr.WriteString(`package main
-
-import (
-	"os"
-	"time"
-)
-
-// BinFile is structure of file in source
-type BinFile struct {
-	Name    string
-	Size    int64
-	Mode    os.FileMode
-	ModTime time.Time
-	IsDir   bool
-	Sys     interface{}
-	Data    []byte // used during program runtime
-	Data64  string // used during generate
-}
-
-`)
-
-	// fptr.Write([]byte(bs))
-	// fptr.Close()
-	// return
+	fptr.Write(tmplStr)
 
 	allowedExt := []string{"jpg", "jpeg", "png", "gif", "htm", "html", "css", "js"}
 
@@ -100,7 +54,7 @@ type BinFile struct {
 	// file counter
 	i := 0
 
-	err = filepath.Walk("web", func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk("web", func(fpath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -125,7 +79,14 @@ type BinFile struct {
 		}
 
 		i++
-		binMap[path] = i
+		fpath2 := "**" + fpath
+		fpath2 = strings.ReplaceAll(fpath2, "**web/", "/")
+		binMap[fpath2] = i
+
+		// convert binary to base64
+		b, err := ioutil.ReadFile(fpath)
+		check(err)
+		bs := base64.URLEncoding.EncodeToString(b)
 
 		bf := BinFile{
 			Name:    info.Name(),
@@ -133,6 +94,7 @@ type BinFile struct {
 			Mode:    info.Mode(),
 			ModTime: info.ModTime(),
 			IsDir:   info.IsDir(),
+			Data64:  bs,
 		}
 
 		fptr.WriteString(fmt.Sprintf("var __binfile%d = ", i))
@@ -142,15 +104,34 @@ type BinFile struct {
 		err = tmpl.Execute(fptr, bf)
 		check(err)
 
-		fmt.Println(i, bf)
+		bdat := bf.Data64
+		max := int(math.Ceil(float64(len(bdat)) / 100))
+		fptr.WriteString(`Data64:  `)
+		for i := 0; i < max; i++ {
+			head := i * 100
+			tail := (i + 1) * 100
+			if tail > len(bdat) {
+				tail = len(bdat)
+			}
+
+			if i == 0 && max == 1 {
+				fptr.WriteString(`"` + bdat[head:tail] + `",`)
+			} else if i == 0 {
+				fptr.WriteString(`"` + bdat[head:tail] + `" +`)
+			} else if i == max-1 {
+				fptr.WriteString("\t\t" + `"` + bdat[head:tail] + `",`)
+			} else {
+				fptr.WriteString("\t\t" + `"` + bdat[head:tail] + `" +`)
+			}
+			fptr.WriteString("\n")
+		}
+		fptr.WriteString("}\n\n")
+
+		fmt.Println(i, bf.Size, fpath)
 
 		return nil
 	})
 	check(err)
-
-	binmapTemplate := `var __binmapName = map[string]*BinFile{
-{{range $k, $v := .}}{{printf "\t"}}"{{$k}}": __binfile{{$v}},
-{{end}}`
 
 	td, terr := template.New(fmt.Sprintf("map%d", i)).Parse(binmapTemplate)
 	tmpl := template.Must(td, terr)
