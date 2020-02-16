@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/subtle"
+	"encoding/base64"
 	"log"
 	"net/http"
 )
@@ -17,8 +18,8 @@ func login(httpSession *SessionStore, cfg *Config) func(http.ResponseWriter, *ht
 		type LoginRequest struct {
 			Username string `json:"username"`
 			Password string `json:"password"`
-			Mode     string `json:"mode"`
 			Referer  string `json:"referer"`
+			RawQuery string `json:"rawquery"`
 		}
 
 		err := r.ParseForm()
@@ -31,8 +32,8 @@ func login(httpSession *SessionStore, cfg *Config) func(http.ResponseWriter, *ht
 		t := LoginRequest{
 			Username: r.Form.Get("username"),
 			Password: r.Form.Get("password"),
-			Mode:     r.Form.Get("mode"),
 			Referer:  r.Form.Get("referer"),
+			RawQuery: r.Form.Get("rawquery"),
 		}
 
 		// more secure compare
@@ -43,9 +44,15 @@ func login(httpSession *SessionStore, cfg *Config) func(http.ResponseWriter, *ht
 
 			log.Println("logged in")
 
+			rquery := ""
+			origQuery, uerr := base64.URLEncoding.DecodeString(t.RawQuery)
+			if uerr == nil {
+				rquery = string(origQuery)
+			}
+
 			// take referer page if provided
 			if len(t.Referer) > 0 {
-				http.Redirect(w, r, t.Referer, http.StatusFound)
+				http.Redirect(w, r, t.Referer+"?"+rquery, http.StatusFound)
 				return
 			}
 

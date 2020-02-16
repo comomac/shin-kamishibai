@@ -1,0 +1,46 @@
+<html>
+	<head>
+		<title>Shin-Kamishibai Login</title>
+		<style>
+			div {
+				font-size: 3em;
+			}
+			#form {
+				display: block;
+
+				margin-left: auto;
+				margin-right: auto;
+				width: fit-content;
+
+				margin-top: 3em;
+			}
+			#form > div {
+				margin-bottom: 2em;
+			}
+			.input-text {
+				font-size: xx-large;
+			}
+			#div-submit {
+				background-color: #828282;
+				width: 40%;
+				margin-left: auto;
+				right: 2em;
+			}
+			#submit {
+				width: 100%;
+				font-size: 1em;
+			}
+		</style>
+	</head>
+	<body>
+		<form method="post" action="/login" id="form">
+			<div>Username: <input class="input-text" type="text" name="username" /></div>
+			<div>Password: <input class="input-text" type="password" name="password" /></div>
+			<input type="hidden" name="referer" value="{{.Referer}}" />
+			<input type="hidden" name="rawquery" value="{{.RawQuery}}" />
+			<div id="div-submit">
+				<input id="submit" type="submit" value="Login" />
+			</div>
+		</form>
+	</body>
+</html>

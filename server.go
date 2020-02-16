@@ -52,8 +52,9 @@ func (svr *Server) Start() {
 	h.HandleFunc("/api/lists_dir", dirList(cfg, db))
 
 	// server side page
-	h.HandleFunc("/ssp/browse.html", sspBrowse(cfg, db))
-	h.HandleFunc("/ssp/read.html", sspRead(cfg, db))
+	h.HandleFunc("/browse.html", sspBrowse(cfg, db))
+	h.HandleFunc("/read.html", sspRead(cfg, db))
+	h.HandleFunc("/login.html", sspLogin(cfg, db))
 
 	// TODO
 	// http.HandleFunc("/alists", postBooksAuthor(db))

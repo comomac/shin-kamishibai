@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"net/http"
 )
 
@@ -21,7 +22,9 @@ func getPage(httpSession *SessionStore, cfg *Config, handler http.Handler) func(
 		// not logged in, show login page
 		value := httpSession.Get(w, r, LoggedIn)
 		if value != true {
-			http.Redirect(w, r, "/login.html?referer="+r.URL.Path, http.StatusFound)
+			rawquery := base64.URLEncoding.EncodeToString([]byte(r.URL.RawQuery))
+
+			http.Redirect(w, r, "/login.html?referer="+r.URL.Path+"&rawquery="+rawquery, http.StatusFound)
 			return
 		}
 
