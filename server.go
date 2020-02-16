@@ -53,6 +53,7 @@ func (svr *Server) Start() {
 
 	// server side page
 	h.HandleFunc("/ssp/browse.html", sspBrowse(cfg, db))
+	h.HandleFunc("/ssp/read.html", sspRead(cfg, db))
 
 	// TODO
 	// http.HandleFunc("/alists", postBooksAuthor(db))
