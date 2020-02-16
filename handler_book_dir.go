@@ -315,8 +315,6 @@ func listDir(dir, keyword string, page int, db *FlatDB) (*FileList, int, error) 
 		fmt.Println("error! bottom fell out", page, keyword, dir)
 	}
 
-	fmt.Println(files2)
-
 	// nothing found
 	if len(fileList) == 1 {
 		// add nothing found

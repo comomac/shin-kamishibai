@@ -64,22 +64,22 @@
 			<div id="div-toggle-fullscreen"></div>
 			<div>
 				<a class="a-link-page" href="/browse.html">Browse</a>
-				<a class="a-link-page" href="/ssp/read.html?book={{ .Book.ID }}&page={{ calcPage .Book -1 }}">Prev</a>
+				<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ calcPage .Book -1 }}">Prev</a>
 			</div>
 		</div>
 		<div class="row">
-			<a class="a-link-page" href="/ssp/read.html?book={{ .Book.ID }}&page={{ calcPage .Book -5 }}">-5</a>
-			<a class="a-link-page" href="/ssp/read.html?book={{ .Book.ID }}&page={{ calcPage .Book 5 }}">+5</a>
-			<a class="a-link-page" href="/ssp/read.html?book={{ .Book.ID }}&page={{ calcPage .Book -10 }}">-10</a>
-			<a class="a-link-page" href="/ssp/read.html?book={{ .Book.ID }}&page={{ calcPage .Book 10 }}">+10</a>
-			<a class="a-link-page" href="/ssp/read.html?book={{ .Book.ID }}&page={{ calcPage .Book -25 }}">-25</a>
-			<a class="a-link-page" href="/ssp/read.html?book={{ .Book.ID }}&page={{ calcPage .Book 25 }}">+25</a>
-			<a class="a-link-page" href="/ssp/read.html?book={{ .Book.ID }}&page={{ calcPage .Book -50 }}">-50</a>
-			<a class="a-link-page" href="/ssp/read.html?book={{ .Book.ID }}&page={{ calcPage .Book 50 }}">+50</a>
+			<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ calcPage .Book -5 }}">-5</a>
+			<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ calcPage .Book 5 }}">+5</a>
+			<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ calcPage .Book -10 }}">-10</a>
+			<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ calcPage .Book 10 }}">+10</a>
+			<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ calcPage .Book -25 }}">-25</a>
+			<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ calcPage .Book 25 }}">+25</a>
+			<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ calcPage .Book -50 }}">-50</a>
+			<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ calcPage .Book 50 }}">+50</a>
 		</div>
 		<div class="row">
 			<!-- book image -->
-			<a href="/ssp/read.html?book={{ .Book.ID }}&page={{ calcPage .Book 1 }}">
+			<a href="/read.html?book={{ .Book.ID }}&page={{ calcPage .Book 1 }}">
 				<div class="div-img" id="div-img-1"><img src="/api/read/{{.Book.ID}}/{{ .Book.Page }}" class="img-manga" id="img-1" onclick="goPage(1);" /></div>
 			</a>
 		</div>

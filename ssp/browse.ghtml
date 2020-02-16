@@ -255,9 +255,9 @@
 		</div>
 
 		<div style="margin:1em;">
-			<a href="/ssp/browse.html?dir={{.UpDir}}&page=1&keyword={{.Keyword}}&sortby={{.SortBy}}"><button class="nav-dir-button">&nbsp;&nbsp;Up&nbsp;&nbsp;</button></a>
-			<a href="/ssp/browse.html?dir={{.Dir}}&page={{calcPage .Page -1}}&keyword={{.Keyword}}&sortby={{.SortBy}}"><button class="nav-dir-button">Prev</button></a>
-			<a href="/ssp/browse.html?dir={{.Dir}}&page={{calcPage .Page 1}}&keyword={{.Keyword}}&sortby={{.SortBy}}"><button class="nav-dir-button">Next</button></a>
+			<a href="/browse.html?dir={{.UpDir}}&page=1&keyword={{.Keyword}}&sortby={{.SortBy}}"><button class="nav-dir-button">&nbsp;&nbsp;Up&nbsp;&nbsp;</button></a>
+			<a href="/browse.html?dir={{.Dir}}&page={{calcPage .Page -1}}&keyword={{.Keyword}}&sortby={{.SortBy}}"><button class="nav-dir-button">Prev</button></a>
+			<a href="/browse.html?dir={{.Dir}}&page={{calcPage .Page 1}}&keyword={{.Keyword}}&sortby={{.SortBy}}"><button class="nav-dir-button">Next</button></a>
 			<span id="span-page">Page: {{.Page}}</span>
 		</div>
 
@@ -268,7 +268,7 @@
 			{{ $dir = $fileInfo.Path }}
 			{{else if $fileInfo.IsDir}}
 			<div class="directory">
-				<a dir="{{ $fileInfo.Path }}" href="/ssp/browse.html?dir={{ printf "%s/%s" $dir $fileInfo.Name }}">
+				<a dir="{{ $fileInfo.Path }}" href="/browse.html?dir={{ printf "%s/%s" $dir $fileInfo.Name }}">
 					<img src="/images/folder-mini.png" alt="folder" />
 					<div class="text">{{ $fileInfo.Name }}</div>
 				</a>
@@ -283,7 +283,7 @@
 			</div>
             {{else if $fileInfo.IsBook}}
 			<div class="file">
-				<a bookcode="{{ $fileInfo.ID }}" href="/ssp/read.html?book={{ $fileInfo.ID }}&page={{ $fileInfo.Page }}">
+				<a bookcode="{{ $fileInfo.ID }}" href="/read.html?book={{ $fileInfo.ID }}&page={{ $fileInfo.Page }}">
 					<img src="/api/thumbnail/{{ $fileInfo.ID }}" alt="cover" />
 					<div class="{{readpc $fileInfo }}">{{ $fileInfo.Name }}</div>
 					<span class="book-pages">{{ $fileInfo.Pages }}</span>

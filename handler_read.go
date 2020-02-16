@@ -39,7 +39,7 @@ func sspRead(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request) {
 		// set page temporary
 		book.Page = uint64(page)
 
-		// browse template
+		// read template
 		data := struct {
 			Book *Book
 			// Resolution?
