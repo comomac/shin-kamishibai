@@ -262,13 +262,12 @@
 		</div>
 
 		<div id="dir-lists">
-			{{ $dir := "bla" }}
+			{{$dir := .Dir }}
 			{{range $i, $fileInfo := .FileList}}
 			{{if (eq $i 0)}}
-			{{ $dir = $fileInfo.Path }}
 			{{else if $fileInfo.IsDir}}
 			<div class="directory">
-				<a dir="{{ $fileInfo.Path }}" href="/browse.html?dir={{ printf "%s/%s" $dir $fileInfo.Name }}">
+				<a dir="{{ $fileInfo.Path }}" href="/browse.html?dir={{ $dir }}/{{ $fileInfo.Name }}">
 					<img src="/images/folder.png" alt="folder" />
 					<div class="text">{{ $fileInfo.Name }}</div>
 				</a>

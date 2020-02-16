@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/sha256"
 	"fmt"
+	"math"
 	"math/rand"
 	"os"
 	"os/user"
@@ -160,4 +161,13 @@ func IsFileExists(path string) (bool, error) {
 		return false, nil
 	}
 	return true, err
+}
+
+// MathRound round the number
+func MathRound(x float64) float64 {
+	t := math.Trunc(x)
+	if math.Abs(x-t) >= 0.5 {
+		return t + math.Copysign(1, x)
+	}
+	return t
 }

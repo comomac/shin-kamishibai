@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
-	"math"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -85,7 +84,7 @@ func browseGet(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request)
 				pg := fi.Page
 				pgs := fi.Pages
 
-				r := int(math.Round(float64(pg) / float64(pgs) * 10))
+				r := int(MathRound(float64(pg) / float64(pgs) * 10))
 				rr := "read"
 				if r == 0 && pg > 0 {
 					rr += " read5"
