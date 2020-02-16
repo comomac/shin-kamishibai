@@ -25,28 +25,25 @@ func (svr *Server) Start() {
 	h := http.NewServeMux()
 
 	// public folder access
-	fs := http.FileServer(http.Dir(svr.Config.PathDir + "/web"))
-	h.HandleFunc("/", handlerFS(fs))
 
-	// public api
-	h.HandleFunc("/login", login(httpSession, cfg))
-	h.HandleFunc("/check", loginCheck(httpSession, cfg))
+	// debug
+	fserv := http.FileServer(http.Dir(svr.Config.PathDir + "/web"))
 
-	// private api
-	h.HandleFunc("/api/thumbnail/", renderThumbnail(db, cfg)) // /thumbnail/{bookID}
-	h.HandleFunc("/api/cbz/", getPageOnly(db))                // /cbz/{bookID}/{page}   get image
-	h.HandleFunc("/api/read/", getPageNRead(db))              // /read/{bookID}/{page}  get image and update page read
-	h.HandleFunc("/api/bookinfo/", getBookInfo(db))           // /bookinfo/{bookID}
-	h.HandleFunc("/api/books_info", getBooksInfo(db))         // /books_info?bookcodes=1,2,3,4,5
-	h.HandleFunc("/api/setbookmark/", setBookmark(db))        // /setbookmark/{bookID}/{page}
-	h.HandleFunc("/api/lists", getBooksByTitle(db))
-	h.HandleFunc("/api/alists", getBooksByAuthor(db))
-	h.HandleFunc("/api/list_sources", getSources(cfg))
-	h.HandleFunc("/api/lists_dir", dirList(cfg, db))
+	// generated and packed
+	// fs := fileSystem{__binmapName}
+	// fserv := http.FileServer(fs)
 
-	// TODO
-	// http.HandleFunc("/alists", postBooksAuthor(db))
-	// r.Post("/delete_book", deleteBook)
+	h.HandleFunc("/", handlerFS(fserv))
+
+	// public api, page
+	h.HandleFunc("/login", loginPOST(httpSession, cfg))
+	h.HandleFunc("/login.html", loginGet(cfg, db))
+
+	// private api, page
+	h.HandleFunc("/api/thumbnail/", renderThumbnail(db, cfg)) // /thumbnail/{bookID}    get book cover thumbnail
+	h.HandleFunc("/api/cbz/", getPageOnly(db))                // /cbz/{bookID}/{page}   get book page
+	h.HandleFunc("/browse.html", browseGet(cfg, db))
+	h.HandleFunc("/read.html", readGet(cfg, db))
 
 	// middleware
 	h1 := CheckAuthHandler(h, httpSession, cfg)

@@ -64,7 +64,8 @@ func (ss *SessionStore) create(w http.ResponseWriter, r *http.Request) *session 
 		Name:     "SessionID",
 		Value:    newSession.ID,
 		Path:     "/",
-		SameSite: http.SameSiteStrictMode,
+		// commented out so works with go1.8
+		// SameSite: http.SameSiteStrictMode,
 	}
 	http.SetCookie(w, cki)
 	// remember to stop other .create(), making multiple session id

@@ -36,19 +36,11 @@
 		<form method="post" action="/login" id="form">
 			<div>Username: <input class="input-text" type="text" name="username" /></div>
 			<div>Password: <input class="input-text" type="password" name="password" /></div>
-			<input type="hidden" name="referer" id="referer" />
+			<input type="hidden" name="referer" value="{{.Referer}}" />
+			<input type="hidden" name="rawquery" value="{{.RawQuery}}" />
 			<div id="div-submit">
 				<input id="submit" type="submit" value="Login" />
 			</div>
 		</form>
-		<script>
-			// set hiddne referer value
-			var regex = /referer=(.+?)($|&)/i;
-			var found = location.search.match(regex);
-			if (found && found.length > 1) {
-				var el = document.getElementById("referer");
-				el.value = found[1];
-			}
-		</script>
 	</body>
 </html>

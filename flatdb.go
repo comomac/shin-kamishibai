@@ -18,7 +18,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 )
 
@@ -40,14 +39,14 @@ type Book struct {
 	Title    string `json:"title"`          // book title
 	Author   string `json:"author"`         // book author, seperated by comma
 	Number   string `json:"number"`         // volume, chapter, etc
-	Fullpath string `json:"fullpath"`       // book file path
+	Fullpath string `json:"-"`              // book file path
 	Ranking  uint64 `json:"ranking"`        // 1-5 ranking, least to most liked
 	Fav      uint64 `json:"fav"`            // favourite, 0 false, 1 true
 	Cond     uint64 `json:"cond,omitempty"` // 0 unknown, 1 exists, 2 not exist, 3 deleted, 4 inaccessible
 	Pages    uint64 `json:"pages"`          // total pages
 	Page     uint64 `json:"page"`           // read upto
 	Size     uint64 `json:"size"`           // fs file size
-	Inode    uint64 `json:"inode"`          // fs inode
+	Inode    uint64 `json:"-"`              // fs inode
 	Mtime    uint64 `json:"mtime"`          // fs modified time
 	Itime    uint64 `json:"itime"`          // import time
 	Rtime    uint64 `json:"rtime"`          // read time
@@ -69,6 +68,7 @@ type Author struct {
 // FlatDB is flat text file database struct
 type FlatDB struct {
 	Mutex        *sync.Mutex
+	Books        []*Book
 	IBooks       []*IBook
 	Authors      []*Author
 	MapperID     map[string]*IBook   // map books by id (unique)
@@ -296,11 +296,11 @@ func (db *FlatDB) AddBook(bookPath string) (*Book, error) {
 		return nil, err
 	}
 
-	// get file inode
-	fstat2, ok := fstat.Sys().(*syscall.Stat_t)
-	if !ok {
-		return nil, errors.New("Not a syscall.Stat_t")
-	}
+	// // get file inode
+	// fstat2, ok := fstat.Sys().(*syscall.Stat_t)
+	// if !ok {
+	// 	return nil, errors.New("Not a syscall.Stat_t")
+	// }
 
 	pages, err := cbzGetPages(bookPath)
 	if err != nil {
@@ -320,9 +320,9 @@ func (db *FlatDB) AddBook(bookPath string) (*Book, error) {
 		Cond:     bookCond(bookPath),
 		Pages:    uint64(pages),
 		Size:     uint64(fstat.Size()),
-		Inode:    fstat2.Ino,
-		Mtime:    uint64(fstat.ModTime().Unix()),
-		Itime:    uint64(time.Now().Unix()),
+		// Inode:    fstat2.Ino,
+		Mtime: uint64(fstat.ModTime().Unix()),
+		Itime: uint64(time.Now().Unix()),
 	}
 
 	f, err := os.OpenFile(db.Path, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)

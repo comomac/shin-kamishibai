@@ -2,8 +2,8 @@ package main
 
 import (
 	"crypto/sha256"
-	"errors"
 	"fmt"
+	"math"
 	"math/rand"
 	"os"
 	"os/user"
@@ -76,14 +76,18 @@ func SHA256Iter(password, salt string, iter int) string {
 
 // NewUUIDV4 generate uuid version 4
 func NewUUIDV4() (string, error) {
+	str := strings.Split("0123456789abcdef", "")
+	a := []string{}
 
-	b := make([]byte, 16)
-	_, err := rand.Read(b)
-	if err != nil {
-		return "", errors.New("failed to generate uuid")
+	t := time.Now().UnixNano()
+	rand.Seed(t)
+
+	for i := 0; i < 36; i++ {
+		a = append(a, str[rand.Intn(16)])
 	}
+	b := strings.Join(a, "")
 
-	uuid := fmt.Sprintf("%X-%X-%X-%X-%X", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
+	uuid := fmt.Sprintf("%s-%s-%s-%s-%s", b[0:8], b[9:13], b[14:18], b[19:23], b[24:36])
 
 	return uuid, nil
 }
@@ -157,4 +161,13 @@ func IsFileExists(path string) (bool, error) {
 		return false, nil
 	}
 	return true, err
+}
+
+// MathRound round the number
+func MathRound(x float64) float64 {
+	t := math.Trunc(x)
+	if math.Abs(x-t) >= 0.5 {
+		return t + math.Copysign(1, x)
+	}
+	return t
 }

@@ -12,11 +12,6 @@ var LoggedIn = "LoggedIn"
 // ref https://cryptic.io/go-http/
 func CheckAuthHandler(h http.Handler, httpSession *SessionStore, cfg *Config) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// // TODO remove when done
-		// // hack, force auth off during dev
-		// h.ServeHTTP(w, r)
-		// return
-
 		// initialise session
 		_ = httpSession.ID(w, r)
 		// fmt.Println("method:", r.Method, "url: ", r.URL.Path, "session", sid)
