@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -61,103 +64,11 @@ func dirList(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request) {
 		}
 
 		// listing dir
-		files, err := ioutil.ReadDir(dir)
+		fileList, status, err := listDir(dir, keyword, page, db)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(status)
 			w.Write([]byte(err.Error()))
 			return
-		}
-
-		// fmt.Printf("%+v", db.IMapper)
-		// spew.Dump(db.FMapper)
-
-		files2 := []os.FileInfo{}
-		for _, file := range files {
-			// no dot file/folder
-			if strings.HasPrefix(file.Name(), ".") {
-				continue
-			}
-			// case insensitive keyword search
-			fname := strings.ToLower(file.Name())
-			if len(keyword) > 0 && !strings.Contains(fname, keyword) {
-				// no match, next
-				continue
-			}
-
-			if file.IsDir() {
-				// a directory
-				files2 = append(files2, file)
-			} else if strings.ToLower(filepath.Ext(file.Name())) == ".cbz" {
-				// a book
-				files2 = append(files2, file)
-			}
-		}
-
-		// add first one as the dir info to save space
-		var fileList FileList
-		fileList = append(fileList, &FileInfoBasic{
-			IsDir: true,
-			Path:  dir,
-		})
-
-		for i, file := range files2 {
-			if i < (page-1)*ItemsPerPage {
-				continue
-			}
-			if i > (page*ItemsPerPage)-1 {
-				// indicate more files
-				fib := &FileInfoBasic{
-					More: true,
-				}
-				fileList = append(fileList, fib)
-				break
-			}
-
-			// setup file full path
-			fileFullPath := dir + "/" + file.Name()
-
-			// dir
-			if file.IsDir() {
-				fileList = append(fileList, &FileInfoBasic{
-					IsDir:   true,
-					Name:    file.Name(),
-					ModTime: file.ModTime(),
-				})
-				continue
-			}
-
-			// file
-
-			// create and store blank book entry
-			fib := &FileInfoBasic{
-				Name:    file.Name(),
-				ModTime: file.ModTime(),
-			}
-			fileList = append(fileList, fib)
-
-			// find book by path
-			book := db.GetBookByPath(fileFullPath)
-			if book != nil {
-				fib.Book = book
-				continue
-			}
-
-			// find book by name and size
-			books := db.SearchBookByNameAndSize(file.Name(), uint64(file.Size()))
-			if len(books) > 0 {
-				fib.Book = books[0]
-				continue
-			}
-
-			// book not found, add now
-			nbook, err := db.AddFile(fileFullPath)
-			if err == nil {
-				fib.Book = nbook
-				continue
-			}
-
-			// error? skip
-			fmt.Println("error! bottom fell out", page, keyword, dir)
 		}
 
 		b, err := json.Marshal(&fileList)
@@ -170,4 +81,215 @@ func dirList(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(b)
 	}
+}
+
+// sspBrowse lists the folder content, only the folder and the manga will be shown
+func sspBrowse(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		query := r.URL.Query()
+
+		dir := query.Get("dir")
+		keyword := query.Get("keyword")
+		keyword = strings.ToLower(keyword)
+		spage := query.Get("page")
+		page, err := strconv.Atoi(spage)
+		if err != nil {
+			page = 1
+		}
+
+		// have clean path, prevent .. bypass
+		dir = filepath.Clean(dir)
+
+		fmt.Println("listing dir (", page, ")", dir)
+
+		// browse template
+		data := struct {
+			AllowedDirs []string
+			CurrentDir  string
+			FileList    *FileList
+		}{
+			AllowedDirs: cfg.AllowedDirs,
+			CurrentDir:  dir,
+		}
+		// helper func for template
+		funcMap := template.FuncMap{
+			"readpc": func(fi *FileInfoBasic) string {
+				// read percentage tag
+				pg := fi.Page
+				pgs := fi.Pages
+
+				r := int(math.Round(float64(pg) / float64(pgs) * 10))
+				rr := "read"
+				if r == 0 && pg > 0 {
+					rr += " read5"
+				} else if r > 0 {
+					rr += fmt.Sprintf(" read%d0", r)
+				}
+				return rr
+			},
+		}
+		tmplStr, err := ioutil.ReadFile("ssp/browse.ghtml")
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+		buf := bytes.Buffer{}
+		tmpl, err := template.New("browse").Funcs(funcMap).Parse(string(tmplStr))
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		// no dir chosen
+		if dir == "" || dir == "." {
+			err = tmpl.Execute(&buf, data)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(err.Error()))
+				return
+			}
+
+			w.Header().Set("Content-Type", "text/html")
+			w.Write([]byte(buf.String()))
+			return
+		}
+
+		// check if the dir is allowed to browse
+		exists := StringSliceContain(cfg.AllowedDirs, dir)
+		if !exists {
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte("not allowed to browse"))
+			return
+		}
+
+		// listing dir
+		fileList, status, err := listDir(dir, keyword, page, db)
+		if err != nil {
+			w.WriteHeader(status)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		// fill file list data
+		data.FileList = fileList
+		// exec template
+		err = tmpl.Execute(&buf, data)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte(buf.String()))
+	}
+}
+
+func listDir(dir, keyword string, page int, db *FlatDB) (*FileList, int, error) {
+	// listing dir
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
+	// fmt.Printf("%+v", db.IMapper)
+	// spew.Dump(db.FMapper)
+
+	files2 := []os.FileInfo{}
+	for _, file := range files {
+		// no dot file/folder
+		if strings.HasPrefix(file.Name(), ".") {
+			continue
+		}
+		// case insensitive keyword search
+		fname := strings.ToLower(file.Name())
+		if len(keyword) > 0 && !strings.Contains(fname, keyword) {
+			// no match, next
+			continue
+		}
+
+		if file.IsDir() {
+			// a directory
+			files2 = append(files2, file)
+		} else if strings.ToLower(filepath.Ext(file.Name())) == ".cbz" {
+			// a book
+			files2 = append(files2, file)
+		}
+	}
+
+	// add first one as the dir info to save space
+	fileList := FileList{}
+	fileList = append(fileList, &FileInfoBasic{
+		IsDir: true,
+		Path:  dir,
+	})
+
+	for i, file := range files2 {
+		if i < (page-1)*ItemsPerPage {
+			continue
+		}
+		if i > (page*ItemsPerPage)-1 {
+			// indicate more files
+			fib := &FileInfoBasic{
+				More: true,
+			}
+			fileList = append(fileList, fib)
+			break
+		}
+
+		// setup file full path
+		fileFullPath := dir + "/" + file.Name()
+
+		// dir
+		if file.IsDir() {
+			fileList = append(fileList, &FileInfoBasic{
+				IsDir:   true,
+				Name:    file.Name(),
+				ModTime: file.ModTime(),
+			})
+			continue
+		}
+
+		// file
+
+		// create and store blank book entry
+		fib := &FileInfoBasic{
+			Name:    file.Name(),
+			ModTime: file.ModTime(),
+		}
+		fileList = append(fileList, fib)
+
+		// find book by path
+		book := db.GetBookByPath(fileFullPath)
+		if book != nil {
+			fib.Book = book
+			continue
+		}
+
+		// find book by name and size
+		books := db.SearchBookByNameAndSize(file.Name(), uint64(file.Size()))
+		if len(books) > 0 {
+			fib.Book = books[0]
+			continue
+		}
+
+		// book not found, add now
+		nbook, err := db.AddFile(fileFullPath)
+		if err == nil {
+			fib.Book = nbook
+			continue
+		}
+
+		// error? skip
+		fmt.Println("error! bottom fell out", page, keyword, dir)
+	}
+
+	return &fileList, 0, nil
 }

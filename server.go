@@ -27,11 +27,11 @@ func (svr *Server) Start() {
 	// public folder access
 
 	// debug
-	// fserv := http.FileServer(http.Dir(svr.Config.PathDir + "/web"))
+	fserv := http.FileServer(http.Dir(svr.Config.PathDir + "/web"))
 
 	// generated and packed
-	fs := fileSystem{__binmapName}
-	fserv := http.FileServer(fs)
+	// fs := fileSystem{__binmapName}
+	// fserv := http.FileServer(fs)
 
 	h.HandleFunc("/", handlerFS(fserv))
 
@@ -50,6 +50,9 @@ func (svr *Server) Start() {
 	h.HandleFunc("/api/alists", getBooksByAuthor(db))
 	h.HandleFunc("/api/list_sources", getSources(cfg))
 	h.HandleFunc("/api/lists_dir", dirList(cfg, db))
+
+	// server side page
+	h.HandleFunc("/ssp/browse.html", sspBrowse(cfg, db))
 
 	// TODO
 	// http.HandleFunc("/alists", postBooksAuthor(db))

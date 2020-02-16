@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta
+			content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=1.0, maximum-scale=5.0"
+			name="viewport"
+		/>
+		<meta content="yes" name="apple-mobile-web-app-capable" />
+		<meta content="black" name="apple-mobile-web-app-status-bar-style" />
+		<meta name="description" content="Manga / Comic Reader" />
+		<title>Kamishibai</title>
+		<link href="/css/browse_dropdown.css" rel="stylesheet" type="text/css" />
+		<style>
+			/****** global ******/
+			body {
+				padding: 0;
+				margin: 0;
+			}
+
+			.hidden {
+				visibility: hidden;
+			}
+
+			/****** basic elements ******/
+			#searchbox {
+				padding: 12px 16px;
+				min-width: 10em;
+				box-shadow: 0px 4px 8px 0px rgba(0, 0, 0, 0.2);
+			}
+
+			.nav-dir-button {
+				padding: 12px 16px;
+			}
+
+			#div-lists {
+				left: 0px;
+				/* position: relative; */
+				width: 100%;
+				margin: 0px;
+				padding: 0px;
+			}
+
+			/* make the last selected browse item dark lighted */
+			.last-selected-item {
+				background-color: #cdcdcd !important;
+			}
+
+			/****** dir listing ******/
+			.directory,
+			.file {
+				position: relative;
+				float: left;
+				min-height: 240px;
+				padding: 0px;
+				transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out,
+					box-shadow 0.15s ease-in-out;
+
+				/* @media adjust */
+				min-width: 24%;
+				margin: 0.5%;
+			}
+
+			.directory a,
+			.file a {
+				width: 100%;
+				height: 100%;
+				display: inline-block;
+				position: absolute;
+				background-color: #eee;
+			}
+
+			.directory .text,
+			.file .text {
+				text-align: center;
+				margin: 0.5em;
+			}
+
+			.directory img,
+			.file img {
+				display: block;
+				margin-left: auto;
+				margin-right: auto;
+				border: none;
+				box-shadow: none;
+				max-width: 95%;
+				max-height: 70%;
+				min-height: 160px;
+			}
+
+			/****** book total pages ******/
+			.book-pages {
+				position: absolute;
+				top: 0px;
+				right: 0px;
+				color: #fff;
+				background-color: #6c757d;
+				display: inline-block;
+				padding: 0.3em 0.5em;
+				font-size: 100%;
+				font-weight: 700;
+				line-height: 1;
+				text-align: center;
+				white-space: nowrap;
+				vertical-align: baseline;
+				border-radius: 0.25rem;
+			}
+
+			/****** media dir column ******/
+			/* 2 per row */
+			@media screen and (min-width: 1px) and (max-width: 414px) {
+				.directory,
+				.file {
+					min-width: 49%;
+					margin: 0.5%;
+				}
+			}
+			/* 3 per row */
+			@media screen and (min-width: 415px) and (max-width: 767px) {
+				.directory,
+				.file {
+					min-width: 32.5%;
+					margin: 0.4%;
+				}
+			}
+			/* 4 per row */
+			@media screen and (min-width: 768px) and (max-width: 1023px) {
+				.directory,
+				.file {
+					min-width: 24%;
+					margin: 0.5%;
+				}
+			}
+			/* 5 per row */
+			@media screen and (min-width: 1024px) and (max-width: 1365px) {
+				.directory,
+				.file {
+					min-width: 19%;
+					margin: 0.5%;
+				}
+			}
+			/* 6 per row */
+			@media screen and (min-width: 1366px) and (max-width: 1679px) {
+				.directory,
+				.file {
+					min-width: 16.4%;
+					margin: 0.13%;
+				}
+			}
+			/* 8 per row */
+			@media screen and (min-width: 1680px) and (max-width: 1919px) {
+				.directory,
+				.file {
+					min-width: 12.2%;
+					margin: 0.15%;
+				}
+			}
+			/* 10 per row */
+			@media screen and (min-width: 1920px) and (max-width: 2559px) {
+				.directory,
+				.file {
+					min-width: 9.8%;
+					margin: 0.1%;
+				}
+			}
+			/* large monitor */
+			@media screen and (min-width: 2560px) {
+				.directory,
+				.file {
+					min-width: 250px;
+					margin: 3px;
+				}
+			}
+
+			/****** delete mode ******/
+			.file .countdown {
+				position: absolute;
+				bottom: 0px;
+				right: 0px;
+				width: 80%;
+				height: 80%;
+				opacity: 0.3;
+				z-index: 10;
+			}
+			.file .countdown:hover {
+				text-decoration: none;
+			}
+
+			/****** read state ******/
+			.read5 {
+				background: linear-gradient(to right, rgba(51, 204, 102, 1) 5%, rgba(234, 234, 234, 1) 6%);
+			}
+			.read10 {
+				background: linear-gradient(to right, rgba(51, 204, 102, 1) 10%, rgba(234, 234, 234, 1) 11%);
+			}
+			.read20 {
+				background: linear-gradient(to right, rgba(51, 204, 102, 1) 20%, rgba(234, 234, 234, 1) 21%);
+			}
+			.read30 {
+				background: linear-gradient(to right, rgba(51, 204, 102, 1) 30%, rgba(234, 234, 234, 1) 31%);
+			}
+			.read40 {
+				background: linear-gradient(to right, rgba(51, 204, 102, 1) 40%, rgba(234, 234, 234, 1) 41%);
+			}
+			.read50 {
+				background: linear-gradient(to right, rgba(51, 204, 102, 1) 50%, rgba(234, 234, 234, 1) 51%);
+			}
+			.read60 {
+				background: linear-gradient(to right, rgba(51, 204, 102, 1) 60%, rgba(234, 234, 234, 1) 61%);
+			}
+			.read70 {
+				background: linear-gradient(to right, rgba(51, 204, 102, 1) 70%, rgba(234, 234, 234, 1) 71%);
+			}
+			.read80 {
+				background: linear-gradient(to right, rgba(51, 204, 102, 1) 80%, rgba(234, 234, 234, 1) 81%);
+			}
+			.read90 {
+				background: linear-gradient(to right, rgba(51, 204, 102, 1) 90%, rgba(234, 234, 234, 1) 91%);
+			}
+			.read100 {
+				background-color: #33cc66 !important;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="dropdown">
+			<button class="dropbtn">Sources</button>
+			<div class="dropdown-content" id="div-sources">
+				{{range $i, $s := .AllowedDirs}}
+				<a href="?dir={{ $s }}" srcnum="{{ $i }}">{{ $s }}</a>
+				{{ end }}
+			</div>
+		</div>
+
+		<div class="dropdown">
+			<button class="dropbtn">Order by</button>
+			<div class="dropdown-content">
+				<a href="#" onclick="dirOrderBy('name');">&#128292; filename</a>
+				<a href="#" onclick="dirOrderBy('size');">&#128290; filesize</a>
+				<a href="#" onclick="dirOrderBy('date');">&#128197; filedate</a>
+			</div>
+		</div>
+
+		<div class="dropdown">
+			<button class="dropbtn">Path</button>
+			<div class="dropdown-content" id="div-paths">
+				<a href="#dir=/" class="pure-menu-link">/</a>
+			</div>
+		</div>
+
+		<div class="dropdown">
+			<form>
+				<label for="searchbox">search</label>
+				<input id="searchbox" placeholder="search" type="text" />
+			</form>
+		</div>
+
+		<div style="margin:1em;">
+			<button class="nav-dir-button" onclick="dirUp();">&nbsp;&nbsp;Up&nbsp;&nbsp;</button>
+			<button class="nav-dir-button" onclick="dirListPrev();">Prev</button>
+			<button class="nav-dir-button" onclick="dirListNext();">Next</button>
+			<span id="span-page"></span>
+		</div>
+
+		<div id="dir-lists">
+			{{ $dir := "bla" }}
+			{{range $i, $fileInfo := .FileList}}
+			{{if (eq $i 0)}}
+			{{ $dir = $fileInfo.Path }}
+			{{else if $fileInfo.IsDir}}
+			<div class="directory" src="{{ $fileInfo.Path }}">
+				<a dir="{{ $fileInfo.Path }}" href="/ssp/browse.html?dir={{ printf "%s/%s" $dir $fileInfo.Name }}">
+					<img src="/images/folder-mini.png" alt="folder" />
+					<div class="text">{{ $fileInfo.Name }}</div>
+				</a>
+			</div>
+			{{else}}
+			<div class="file">
+				<a bookcode="{{ $fileInfo.ID }}" href="/ssp/read.html?book={{ $fileInfo.ID }}&page={{ $fileInfo.Page }}">
+					<img src="/api/thumbnail/{{ $fileInfo.ID }}" alt="cover" />
+					<div class="{{readpc $fileInfo }}">{{ $fileInfo.Name }}</div>
+					<span class="book-pages">{{ $fileInfo.Pages }}</span>
+				</a>
+			</div>
+			{{ end }}
+			{{ end }}
+		</div>
+	</body>
+</html>
