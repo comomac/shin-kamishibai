@@ -115,6 +115,7 @@ func sspBrowse(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request)
 		}{
 			AllowedDirs: cfg.AllowedDirs,
 			CurrentDir:  dir,
+			FileList:    &FileList{},
 		}
 		// helper func for template
 		funcMap := template.FuncMap{
