@@ -35,17 +35,15 @@ func (svr *Server) Start() {
 
 	h.HandleFunc("/", handlerFS(fserv))
 
-	// public api
-	h.HandleFunc("/login", login(httpSession, cfg))
+	// public api, page
+	h.HandleFunc("/login", loginPOST(httpSession, cfg))
+	h.HandleFunc("/login.html", loginGet(cfg, db))
 
-	// private api
+	// private api, page
 	h.HandleFunc("/api/thumbnail/", renderThumbnail(db, cfg)) // /thumbnail/{bookID}
 	h.HandleFunc("/api/cbz/", getPageOnly(db))                // /cbz/{bookID}/{page}   get image
-
-	// server side page
 	h.HandleFunc("/browse.html", sspBrowse(cfg, db))
 	h.HandleFunc("/read.html", sspRead(cfg, db))
-	h.HandleFunc("/login.html", sspLogin(cfg, db))
 
 	// middleware
 	h1 := CheckAuthHandler(h, httpSession, cfg)
