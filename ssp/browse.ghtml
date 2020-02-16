@@ -258,7 +258,7 @@
 			<a href="/ssp/browse.html?dir={{.UpDir}}&page=1&keyword={{.Keyword}}&sortby={{.SortBy}}"><button class="nav-dir-button">&nbsp;&nbsp;Up&nbsp;&nbsp;</button></a>
 			<a href="/ssp/browse.html?dir={{.Dir}}&page={{calcPage .Page -1}}&keyword={{.Keyword}}&sortby={{.SortBy}}"><button class="nav-dir-button">Prev</button></a>
 			<a href="/ssp/browse.html?dir={{.Dir}}&page={{calcPage .Page 1}}&keyword={{.Keyword}}&sortby={{.SortBy}}"><button class="nav-dir-button">Next</button></a>
-			<span id="span-page"></span>
+			<span id="span-page">Page: {{.Page}}</span>
 		</div>
 
 		<div id="dir-lists">
