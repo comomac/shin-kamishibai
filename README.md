@@ -4,7 +4,7 @@
 
 A basic manga reader in browser, server hosted in remote pc. This comes with browser client and server.
 
-Written in Go language, with zero dependency and portability and support widest variety of devices in mind (so no fancy HTML5).
+Written in Go language, with zero dependency and portability and support widest variety of devices in mind (so no fancy HTML5 and no javascript either).
 
 This is a continuation of my previous project kamishibai.
 
@@ -16,8 +16,8 @@ To make manga reader (client side) work with old/outdated/retro/obscure software
 
 ## Requirements
 
-Go lang ver >= 13 [https://golang.org](https://golang.org)  
-Optional: GNU Make ver > 3.81
+Go version >= 1.2 [https://golang.org](https://golang.org)
+Browser support cookie and css
 
 ## Build
 
@@ -25,14 +25,11 @@ Optional: GNU Make ver > 3.81
 
 ## Build (using Make)
 
-For Linux
-`make build-linux`
+For Linux and Mac and Windows
+`go build *.go`
 
-For Mac os
-`make build-mac`
-
-For Windows
-`make build-win`
+For Windows 2000
+`go build`
 
 ## Run
 
@@ -47,4 +44,4 @@ For Windows
 ---
 
 BSD 3-clause
-Mac Ma gitmac at runbox.com (C) 2013-2019 Copyright
+Mac Ma gitmac at runbox.com (C) 2013-2020 Copyright
