@@ -31,23 +31,20 @@ func sspLogin(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request) 
 		funcMap := template.FuncMap{}
 		tmplStr, err := ioutil.ReadFile("ssp/login.ghtml")
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			responseError(w, err)
 			return
 		}
 		buf := bytes.Buffer{}
 		tmpl, err := template.New("login").Funcs(funcMap).Parse(string(tmplStr))
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			responseError(w, err)
 			return
 		}
 
 		// exec template
 		err = tmpl.Execute(&buf, data)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			responseError(w, err)
 			return
 		}
 

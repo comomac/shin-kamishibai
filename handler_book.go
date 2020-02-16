@@ -2,7 +2,6 @@ package main
 
 import (
 	"archive/zip"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -21,173 +20,6 @@ type BooksResponse []*Book
 
 // MapBooksResponse string mapped book(s) information
 type MapBooksResponse map[string]*Book
-
-// getBookInfo return indivisual book info
-func getBookInfo(db *FlatDB) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-
-		items := strings.Split(r.URL.Path, "/")
-		bookID := items[len(items)-1]
-
-		book := db.GetBookByID(bookID)
-		if book == nil {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-
-		b, err := json.Marshal(book)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(b)
-	}
-}
-
-// getBooksInfo return several books info
-func getBooksInfo(db *FlatDB) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-
-		bookcodes := r.URL.Query().Get("bookcodes")
-		bookIDs := strings.Split(bookcodes, ",")
-
-		books := MapBooksResponse{}
-
-		for _, bookID := range bookIDs {
-			bookID = strings.TrimSpace(bookID)
-			book := db.GetBookByID(bookID)
-			if book == nil {
-				continue
-			}
-
-			books[bookID] = book
-		}
-
-		b, err := json.Marshal(books)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(b)
-	}
-}
-
-// get list of dirs for access
-func getSources(cfg *Config) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		cookies := r.Cookies()
-		fmt.Printf("%+v\n", cookies)
-		cookie, err := r.Cookie(fmt.Sprintf("%d.order_by", cfg.Port))
-		if err == nil {
-			fmt.Printf("%+v %+v\n", cookie.Name, cookie.Value)
-		}
-
-		b, err := json.Marshal(cfg.AllowedDirs)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(b)
-	}
-}
-
-// post books returns paginated the book info
-func getBooks(db *FlatDB) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-
-		filterBy := r.URL.Query().Get("filter_by")
-		page, _ := strconv.Atoi(r.URL.Query().Get("page")) // pageination, 100 per page
-		keywords := r.URL.Query().Get("keywords")
-
-		fmt.Println("filter_by", filterBy, "page", page, "keywords", keywords)
-
-		filtered := filterByTitle(db.Books, keywords)
-		sorted := sortByTitle(filtered)
-
-		from := 100 * page
-		to := 100 * (page + 1)
-
-		if from > len(sorted) {
-			// exceeded range
-			from = 0
-			to = 0
-		} else if to > len(sorted)-1 {
-			to = len(sorted) - 1
-		}
-
-		filtered2 := sorted[from:to]
-
-		books := BooksResponse{}
-		for _, book := range filtered2 {
-			books = append(books, book)
-		}
-
-		b, err := json.Marshal(&books)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(b)
-	}
-}
-
-// setBookmark remember where the book is read upto
-func setBookmark(db *FlatDB) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-
-		bookID, page, err := parseURIBookIDandPage(r.RequestURI, "/api/setbookmark/")
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
-			return
-		}
-		// fmt.Println(r.Method, r.RequestURI, bookID, page)
-
-		ibook := db.MapperID[bookID]
-		if ibook == nil {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-		if uint64(page) > ibook.Pages {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("page cannot be larger than available pages"))
-			return
-		}
-
-		db.UpdatePage(bookID, page)
-
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("updated"))
-	}
-}
 
 // renderThumbnail gives thumbnail on the book
 func renderThumbnail(db *FlatDB, cfg *Config) func(http.ResponseWriter, *http.Request) {
@@ -305,31 +137,11 @@ func getPageOnly(db *FlatDB) func(http.ResponseWriter, *http.Request) {
 
 		bookID, page, err := parseURIBookIDandPage(r.RequestURI, "/api/cbz/")
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
+			responseBadRequest(w, err)
 			return
 		}
 
 		cbzPage(w, r, db, bookID, page, false)
-	}
-}
-
-// getPageNRead gives the image of the page from the book and sets page read
-func getPageNRead(db *FlatDB) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-
-		bookID, page, err := parseURIBookIDandPage(r.RequestURI, "/api/read/")
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
-			return
-		}
-
-		cbzPage(w, r, db, bookID, page, true)
 	}
 }
 
@@ -370,23 +182,19 @@ func cbzPage(w http.ResponseWriter, r *http.Request, db *FlatDB, bookID string, 
 		}
 
 		files = append(files, f.Name)
-		// fmt.Println("img!", f.Name)
 	}
 
 	// do natural sort
 	sortNatural(files, RegexSupportedImageExt)
 
-	// fmt.Println("-------------------------- sorted --------------------------")
-	// for _, file := range files {
-	// 	fmt.Printf("%+v\n", file)
-	// }
-
-	var imgDat []byte // image data to serve
+	// image data to serve
+	var imgDat []byte
 
 	if pg > len(files) {
 		responseError(w, errors.New("page beyond file #"))
 	}
-	getImgFileName := files[pg-1] // image file to get in zip
+	// image file to get in zip
+	getImgFileName := files[pg-1]
 
 	if getImgFileName == "" {
 		http.NotFound(w, r)
@@ -413,25 +221,15 @@ func cbzPage(w http.ResponseWriter, r *http.Request, db *FlatDB, bookID string, 
 		break
 	}
 
-	// fmt.Println("found", ttlImages, "images")
-	// fmt.Println(page, "th image name (", imgFileName, ")")
-
-	// fmt.Fprint(w, "bytes")
-
 	if updatePage {
 		// updates bookmark on page read
 		db.UpdatePage(bookID, pg)
 	}
 
-	// fmt.Printf("imgDat\n%+v\n", imgDat)
 	ctype := http.DetectContentType(imgDat)
 	w.Header().Add("Content-Type", ctype)
 	w.Header().Add("Content-Length", strconv.Itoa(len(imgDat)))
 	w.Write(imgDat)
-}
-
-func deleteBook(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "deleted")
 }
 
 // parseURIBookIDandPage parse url and return book id and page. it also do http error if failed

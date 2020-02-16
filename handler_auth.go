@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/subtle"
 	"encoding/base64"
+	"errors"
 	"log"
 	"net/http"
 )
@@ -24,8 +25,7 @@ func login(httpSession *SessionStore, cfg *Config) func(http.ResponseWriter, *ht
 
 		err := r.ParseForm()
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("cannot parse form data"))
+			responseError(w, errors.New("cannot parse form data"))
 			return
 		}
 
@@ -62,27 +62,5 @@ func login(httpSession *SessionStore, cfg *Config) func(http.ResponseWriter, *ht
 
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("wrong username or password"))
-	}
-}
-
-// loginCheck so the client knows if current session is login or not
-func loginCheck(httpSession *SessionStore, cfg *Config) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-
-		// not logged in
-		value := httpSession.Get(w, r, LoggedIn)
-		if value != true {
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte("failed"))
-			return
-		}
-
-		// logged in
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
 	}
 }

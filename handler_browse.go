@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -32,58 +31,6 @@ type FileInfoBasic struct {
 
 // ItemsPerPage use for pagination
 var ItemsPerPage = 18
-
-// dirList lists the folder content, only the folder and the manga will be shown
-func dirList(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-
-		query := r.URL.Query()
-
-		dir := query.Get("dir")
-		keyword := query.Get("keyword")
-		keyword = strings.ToLower(keyword)
-		spage := query.Get("page")
-		page, err := strconv.Atoi(spage)
-		if err != nil {
-			page = 1
-		}
-
-		// have clean path, prevent .. bypass
-		dir = filepath.Clean(dir)
-
-		fmt.Println("listing dir (", page, ")", dir)
-
-		// check if the dir is allowed to browse
-		exists := StringSliceContain(cfg.AllowedDirs, dir)
-		if !exists {
-			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte("not allowed to browse"))
-			return
-		}
-
-		// listing dir
-		fileList, status, err := listDir(dir, keyword, page, db)
-		if err != nil {
-			w.WriteHeader(status)
-			w.Write([]byte(err.Error()))
-			return
-		}
-
-		b, err := json.Marshal(&fileList)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(b)
-	}
-}
 
 // sspBrowse lists the folder content, only the folder and the manga will be shown
 func sspBrowse(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request) {
@@ -158,15 +105,13 @@ func sspBrowse(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request)
 		}
 		tmplStr, err := ioutil.ReadFile("ssp/browse.ghtml")
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			responseError(w, err)
 			return
 		}
 		buf := bytes.Buffer{}
 		tmpl, err := template.New("browse").Funcs(funcMap).Parse(string(tmplStr))
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			responseError(w, err)
 			return
 		}
 
@@ -174,8 +119,7 @@ func sspBrowse(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request)
 		if dir == "" || dir == "." {
 			err = tmpl.Execute(&buf, data)
 			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(err.Error()))
+				responseError(w, err)
 				return
 			}
 
@@ -193,10 +137,9 @@ func sspBrowse(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request)
 		}
 
 		// listing dir
-		fileList, status, err := listDir(dir, keyword, page, db)
+		fileList, err := listDir(dir, keyword, page, db)
 		if err != nil {
-			w.WriteHeader(status)
-			w.Write([]byte(err.Error()))
+			responseBadRequest(w, err)
 			return
 		}
 
@@ -205,8 +148,7 @@ func sspBrowse(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request)
 		// exec template
 		err = tmpl.Execute(&buf, data)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			responseError(w, err)
 			return
 		}
 
@@ -215,11 +157,11 @@ func sspBrowse(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request)
 	}
 }
 
-func listDir(dir, keyword string, page int, db *FlatDB) (*FileList, int, error) {
+func listDir(dir, keyword string, page int, db *FlatDB) (*FileList, error) {
 	// listing dir
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
-		return nil, http.StatusBadRequest, err
+		return nil, err
 	}
 
 	// fmt.Printf("%+v", db.IMapper)
@@ -322,8 +264,8 @@ func listDir(dir, keyword string, page int, db *FlatDB) (*FileList, int, error) 
 			IsEmpty: true,
 		})
 
-		return &fileList, 0, nil
+		return &fileList, nil
 	}
 
-	return &fileList, 0, nil
+	return &fileList, nil
 }

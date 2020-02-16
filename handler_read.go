@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"html/template"
 	"io/ioutil"
 	"net/http"
@@ -27,13 +28,11 @@ func sspRead(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request) {
 
 		book := db.GetBookByID(bookID)
 		if book == nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("book not found"))
+			responseBadRequest(w, errors.New("book not found"))
 			return
 		}
 		if page < 1 || page > int(book.Pages) {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("invalid page number"))
+			responseBadRequest(w, errors.New("invalid page number"))
 			return
 		}
 		// set page temporary
@@ -63,23 +62,20 @@ func sspRead(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request) {
 		}
 		tmplStr, err := ioutil.ReadFile("ssp/read.ghtml")
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			responseError(w, err)
 			return
 		}
 		buf := bytes.Buffer{}
 		tmpl, err := template.New("read").Funcs(funcMap).Parse(string(tmplStr))
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			responseError(w, err)
 			return
 		}
 
 		// exec template
 		err = tmpl.Execute(&buf, data)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			responseError(w, err)
 			return
 		}
 
