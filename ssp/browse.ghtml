@@ -269,7 +269,7 @@
 			{{else if $fileInfo.IsDir}}
 			<div class="directory">
 				<a dir="{{ $fileInfo.Path }}" href="/browse.html?dir={{ printf "%s/%s" $dir $fileInfo.Name }}">
-					<img src="/images/folder-mini.png" alt="folder" />
+					<img src="/images/folder.png" alt="folder" />
 					<div class="text">{{ $fileInfo.Name }}</div>
 				</a>
 			</div>
