@@ -32,8 +32,8 @@ type FileInfoBasic struct {
 // ItemsPerPage use for pagination
 var ItemsPerPage = 18
 
-// sspBrowse lists the folder content, only the folder and the manga will be shown
-func sspBrowse(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request) {
+// browseGet http GET lists the folder content, only the folder and the manga will be shown
+func browseGet(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)

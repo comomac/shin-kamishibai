@@ -40,10 +40,10 @@ func (svr *Server) Start() {
 	h.HandleFunc("/login.html", loginGet(cfg, db))
 
 	// private api, page
-	h.HandleFunc("/api/thumbnail/", renderThumbnail(db, cfg)) // /thumbnail/{bookID}
-	h.HandleFunc("/api/cbz/", getPageOnly(db))                // /cbz/{bookID}/{page}   get image
-	h.HandleFunc("/browse.html", sspBrowse(cfg, db))
-	h.HandleFunc("/read.html", sspRead(cfg, db))
+	h.HandleFunc("/api/thumbnail/", renderThumbnail(db, cfg)) // /thumbnail/{bookID}    get book cover thumbnail
+	h.HandleFunc("/api/cbz/", getPageOnly(db))                // /cbz/{bookID}/{page}   get book page
+	h.HandleFunc("/browse.html", browseGet(cfg, db))
+	h.HandleFunc("/read.html", readGet(cfg, db))
 
 	// middleware
 	h1 := CheckAuthHandler(h, httpSession, cfg)
