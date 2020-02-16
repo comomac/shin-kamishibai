@@ -21,10 +21,6 @@ Browser support cookie and css
 
 ## Build
 
-`go build -o shin-kamishibai`
-
-## Build (using Make)
-
 For Linux and Mac and Windows
 `go build *.go`
 
