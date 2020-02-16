@@ -21,6 +21,8 @@ type FileList []*FileInfoBasic
 // FileInfoBasic basic FileInfo to identify file for dir list
 type FileInfoBasic struct {
 	IsDir   bool      `json:"is_dir,omitempty"`
+	IsEmpty bool      `json:"is_empty,omitempty"`
+	IsBook  bool      `json:"is_book,omitempty"`
 	Path    string    `json:"path,omitempty"`     // first item, the current directory
 	Name    string    `json:"name,omitempty"`     // file, dir
 	ModTime time.Time `json:"mod_time,omitempty"` // file modified time
@@ -94,11 +96,15 @@ func sspBrowse(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request)
 		query := r.URL.Query()
 
 		dir := query.Get("dir")
-		keyword := query.Get("keyword")
-		keyword = strings.ToLower(keyword)
+		keyword := strings.ToLower(query.Get("keyword"))
+		// TODO implement sortBy
+		sortBy := strings.ToLower(query.Get("sortby"))
 		spage := query.Get("page")
 		page, err := strconv.Atoi(spage)
 		if err != nil {
+			page = 1
+		}
+		if page < 1 {
 			page = 1
 		}
 
@@ -110,11 +116,19 @@ func sspBrowse(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request)
 		// browse template
 		data := struct {
 			AllowedDirs []string
-			CurrentDir  string
+			Dir         string
+			UpDir       string
+			Page        int
+			Keyword     string
+			SortBy      string
 			FileList    *FileList
 		}{
 			AllowedDirs: cfg.AllowedDirs,
-			CurrentDir:  dir,
+			Dir:         dir,
+			UpDir:       filepath.Dir(dir),
+			Page:        page,
+			Keyword:     keyword,
+			SortBy:      sortBy,
 			FileList:    &FileList{},
 		}
 		// helper func for template
@@ -132,6 +146,14 @@ func sspBrowse(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request)
 					rr += fmt.Sprintf(" read%d0", r)
 				}
 				return rr
+			},
+			"calcPage": func(a, b int) int {
+				c := a + b
+				if c < 1 {
+					c = 1
+				}
+
+				return c
 			},
 		}
 		tmplStr, err := ioutil.ReadFile("ssp/browse.ghtml")
@@ -166,7 +188,7 @@ func sspBrowse(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request)
 		exists := StringSliceContain(cfg.AllowedDirs, dir)
 		if !exists {
 			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte("not allowed to browse"))
+			w.Write([]byte("not allowed to browse " + dir))
 			return
 		}
 
@@ -262,6 +284,7 @@ func listDir(dir, keyword string, page int, db *FlatDB) (*FileList, int, error) 
 
 		// create and store blank book entry
 		fib := &FileInfoBasic{
+			IsBook:  true,
 			Name:    file.Name(),
 			ModTime: file.ModTime(),
 		}
@@ -290,6 +313,18 @@ func listDir(dir, keyword string, page int, db *FlatDB) (*FileList, int, error) 
 
 		// error? skip
 		fmt.Println("error! bottom fell out", page, keyword, dir)
+	}
+
+	fmt.Println(files2)
+
+	// nothing found
+	if len(fileList) == 1 {
+		// add nothing found
+		fileList = append(fileList, &FileInfoBasic{
+			IsEmpty: true,
+		})
+
+		return &fileList, 0, nil
 	}
 
 	return &fileList, 0, nil

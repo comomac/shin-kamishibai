@@ -235,9 +235,8 @@
 		<div class="dropdown">
 			<button class="dropbtn">Order by</button>
 			<div class="dropdown-content">
-				<a href="#" onclick="dirOrderBy('name');">&#128292; filename</a>
-				<a href="#" onclick="dirOrderBy('size');">&#128290; filesize</a>
-				<a href="#" onclick="dirOrderBy('date');">&#128197; filedate</a>
+				<a href="/browse/?dir={{.Dir}}&page={{.Page}}&keyword={{.Keyword}}&sortby=name">&#128292; filename</a>
+				<a href="/browse/?dir={{.Dir}}&page={{.Page}}&keyword={{.Keyword}}&sortby=date">&#128197; filedate</a>
 			</div>
 		</div>
 
@@ -256,9 +255,9 @@
 		</div>
 
 		<div style="margin:1em;">
-			<button class="nav-dir-button" onclick="dirUp();">&nbsp;&nbsp;Up&nbsp;&nbsp;</button>
-			<button class="nav-dir-button" onclick="dirListPrev();">Prev</button>
-			<button class="nav-dir-button" onclick="dirListNext();">Next</button>
+			<a href="/ssp/browse.html?dir={{.UpDir}}&page=1&keyword={{.Keyword}}&sortby={{.SortBy}}"><button class="nav-dir-button">&nbsp;&nbsp;Up&nbsp;&nbsp;</button></a>
+			<a href="/ssp/browse.html?dir={{.Dir}}&page={{calcPage .Page -1}}&keyword={{.Keyword}}&sortby={{.SortBy}}"><button class="nav-dir-button">Prev</button></a>
+			<a href="/ssp/browse.html?dir={{.Dir}}&page={{calcPage .Page 1}}&keyword={{.Keyword}}&sortby={{.SortBy}}"><button class="nav-dir-button">Next</button></a>
 			<span id="span-page"></span>
 		</div>
 
@@ -268,13 +267,21 @@
 			{{if (eq $i 0)}}
 			{{ $dir = $fileInfo.Path }}
 			{{else if $fileInfo.IsDir}}
-			<div class="directory" src="{{ $fileInfo.Path }}">
+			<div class="directory">
 				<a dir="{{ $fileInfo.Path }}" href="/ssp/browse.html?dir={{ printf "%s/%s" $dir $fileInfo.Name }}">
 					<img src="/images/folder-mini.png" alt="folder" />
 					<div class="text">{{ $fileInfo.Name }}</div>
 				</a>
 			</div>
-			{{else}}
+			{{else if $fileInfo.More}}
+			<div class="directory">
+				<div class="text">More...</div>
+			</div>
+			{{else if $fileInfo.IsEmpty}}
+			<div class="directory">
+				<div class="text">Empty...</div>
+			</div>
+            {{else if $fileInfo.IsBook}}
 			<div class="file">
 				<a bookcode="{{ $fileInfo.ID }}" href="/ssp/read.html?book={{ $fileInfo.ID }}&page={{ $fileInfo.Page }}">
 					<img src="/api/thumbnail/{{ $fileInfo.ID }}" alt="cover" />
