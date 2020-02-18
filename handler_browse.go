@@ -32,7 +32,7 @@ type FileInfoBasic struct {
 var ItemsPerPage = 18
 
 // browseGet http GET lists the folder content, only the folder and the manga will be shown
-func browseGet(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request) {
+func browseGet(cfg *Config, db *FlatDB, htmlTemplateFile string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -102,7 +102,7 @@ func browseGet(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request)
 				return c
 			},
 		}
-		tmplStr, err := ioutil.ReadFile("ssp/browse.ghtml")
+		tmplStr, err := ioutil.ReadFile(htmlTemplateFile)
 		if err != nil {
 			responseError(w, err)
 			return

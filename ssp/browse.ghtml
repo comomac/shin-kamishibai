@@ -254,6 +254,10 @@
 			</form>
 		</div>
 
+		<div style="position: absolute; top: 0; right: 0;">
+			<a href="/legacy.html?dir={{.Dir}}&page={{.Page}}&keyword={{.Keyword}}&sortby={{.SortBy}}">Legacy</a>
+		</div>
+
 		<div style="margin:1em;">
 			<a href="/browse.html?dir={{.UpDir}}&page=1&keyword={{.Keyword}}&sortby={{.SortBy}}"><button class="nav-dir-button">&nbsp;&nbsp;Up&nbsp;&nbsp;</button></a>
 			<a href="/browse.html?dir={{.Dir}}&page={{calcPage .Page -1}}&keyword={{.Keyword}}&sortby={{.SortBy}}"><button class="nav-dir-button">Prev</button></a>

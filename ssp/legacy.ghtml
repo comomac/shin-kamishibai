@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta
+			content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=1.0, maximum-scale=5.0"
+			name="viewport"
+		/>
+		<meta content="yes" name="apple-mobile-web-app-capable" />
+		<meta content="black" name="apple-mobile-web-app-status-bar-style" />
+		<meta name="description" content="Manga / Comic Reader" />
+		<title>Kamishibai</title>
+		<style>
+			/****** global ******/
+			body {
+				padding: 0;
+				margin: 0;
+			}
+
+			/****** basic elements ******/
+			#searchbox {
+				padding: 6px 8px;
+				margin-top: 20px;
+				margin-bottom: 20px;
+			}
+			#search-button {
+				padding: 6px 8px;
+				margin-top: 20px;
+				margin-bottom: 20px;
+			}
+
+			.nav-dir-button {
+				padding: 6px 8px;
+			}
+
+			/* make the last selected browse item dark lighted */
+			.last-selected-item {
+				background-color: #cdcdcd !important;
+			}
+
+			/****** dir listing ******/
+			.directory,
+			.file {
+				position: relative;
+				float: left;
+
+				height: 240px;
+				padding: 0px;
+
+				width: 32%;
+				margin: 0.3%;
+			}
+
+			.directory a,
+			.file a {
+				width: 100%;
+				height: 100%;
+				display: inline-block;
+				/* position: absolute; */
+				background-color: #eee;
+			}
+
+			.directory .text,
+			.file .text {
+				text-align: center;
+				margin: 0.5em;
+			}
+
+			.directory img,
+			.file img {
+				display: block;
+				margin-left: auto;
+				margin-right: auto;
+				border: none;
+				width: 95%;
+				height: 70%;
+			}
+
+			/****** book total pages ******/
+			.book-pages {
+				position: absolute;
+				top: 0px;
+				right: 0px;
+				color: #fff;
+				background-color: #6c757d;
+				font-weight: 700;
+			}
+		</style>
+	</head>
+	<body>
+		<!-- references
+		https://www.quirksmode.org/dom/w3c_cssom.html
+		https://quirksmode.org/compatibility.html
+		https://quirksmode.org/css/
+		https://caniuse.com/#compare=ie+6
+		https://en.wikipedia.org/wiki/Comparison_of_browser_engines_(CSS_support)
+		https://en.wikipedia.org/wiki/Comparison_of_browser_engines_(HTML_support)
+		https://developer.mozilla.org/en-US/docs/Web/CSS/
+		https://stackoverflow.com/questions/495050/list-of-css-features-not-supported-by-ie6
+		https://docs.microsoft.com/en-us/previous-versions//cc351024(v=vs.85)?redirectedfrom=MSDN
+		-->
+		<div style="position: absolute; top: 0; right: 0;">
+			<a href="/browse.html?dir={{.Dir}}&page={{.Page}}&keyword={{.Keyword}}&sortby={{.SortBy}}">CSS</a>
+		</div>
+
+		<table>
+			<tr>
+				<form style="float: left;">
+				<td>
+					<input id="searchbox" placeholder="search" type="text" />
+				</td>
+				<td>
+					<input id="search-button" type="submit" value="Search" />
+				</td>
+				</form>
+			</tr>
+			<tr>
+				{{range $i, $s := .AllowedDirs}}
+				<td>
+				<form>
+					<input type="hidden" name="dir" value="{{$s}}" />
+					<input type="submit" class="nav-dir-button" value="{{$s}}" />
+				</form>
+				</td>
+				{{end}}
+			</tr>
+			<tr>
+				<td spanrow="3">
+					<form style="float: left;">
+						<input type="hidden" name="dir" value="{{.UpDir}}" />
+						<input type="hidden" name="page" value="1" />
+						<input type="hidden" name="keyword" value="{{.Keyword}}" />
+						<input type="hidden" name="sortby" value="{{.SortBy}}" />
+						<input type="submit" class="nav-dir-button" value="&nbsp;&nbsp;Up&nbsp;&nbsp;">
+					</form>
+					<form style="float: left;">
+						<input type="hidden" name="dir" value="{{.Dir}}" />
+						<input type="hidden" name="page" value="{{calcPage .Page -1}}" />
+						<input type="hidden" name="keyword" value="{{.Keyword}}" />
+						<input type="hidden" name="sortby" value="{{.SortBy}}" />
+						<input type="submit" class="nav-dir-button" value="Prev" />
+					</form>
+					<form style="float: left;">
+						<input type="hidden" name="dir" value="{{.Dir}}" />
+						<input type="hidden" name="page" value="{{calcPage .Page 1}}" />
+						<input type="hidden" name="keyword" value="{{.Keyword}}" />
+						<input type="hidden" name="sortby" value="{{.SortBy}}" />
+						<input type="submit" class="nav-dir-button" value="Next" />
+					</form>
+				</td>
+				<td>
+					Page: {{.Page}}
+				</td>
+			</tr>
+		</table>
+
+		<div id="dir-lists" style="">
+			{{$dir := .Dir }}
+			{{range $i, $fileInfo := .FileList}}
+			{{if (eq $i 0)}}
+			{{else if $fileInfo.IsDir}}
+			<div class="directory" style="background-color: magenta;">
+				<a href="/legacy.html?dir={{ $dir }}/{{ $fileInfo.Name }}">
+					<img src="/images/folder.png" alt="folder" />
+					<div class="text">{{ $fileInfo.Name }}</div>
+				</a>
+			</div>
+			{{else if $fileInfo.More}}
+			<div class="directory">
+				<div class="text">More...</div>
+			</div>
+			{{else if $fileInfo.IsEmpty}}
+			<div class="directory">
+				<div class="text">Empty...</div>
+			</div>
+			{{else if $fileInfo.IsBook}}
+			<div class="file">
+				<a href="/read.html?book={{ $fileInfo.ID }}&page={{ $fileInfo.Page }}">
+					<img src="/api/thumbnail/{{ $fileInfo.ID }}" alt="cover" />
+					<div class="{{readpc $fileInfo }}">{{ $fileInfo.Name }}</div>
+					<span class="book-pages">{{ $fileInfo.Pages }}</span>
+				</a>
+			</div>
+			{{ end }}
+			{{ end }}
+		</div>
+	</body>
+</html>
