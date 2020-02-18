@@ -55,7 +55,7 @@
 					Author: <span id="span-book-author">{{ .Book.Author }}</span>
 				</div>
 				<div>
-					Title: <span id="span-book-title">{{ .Book.Title }}</span>
+					Title: <span id="span-book-title">{{ .Book.Title }} {{ .Book.Number }}</span>
 				</div>
 				<div>
 					Page: <span id="span-book-page">{{ .Book.Page }}</span> / <span id="span-book-pages">{{ .Book.Pages }}</span>
@@ -79,11 +79,18 @@
 		</div>
 		<div class="row">
 			<!-- book image -->
-			<a href="/read.html?book={{ .Book.ID }}&page={{ calcPage .Book 1 }}">
-				<div class="div-img" id="div-img-1"><img src="/api/read/{{.Book.ID}}/{{ .Book.Page }}" class="img-manga" id="img-1" onclick="goPage(1);" /></div>
-			</a>
+			<div class="div-img" id="div-img-1">
+				<a href="/read.html?book={{ .Book.ID }}&page={{ calcPage .Book 1 }}">
+					<img src="/api/read/{{.Book.ID}}/{{ .Book.Page }}" class="img-manga" id="img-1" />
+				</a>
+			</div>
 		</div>
 		<script>
+			if (document.documentElement.requestFullscreen) {
+				var el = document.getElementById("div-toggle-fullscreen");
+				el.innerHTML = "<a href='#'>Full Screen</a>";
+				el.onclick = toggleFullScreen;
+			}
 			function toggleFullScreen() {
 				if (!document.fullscreenElement) {
 					document.documentElement.requestFullscreen();
