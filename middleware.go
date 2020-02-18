@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"strings"
 )
@@ -45,6 +46,16 @@ func CheckAuthHandler(h http.Handler, httpSession *SessionStore, cfg *Config) ht
 		}
 
 		// public
+		h.ServeHTTP(w, r)
+		return
+	})
+}
+
+// echo http events
+func svrLogging(h http.Handler, httpSession *SessionStore, cfg *Config) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Println(r.Method, r.URL.Path, r.URL.RawQuery)
+
 		h.ServeHTTP(w, r)
 		return
 	})

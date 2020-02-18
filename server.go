@@ -46,7 +46,8 @@ func (svr *Server) Start() {
 	h.HandleFunc("/read.html", readGet(cfg, db))
 
 	// middleware
-	h1 := CheckAuthHandler(h, httpSession, cfg)
+	slog := svrLogging(h, httpSession, cfg)
+	h1 := CheckAuthHandler(slog, httpSession, cfg)
 
 	port := cfg.IP + ":" + strconv.Itoa(cfg.Port)
 	fmt.Println("listening on", port)
