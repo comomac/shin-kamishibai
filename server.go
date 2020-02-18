@@ -41,7 +41,7 @@ func (svr *Server) Start() {
 
 	// private api, page
 	h.HandleFunc("/api/thumbnail/", renderThumbnail(db, cfg)) // /thumbnail/{bookID}    get book cover thumbnail
-	h.HandleFunc("/api/cbz/", getPageOnly(db))                // /cbz/{bookID}/{page}   get book page
+	h.HandleFunc("/api/read/", readPage(db, true))            // /cbz/{bookID}/{page}   get book page and update last read
 	h.HandleFunc("/browse.html", browseGet(cfg, db, "ssp/browse.ghtml"))
 	h.HandleFunc("/legacy.html", browseGet(cfg, db, "ssp/legacy.ghtml"))
 	h.HandleFunc("/read.html", readGet(cfg, db))

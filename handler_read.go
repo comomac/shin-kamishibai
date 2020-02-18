@@ -116,10 +116,8 @@ func renderThumbnail(db *FlatDB, cfg *Config) func(http.ResponseWriter, *http.Re
 		var imgDat []byte
 
 		// check if book is in db
-		db.Mutex.Lock()
-		ibook := db.MapperID[bookID]
-		db.Mutex.Unlock()
-		if ibook == nil {
+		book := db.GetBookByID(bookID)
+		if book == nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
@@ -144,7 +142,7 @@ func renderThumbnail(db *FlatDB, cfg *Config) func(http.ResponseWriter, *http.Re
 			return
 		}
 
-		zr, err := zip.OpenReader(ibook.Fullpath)
+		zr, err := zip.OpenReader(book.Fullpath)
 		if err != nil {
 			responseError(w, err)
 			return
@@ -193,7 +191,7 @@ func renderThumbnail(db *FlatDB, cfg *Config) func(http.ResponseWriter, *http.Re
 			return
 		}
 
-		fmt.Println("created thumbnail", ibook.Fullpath)
+		fmt.Println("created thumbnail", book.Fullpath)
 
 		// save thumb
 		err2 := ioutil.WriteFile(outFile, imgDat, 0644)
@@ -208,51 +206,60 @@ func renderThumbnail(db *FlatDB, cfg *Config) func(http.ResponseWriter, *http.Re
 	}
 }
 
-// getPageOnly gives the image of the page from the book
-func getPageOnly(db *FlatDB) func(http.ResponseWriter, *http.Request) {
+// readPage returns image of the page from the book with option to update bookmark
+func readPage(db *FlatDB, updateBookmark bool) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 
-		bookID, page, err := parseURIBookIDandPage(r.RequestURI, "/api/cbz/")
+		bookID, page, err := parseURIBookIDandPage(r.RequestURI, "/api/read/")
 		if err != nil {
 			responseBadRequest(w, err)
 			return
 		}
 
-		cbzPage(w, r, db, bookID, page, false)
+		book := db.GetBookByID(bookID)
+		if book == nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		fp := book.Fullpath
+
+		fmt.Println("page", page, fp)
+
+		if uint64(page) > book.Pages {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		imgDat, err := cbzPage(fp, page)
+		if err != nil {
+			responseError(w, err)
+			return
+		}
+
+		if updateBookmark {
+			db.UpdatePage(bookID, page)
+		}
+
+		ctype := http.DetectContentType(imgDat)
+		w.Header().Add("Content-Type", ctype)
+		w.Header().Add("Content-Length", strconv.Itoa(len(imgDat)))
+		w.Write(imgDat)
 	}
 }
 
-// cbzPage shared function for /cbz/... and /read/...
-// updatePage == true will update bookmark page
-func cbzPage(w http.ResponseWriter, r *http.Request, db *FlatDB, bookID string, pg int, updatePage bool) {
-	db.Mutex.Lock()
-	ibook := db.MapperID[bookID]
-	db.Mutex.Unlock()
-	if ibook == nil {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	// pg starts at 1 (0 is null)
+// cbzPage retrives a page from cbz
+func cbzPage(bookPath string, page int) ([]byte, error) {
+	// page starts at 1 (0 is null)
 	// file counter starts at 0. it is still a page, just internal
 
-	fp := ibook.Fullpath
-
-	fmt.Println("page", pg, fp)
-
-	if uint64(pg) > ibook.Pages {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	zr, err := zip.OpenReader(fp)
+	zr, err := zip.OpenReader(bookPath)
 	if err != nil {
-		responseError(w, err)
-		return
+		return nil, err
 	}
 	defer zr.Close()
 
@@ -271,15 +278,14 @@ func cbzPage(w http.ResponseWriter, r *http.Request, db *FlatDB, bookID string, 
 	// image data to serve
 	var imgDat []byte
 
-	if pg > len(files) {
-		responseError(w, errors.New("page beyond file #"))
+	if page > len(files) {
+		return nil, errors.New("page beyond file #")
 	}
 	// image file to get in zip
-	getImgFileName := files[pg-1]
+	getImgFileName := files[page-1]
 
 	if getImgFileName == "" {
-		http.NotFound(w, r)
-		return
+		return nil, errors.New("failed to find image")
 	}
 
 	for _, f := range zr.File {
@@ -289,28 +295,18 @@ func cbzPage(w http.ResponseWriter, r *http.Request, db *FlatDB, bookID string, 
 
 		rc, err := f.Open()
 		if err != nil {
-			responseError(w, err)
-			return
+			return nil, err
 		}
 		defer rc.Close()
 
 		imgDat, err = ioutil.ReadAll(rc)
 		if err != nil {
-			responseError(w, err)
-			return
+			return nil, err
 		}
 		break
 	}
 
-	if updatePage {
-		// updates bookmark on page read
-		db.UpdatePage(bookID, pg)
-	}
-
-	ctype := http.DetectContentType(imgDat)
-	w.Header().Add("Content-Type", ctype)
-	w.Header().Add("Content-Length", strconv.Itoa(len(imgDat)))
-	w.Write(imgDat)
+	return imgDat, nil
 }
 
 // parseURIBookIDandPage parse url and return book id and page. it also do http error if failed
