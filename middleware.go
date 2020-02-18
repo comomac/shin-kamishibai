@@ -29,6 +29,9 @@ func CheckAuthHandler(h http.Handler, httpSession *SessionStore, cfg *Config) ht
 		case "/browse.html":
 			getPage(httpSession, cfg, h)(w, r)
 			return
+		case "/legacy.html":
+			getPage(httpSession, cfg, h)(w, r)
+			return
 		}
 
 		// private

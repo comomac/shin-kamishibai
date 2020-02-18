@@ -67,14 +67,14 @@ type Author struct {
 
 // FlatDB is flat text file database struct
 type FlatDB struct {
-	Mutex        *sync.Mutex
-	Books        []*Book
-	IBooks       []*IBook
-	Authors      []*Author
-	MapperID     map[string]*IBook   // map books by id (unique)
-	MapperPath   map[string]*IBook   // map books by file path (unique)
-	MapperTitle  map[string][]*IBook // group books by title (array)
-	MapperAuthor map[string][]*IBook // group books by author (array)
+	mutex        *sync.Mutex
+	books        []*Book
+	ibooks       []*IBook
+	authors      []*Author
+	mapperID     map[string]*IBook   // map books by id (unique)
+	mapperPath   map[string]*IBook   // map books by file path (unique)
+	mapperTitle  map[string][]*IBook // group books by title (array)
+	mapperAuthor map[string][]*IBook // group books by author (array)
 	Path         string              // where the database is stored
 	FileModDate  int64               // file last modified date
 }
@@ -120,25 +120,25 @@ func bookCond(fp string) uint64 {
 
 // New initialize new Flat Database
 func (db *FlatDB) New(dbPath string) {
-	db.Mutex = &sync.Mutex{}
+	db.mutex = &sync.Mutex{}
 	db.Path = dbPath
-	db.MapperID = make(map[string]*IBook)
-	db.MapperPath = make(map[string]*IBook)
-	db.MapperTitle = make(map[string][]*IBook)
-	db.MapperAuthor = make(map[string][]*IBook)
+	db.mapperID = make(map[string]*IBook)
+	db.mapperPath = make(map[string]*IBook)
+	db.mapperTitle = make(map[string][]*IBook)
+	db.mapperAuthor = make(map[string][]*IBook)
 }
 
 // Clear all data
 func (db *FlatDB) Clear() {
-	db.Mutex.Lock()
-	defer db.Mutex.Unlock()
+	db.mutex.Lock()
+	defer db.mutex.Unlock()
 
-	db.IBooks = nil
-	db.Authors = nil
-	db.MapperID = make(map[string]*IBook)
-	db.MapperPath = make(map[string]*IBook)
-	db.MapperTitle = make(map[string][]*IBook)
-	db.MapperAuthor = make(map[string][]*IBook)
+	db.ibooks = nil
+	db.authors = nil
+	db.mapperID = make(map[string]*IBook)
+	db.mapperPath = make(map[string]*IBook)
+	db.mapperTitle = make(map[string][]*IBook)
+	db.mapperAuthor = make(map[string][]*IBook)
 }
 
 // Load data using default file path
@@ -198,13 +198,13 @@ func (db *FlatDB) Import(dbPath string) error {
 			Length:  uint64(len(line)),
 		}
 
-		db.Mutex.Lock()
-		db.IBooks = append(db.IBooks, ibook)
-		db.MapperID[book.ID] = ibook
-		db.MapperPath[book.Fullpath] = ibook
-		db.MapperTitle[book.Title] = append(db.MapperTitle[book.Title], ibook)
-		db.MapperAuthor[book.Author] = append(db.MapperAuthor[book.Author], ibook)
-		db.Mutex.Unlock()
+		db.mutex.Lock()
+		db.ibooks = append(db.ibooks, ibook)
+		db.mapperID[book.ID] = ibook
+		db.mapperPath[book.Fullpath] = ibook
+		db.mapperTitle[book.Title] = append(db.mapperTitle[book.Title], ibook)
+		db.mapperAuthor[book.Author] = append(db.mapperAuthor[book.Author], ibook)
+		db.mutex.Unlock()
 
 		prevLen += uint64(len(line) + 1)
 	}
@@ -225,7 +225,7 @@ func (db *FlatDB) Export(dbPath string) error {
 	}
 	defer f.Close()
 
-	ibooks := db.IBooks
+	ibooks := db.ibooks
 	for _, ibook := range ibooks {
 		f.Write(bookToCSV(ibook.Book))
 	}
@@ -234,9 +234,10 @@ func (db *FlatDB) Export(dbPath string) error {
 
 // UpdatePage change database record on page read, returns written byte size
 func (db *FlatDB) UpdatePage(id string, page int) (int, error) {
-	db.Mutex.Lock()
-	defer db.Mutex.Unlock()
-	ibook := db.MapperID[id]
+	db.mutex.Lock()
+	defer db.mutex.Unlock()
+
+	ibook := db.mapperID[id]
 	if ibook == nil {
 		err := errors.New("ibook is nil")
 		return 0, err
@@ -273,9 +274,9 @@ func (db *FlatDB) UpdatePage(id string, page int) (int, error) {
 
 // BookIDs gives list of all the book ids in the db
 func (db *FlatDB) BookIDs() []string {
-	ids := make([]string, len(db.IBooks))
+	ids := make([]string, len(db.ibooks))
 
-	for _, ibook := range db.IBooks {
+	for _, ibook := range db.ibooks {
 		ids = append(ids, ibook.ID)
 	}
 
@@ -584,10 +585,10 @@ func cbzGetPages(fp string) (int, error) {
 // GetBookByID get Book object by book id
 func (db *FlatDB) GetBookByID(bookID string) *Book {
 
-	db.Mutex.Lock()
-	defer db.Mutex.Unlock()
+	db.mutex.Lock()
+	defer db.mutex.Unlock()
 
-	ibook := db.MapperID[bookID]
+	ibook := db.mapperID[bookID]
 	if ibook == nil {
 		return nil
 	}
@@ -597,33 +598,25 @@ func (db *FlatDB) GetBookByID(bookID string) *Book {
 
 // GetBookByPath get Book object by file path
 func (db *FlatDB) GetBookByPath(fpath string) *Book {
-	db.Mutex.Lock()
-	defer db.Mutex.Unlock()
+	db.mutex.Lock()
+	defer db.mutex.Unlock()
 
 	// not working for some reason
-	ibook := db.MapperPath[fpath]
+	ibook := db.mapperPath[fpath]
 	if ibook == nil {
 		return nil
 	}
-	return db.MapperPath[fpath].Book
-
-	// for _, ibook := range db.IBooks {
-	// 	fmt.Println(111, ibook.Fullpath)
-	// 	if ibook.Fullpath == fpath {
-	// 		return ibook.Book
-	// 	}
-	// }
-	// return nil
+	return db.mapperPath[fpath].Book
 }
 
 // SearchBookByNameAndSize get Books object by filename and size
 func (db *FlatDB) SearchBookByNameAndSize(fname string, size uint64) []*Book {
-	db.Mutex.Lock()
-	defer db.Mutex.Unlock()
+	db.mutex.Lock()
+	defer db.mutex.Unlock()
 
 	var books []*Book
 
-	for _, ibook := range db.IBooks {
+	for _, ibook := range db.ibooks {
 		if ibook.Size == size && path.Base(ibook.Fullpath) == fname {
 			books = append(books, ibook.Book)
 		}

@@ -163,9 +163,6 @@ func listDir(dir, keyword string, page int, db *FlatDB) (*FileList, error) {
 		return nil, err
 	}
 
-	// fmt.Printf("%+v", db.IMapper)
-	// spew.Dump(db.FMapper)
-
 	files2 := []os.FileInfo{}
 	for _, file := range files {
 		// no dot file/folder
