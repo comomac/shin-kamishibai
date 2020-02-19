@@ -1,7 +1,7 @@
 {
   "port": 2525,
   "username": "user",
-  "password": "pass",
+  "password": "pass123",
   "iterations": 100000,
   "allowed_dirs": [
     "/Users/mac/books",
