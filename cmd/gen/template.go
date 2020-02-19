@@ -46,6 +46,24 @@ func (fsys fileSystem) Open(name string) (http.File, error) {
 	return f, nil
 }
 
+// mimic ioutil.ReadFile
+func (fsys fileSystem) ReadFile(name string) ([]byte, error) {
+	f := httpFile{}
+
+	if fsys.BinFileMap[name] == nil {
+		return nil, os.ErrNotExist
+	}
+	f.binFile = fsys.BinFileMap[name]
+
+	bdat := make([]byte, f.binFile.Size)
+	_, err := f.Read(bdat)
+	if err != nil {
+		return nil, err
+	}
+
+	return bdat, nil
+}
+
 // ##############################
 // #
 // #    mimic http.File

@@ -61,7 +61,7 @@ func main() {
 	fptr.Write(tmplStr)
 	fptr.WriteString("\n")
 
-	allowedExt := []string{"jpg", "jpeg", "png", "gif", "htm", "html", "css", "js"}
+	allowedExt := []string{"jpg", "jpeg", "png", "gif", "htm", "html", "css", "js", "ghtml"}
 
 	// start blank
 	binMap := map[string]int{}
@@ -69,90 +69,98 @@ func main() {
 	// file counter
 	i := 0
 
-	err = filepath.Walk("web", func(fpath string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		// revert windows path to / instead of \
-		fpath = strings.Replace(fpath, `\`, "/", -1)
-		// no dir
-		if info.IsDir() {
-			return nil
-		}
-		// no . file
-		if strings.HasPrefix(info.Name(), ".") {
-			return nil
-		}
-		// no raw asset
-		if strings.HasPrefix(fpath, "web/raw/") {
-			return nil
-		}
-		// only allowed file ext
-		found := false
-		for _, ext := range allowedExt {
-			if strings.HasSuffix(strings.ToLower(info.Name()), "."+ext) {
-				found = true
-				break
+	wdirs := []string{"web", "ssp"}
+	for _, wdir := range wdirs {
+		err = filepath.Walk(wdir, func(fpath string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
 			}
-		}
-		if !found {
-			return nil
-		}
-
-		i++
-		fpath2 := "**" + fpath
-		fpath2 = strings.Replace(fpath2, "**web/", "/", -1)
-		binMap[fpath2] = i
-
-		// convert binary to base64
-		b, err := ioutil.ReadFile(fpath)
-		check(err)
-		bs := base64.URLEncoding.EncodeToString(b)
-
-		bf := BinFile{
-			Name:    info.Name(),
-			Size:    info.Size(),
-			Mode:    info.Mode(),
-			ModTime: info.ModTime(),
-			IsDir:   info.IsDir(),
-			Data64:  bs,
-		}
-
-		fptr.WriteString(fmt.Sprintf("var __binfile%d = ", i))
-
-		td, terr := template.New(fmt.Sprintf("data%d", i)).Parse(binfileTemplate)
-		tmpl := template.Must(td, terr)
-		err = tmpl.Execute(fptr, bf)
-		check(err)
-
-		bdat := bf.Data64
-		max := int(math.Ceil(float64(len(bdat)) / 100))
-		fptr.WriteString(`Data64: `)
-		for i := 0; i < max; i++ {
-			head := i * 100
-			tail := (i + 1) * 100
-			if tail > len(bdat) {
-				tail = len(bdat)
+			// revert windows path to / instead of \
+			fpath = strings.Replace(fpath, `\`, "/", -1)
+			// no dir
+			if info.IsDir() {
+				return nil
+			}
+			// no . file
+			if strings.HasPrefix(info.Name(), ".") {
+				return nil
+			}
+			// no raw asset
+			if strings.HasPrefix(fpath, "web/raw/") {
+				return nil
+			}
+			// only allowed file ext
+			found := false
+			for _, ext := range allowedExt {
+				if strings.HasSuffix(strings.ToLower(info.Name()), "."+ext) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return nil
 			}
 
-			if i == 0 && max == 1 {
-				fptr.WriteString(`"` + bdat[head:tail] + `",`)
-			} else if i == 0 {
-				fptr.WriteString(`"` + bdat[head:tail] + `" +`)
-			} else if i == max-1 {
-				fptr.WriteString("\t\t" + `"` + bdat[head:tail] + `",`)
+			i++
+			if wdir == "web" {
+				// web needs to be at the root level to work with http.FileServe
+				fpath2 := "**" + fpath
+				fpath2 = strings.Replace(fpath2, "**web/", "/", -1)
+				binMap[fpath2] = i
 			} else {
-				fptr.WriteString("\t\t" + `"` + bdat[head:tail] + `" +`)
+				binMap[fpath] = i
 			}
-			fptr.WriteString("\n")
-		}
-		fptr.WriteString("}\n\n")
 
-		fmt.Println(i, bf.Size, fpath)
+			// convert binary to base64
+			b, err := ioutil.ReadFile(fpath)
+			check(err)
+			bs := base64.URLEncoding.EncodeToString(b)
 
-		return nil
-	})
-	check(err)
+			bf := BinFile{
+				Name:    info.Name(),
+				Size:    info.Size(),
+				Mode:    info.Mode(),
+				ModTime: info.ModTime(),
+				IsDir:   info.IsDir(),
+				Data64:  bs,
+			}
+
+			fptr.WriteString(fmt.Sprintf("var __binfile%d = ", i))
+
+			td, terr := template.New(fmt.Sprintf("data%d", i)).Parse(binfileTemplate)
+			tmpl := template.Must(td, terr)
+			err = tmpl.Execute(fptr, bf)
+			check(err)
+
+			bdat := bf.Data64
+			max := int(math.Ceil(float64(len(bdat)) / 100))
+			fptr.WriteString(`Data64: `)
+			for i := 0; i < max; i++ {
+				head := i * 100
+				tail := (i + 1) * 100
+				if tail > len(bdat) {
+					tail = len(bdat)
+				}
+
+				if i == 0 && max == 1 {
+					fptr.WriteString(`"` + bdat[head:tail] + `",`)
+				} else if i == 0 {
+					fptr.WriteString(`"` + bdat[head:tail] + `" +`)
+				} else if i == max-1 {
+					fptr.WriteString("\t\t" + `"` + bdat[head:tail] + `",`)
+				} else {
+					fptr.WriteString("\t\t" + `"` + bdat[head:tail] + `" +`)
+				}
+				fptr.WriteString("\n")
+			}
+			fptr.WriteString("}\n\n")
+
+			fmt.Println(i, bf.Size, fpath)
+
+			return nil
+		})
+		check(err)
+	}
 
 	td, terr := template.New(fmt.Sprintf("map%d", i)).Parse(binmapTemplate)
 	tmpl := template.Must(td, terr)

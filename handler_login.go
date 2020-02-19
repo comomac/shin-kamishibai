@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"net/http"
 )
@@ -69,7 +68,7 @@ func loginPOST(httpSession *SessionStore, cfg *Config) func(http.ResponseWriter,
 }
 
 // loginGet login Get page
-func loginGet(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request) {
+func loginGet(cfg *Config, db *FlatDB, fRead fileReader) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -90,13 +89,13 @@ func loginGet(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request) 
 		}
 		// helper func for template
 		funcMap := template.FuncMap{}
-		tmplStr, err := ioutil.ReadFile("ssp/login.ghtml")
+		tmplBytes, err := fRead("ssp/login.ghtml")
 		if err != nil {
 			responseError(w, err)
 			return
 		}
 		buf := bytes.Buffer{}
-		tmpl, err := template.New("login").Funcs(funcMap).Parse(string(tmplStr))
+		tmpl, err := template.New("login").Funcs(funcMap).Parse(string(tmplBytes))
 		if err != nil {
 			responseError(w, err)
 			return

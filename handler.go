@@ -5,6 +5,9 @@ import (
 	"net/http"
 )
 
+// mimic ioutil.ReadFile
+type fileReader func(string) ([]byte, error)
+
 // handle http.FileServer
 func handlerFS(handler http.Handler) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {

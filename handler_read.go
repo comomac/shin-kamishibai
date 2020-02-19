@@ -24,7 +24,7 @@ type BooksResponse []*Book
 type MapBooksResponse map[string]*Book
 
 // readGet http Get read page
-func readGet(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request) {
+func readGet(cfg *Config, db *FlatDB, fRead fileReader) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -74,7 +74,7 @@ func readGet(cfg *Config, db *FlatDB) func(http.ResponseWriter, *http.Request) {
 				return b
 			},
 		}
-		tmplStr, err := ioutil.ReadFile("ssp/read.ghtml")
+		tmplStr, err := fRead("ssp/read.ghtml")
 		if err != nil {
 			responseError(w, err)
 			return

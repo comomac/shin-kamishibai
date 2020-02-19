@@ -26,25 +26,27 @@ func (svr *Server) Start() {
 
 	// public folder access
 
-	// debug
-	fserv := http.FileServer(http.Dir(svr.Config.PathDir + "/web"))
+	// // debug with local files
+	// fserv := http.FileServer(http.Dir(svr.Config.PathDir + "/web"))
+	// fRead := ioutil.ReadFile
 
-	// generated and packed
-	// fs := fileSystem{__binmapName}
-	// fserv := http.FileServer(fs)
+	// use packed file (binfile.go)
+	fs := fileSystem{__binmapName}
+	fRead := fs.ReadFile
+	fserv := http.FileServer(fs)
 
 	h.HandleFunc("/", handlerFS(fserv))
 
 	// public api, page
 	h.HandleFunc("/login", loginPOST(httpSession, cfg))
-	h.HandleFunc("/login.html", loginGet(cfg, db))
+	h.HandleFunc("/login.html", loginGet(cfg, db, fRead))
 
 	// private api, page
 	h.HandleFunc("/api/thumbnail/", renderThumbnail(db, cfg)) // /thumbnail/{bookID}    get book cover thumbnail
 	h.HandleFunc("/api/read/", readPage(db, true))            // /cbz/{bookID}/{page}   get book page and update last read
-	h.HandleFunc("/browse.html", browseGet(cfg, db, "ssp/browse.ghtml"))
-	h.HandleFunc("/legacy.html", browseGet(cfg, db, "ssp/legacy.ghtml"))
-	h.HandleFunc("/read.html", readGet(cfg, db))
+	h.HandleFunc("/browse.html", browseGet(cfg, db, fRead, "ssp/browse.ghtml"))
+	h.HandleFunc("/legacy.html", browseGet(cfg, db, fRead, "ssp/legacy.ghtml"))
+	h.HandleFunc("/read.html", readGet(cfg, db, fRead))
 
 	// middleware
 	slog := svrLogging(h, httpSession, cfg)
