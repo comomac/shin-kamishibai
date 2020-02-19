@@ -21,6 +21,9 @@ Browser support cookie and css
 
 ## Build
 
+First, need build the binfile.go
+`go run cmd/gen/generate.go`
+
 For Linux and Mac and Windows
 `go build *.go`
 
@@ -33,7 +36,7 @@ For Windows 2000
 2. Edit and save config
 3. Copy `web` to the same place as config
 4. Start by running `./shin-kamishibai` in terminal
-5. Open web browser and browse `http://<host>:<port>`
+5. Open web browser and browse `http://localhost:2525`
 
 ## License:
 
