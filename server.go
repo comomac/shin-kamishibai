@@ -31,7 +31,7 @@ func (svr *Server) Start() {
 	// fRead := ioutil.ReadFile
 
 	// use packed file (binfile.go)
-	fs := fileSystem{__binmapName}
+	fs := fakeFileSystem{__binmapName}
 	fRead := fs.ReadFile
 	fserv := http.FileServer(fs)
 

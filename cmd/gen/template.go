@@ -9,8 +9,9 @@ import (
 	"time"
 )
 
-// BinFile is structure of file in source
-// copied here because go1.4 dont support glob when go build
+// BinFile copys struct of os.FileInfo to mimic fake file system,
+// note another copy of BinFile in generate because go1.4 dont
+// support glob in windows 2000, so 2 copies of type BinFile def
 type BinFile struct {
 	Name    string
 	Size    int64
@@ -31,11 +32,11 @@ const (
 	SeekEnd     = 2 // seek relative to the end
 )
 
-type fileSystem struct {
+type fakeFileSystem struct {
 	BinFileMap map[string]*BinFile
 }
 
-func (fsys fileSystem) Open(name string) (http.File, error) {
+func (fsys fakeFileSystem) Open(name string) (http.File, error) {
 	f := httpFile{}
 
 	if fsys.BinFileMap[name] == nil {
@@ -47,7 +48,7 @@ func (fsys fileSystem) Open(name string) (http.File, error) {
 }
 
 // mimic ioutil.ReadFile
-func (fsys fileSystem) ReadFile(name string) ([]byte, error) {
+func (fsys fakeFileSystem) ReadFile(name string) ([]byte, error) {
 	f := httpFile{}
 
 	if fsys.BinFileMap[name] == nil {

@@ -34,7 +34,7 @@ const binmapTemplate = `var __binmapName = map[string]*BinFile{
 {{range $k, $v := .}}{{printf "\t"}}"{{$k}}": __binfile{{$v}},
 {{end}}`
 
-// BinFile is structure of file in source
+// BinFile copys struct of os.FileInfo to mimic fake file system
 type BinFile struct {
 	Name    string
 	Size    int64
