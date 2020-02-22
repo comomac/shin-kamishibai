@@ -216,7 +216,6 @@ func listDir(db *FlatDB, dir, search string) (FileList, error) {
 	fileList := FileList{}
 OUTER:
 	for i, file := range files {
-		fmt.Println(i, file.Name())
 		// no dot file/folder
 		if strings.HasPrefix(file.Name(), ".") {
 			continue
