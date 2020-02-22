@@ -121,6 +121,19 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 			return
 		}
 
+		// no dir chosen
+		if dir == "" || dir == "." {
+			err = tmpl.Execute(&buf, data)
+			if err != nil {
+				responseError(w, err)
+				return
+			}
+
+			w.Header().Set("Content-Type", "text/html")
+			w.Write([]byte(buf.String()))
+			return
+		}
+
 		// data to client
 		fileList := FileList{}
 		var lists FileList
