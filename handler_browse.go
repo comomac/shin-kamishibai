@@ -211,11 +211,10 @@ func listDir(db *FlatDB, dir, search string) (FileList, error) {
 	search = strings.ToLower(search)
 	keywords := strings.Split(search, " ")
 	keywords = StringSliceFlatten(keywords)
-	fmt.Println("listing", dir, " | ", search, " | ", keywords)
 
 	fileList := FileList{}
 OUTER:
-	for i, file := range files {
+	for _, file := range files {
 		// no dot file/folder
 		if strings.HasPrefix(file.Name(), ".") {
 			continue
