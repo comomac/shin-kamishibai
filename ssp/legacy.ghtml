@@ -107,9 +107,16 @@
 			<tr>
 				<form style="float: left;">
 				<td>
-					<input id="searchbox" placeholder="search" type="text" />
+					<input id="searchbox" placeholder="search" type="text" name="keyword" value="{{.Keyword}}"/>
 				</td>
 				<td>
+					<input type="hidden" name="dir" value="{{.Dir}}"/>
+					{{if (.Everywhere)}}
+					<input type="checkbox" id="everywhere" name="everywhere" value="true" checked/>
+					{{else}}
+					<input type="checkbox" id="everywhere" name="everywhere" value="true"/>
+					{{end}}
+					<label for="everywhere">Everywhere</label>
 					<input id="search-button" type="submit" value="Search" />
 				</td>
 				</form>
@@ -129,12 +136,12 @@
 					<form style="float: left;">
 						<input type="hidden" name="dir" value="{{.UpDir}}" />
 						<input type="hidden" name="page" value="1" />
-						<input type="hidden" name="keyword" value="{{.Keyword}}" />
 						<input type="hidden" name="sortby" value="{{.SortBy}}" />
 						<input type="submit" class="nav-dir-button" value="&nbsp;&nbsp;Up&nbsp;&nbsp;">
 					</form>
 					<form style="float: left;">
 						<input type="hidden" name="dir" value="{{.Dir}}" />
+						<input type="hidden" name="everywhere" value="{{.Everywhere}}" />
 						<input type="hidden" name="page" value="{{calcPage .Page -1}}" />
 						<input type="hidden" name="keyword" value="{{.Keyword}}" />
 						<input type="hidden" name="sortby" value="{{.SortBy}}" />
@@ -142,6 +149,7 @@
 					</form>
 					<form style="float: left;">
 						<input type="hidden" name="dir" value="{{.Dir}}" />
+						<input type="hidden" name="everywhere" value="{{.Everywhere}}" />
 						<input type="hidden" name="page" value="{{calcPage .Page 1}}" />
 						<input type="hidden" name="keyword" value="{{.Keyword}}" />
 						<input type="hidden" name="sortby" value="{{.SortBy}}" />

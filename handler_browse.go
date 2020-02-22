@@ -6,7 +6,6 @@ import (
 	"html/template"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -43,6 +42,8 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 
 		dir := query.Get("dir")
 		keyword := strings.ToLower(query.Get("keyword"))
+		// search entire library
+		everywhere := strings.ToLower(query.Get("everywhere")) == "true"
 		// TODO implement sortBy
 		sortBy := strings.ToLower(query.Get("sortby"))
 		spage := query.Get("page")
@@ -57,25 +58,31 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 		// have clean path, prevent .. bypass
 		dir = filepath.Clean(dir)
 
-		fmt.Println("listing dir (", page, ")", dir)
+		if everywhere {
+			fmt.Println("searching (", page, ")", keyword)
+		} else {
+			fmt.Println("listing dir (", page, ")", dir)
+		}
 
 		// browse template
 		data := struct {
 			AllowedDirs []string
+			Everywhere  bool
 			Dir         string
 			UpDir       string
 			Page        int
 			Keyword     string
 			SortBy      string
-			FileList    *FileList
+			FileList    FileList
 		}{
 			AllowedDirs: cfg.AllowedDirs,
+			Everywhere:  everywhere,
 			Dir:         dir,
 			UpDir:       filepath.Dir(dir),
 			Page:        page,
 			Keyword:     keyword,
 			SortBy:      sortBy,
-			FileList:    &FileList{},
+			FileList:    FileList{},
 		}
 		// helper func for template
 		funcMap := template.FuncMap{
@@ -114,32 +121,70 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 			return
 		}
 
-		// no dir chosen
-		if dir == "" || dir == "." {
-			err = tmpl.Execute(&buf, data)
+		// data to client
+		fileList := FileList{}
+		var lists FileList
+
+		if everywhere {
+			// add first one as the dir info to save space
+			fileList = append(fileList, &FileInfoBasic{
+				IsDir: true,
+				Path:  "My Entire Library",
+			})
+
+			// build library list
+			lists, err = search(db, keyword)
 			if err != nil {
 				responseError(w, err)
 				return
 			}
 
-			w.Header().Set("Content-Type", "text/html")
-			w.Write([]byte(buf.String()))
-			return
+		} else {
+			// check if the dir is allowed to browse
+			exists := StringSliceContain(cfg.AllowedDirs, dir)
+			if !exists {
+				w.WriteHeader(http.StatusForbidden)
+				w.Write([]byte("not allowed to browse " + dir))
+				return
+			}
+
+			// add first one as the dir info to save space
+			fileList = append(fileList, &FileInfoBasic{
+				IsDir: true,
+				Path:  dir,
+			})
+
+			// build dir list
+			lists, err = listDir(db, dir, keyword)
+			if err != nil {
+				responseError(w, err)
+				return
+			}
 		}
 
-		// check if the dir is allowed to browse
-		exists := StringSliceContain(cfg.AllowedDirs, dir)
-		if !exists {
-			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte("not allowed to browse " + dir))
-			return
+		// pagination
+		head := (page - 1) * ItemsPerPage
+		if head > len(lists) {
+			head = len(lists)
 		}
+		tail := (page) * ItemsPerPage
+		if tail > len(lists) {
+			tail = len(lists)
+		}
+		choppedFileList := lists[head:tail]
+		fileList = append(fileList, choppedFileList...)
 
-		// listing dir
-		fileList, err := listDir(dir, keyword, page, db)
-		if err != nil {
-			responseBadRequest(w, err)
-			return
+		if len(lists) > tail {
+			// indicate more files
+			fileList = append(fileList, &FileInfoBasic{
+				More: true,
+			})
+		}
+		if len(fileList) == 1 {
+			// indicate no more file
+			fileList = append(fileList, &FileInfoBasic{
+				IsEmpty: true,
+			})
 		}
 
 		// fill file list data
@@ -156,112 +201,98 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 	}
 }
 
-func listDir(dir, keyword string, page int, db *FlatDB) (*FileList, error) {
+func listDir(db *FlatDB, dir, search string) (FileList, error) {
 	// listing dir
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return nil, err
 	}
 
-	files2 := []os.FileInfo{}
-	for _, file := range files {
+	search = strings.ToLower(search)
+	keywords := strings.Split(search, " ")
+	keywords = StringSliceFlatten(keywords)
+	fmt.Println("listing", dir, " | ", search, " | ", keywords)
+
+	fileList := FileList{}
+OUTER:
+	for i, file := range files {
+		fmt.Println(i, file.Name())
 		// no dot file/folder
 		if strings.HasPrefix(file.Name(), ".") {
 			continue
 		}
+
 		// case insensitive keyword search
-		fname := strings.ToLower(file.Name())
-		if len(keyword) > 0 && !strings.Contains(fname, keyword) {
-			// no match, next
-			continue
+		fulltext := strings.ToLower(file.Name())
+		if len(keywords) > 0 {
+			found := 0
+			for _, keyword := range keywords {
+				if !strings.Contains(fulltext, keyword) {
+					// no match, next
+					continue OUTER
+				}
+				found++
+			}
+			if found < len(keywords) {
+				// if not all keywords found, skip (doing AND match)
+				continue OUTER
+			}
 		}
 
 		if file.IsDir() {
 			// a directory
-			files2 = append(files2, file)
-		} else if strings.ToLower(filepath.Ext(file.Name())) == ".cbz" {
-			// a book
-			files2 = append(files2, file)
-		}
-	}
-
-	// add first one as the dir info to save space
-	fileList := FileList{}
-	fileList = append(fileList, &FileInfoBasic{
-		IsDir: true,
-		Path:  dir,
-	})
-
-	for i, file := range files2 {
-		if i < (page-1)*ItemsPerPage {
-			continue
-		}
-		if i > (page*ItemsPerPage)-1 {
-			// indicate more files
-			fib := &FileInfoBasic{
-				More: true,
-			}
-			fileList = append(fileList, fib)
-			break
-		}
-
-		// setup file full path
-		fileFullPath := dir + "/" + file.Name()
-
-		// dir
-		if file.IsDir() {
 			fileList = append(fileList, &FileInfoBasic{
 				IsDir:   true,
 				Name:    file.Name(),
 				ModTime: file.ModTime(),
 			})
-			continue
+
+		} else if strings.HasSuffix(fulltext, ".cbz") {
+			// a book
+			fileFullPath := dir + "/" + file.Name()
+
+			// create and store blank book entry
+			fib := &FileInfoBasic{
+				IsBook:  true,
+				Name:    file.Name(),
+				ModTime: file.ModTime(),
+			}
+
+			// find book by path
+			book := db.GetBookByPath(fileFullPath)
+			if book != nil {
+				fib.Book = book
+			} else {
+				// book not found, add now
+				nbook, err := db.AddFile(fileFullPath)
+				if err != nil {
+					return nil, err
+				}
+				fib.Book = nbook
+			}
+
+			fileList = append(fileList, fib)
 		}
+	}
 
-		// file
+	return fileList, nil
+}
 
+func search(db *FlatDB, search string) (FileList, error) {
+	fileList := FileList{}
+
+	books := db.Search(search)
+	for _, book := range books {
 		// create and store blank book entry
 		fib := &FileInfoBasic{
 			IsBook:  true,
-			Name:    file.Name(),
-			ModTime: file.ModTime(),
+			Name:    filepath.Base(book.Fullpath),
+			ModTime: time.Unix(int64(book.Mtime), 0),
+			Book:    book,
 		}
+
 		fileList = append(fileList, fib)
-
-		// find book by path
-		book := db.GetBookByPath(fileFullPath)
-		if book != nil {
-			fib.Book = book
-			continue
-		}
-
-		// find book by name and size
-		books := db.SearchBookByNameAndSize(file.Name(), uint64(file.Size()))
-		if len(books) > 0 {
-			fib.Book = books[0]
-			continue
-		}
-
-		// book not found, add now
-		nbook, err := db.AddFile(fileFullPath)
-		if err == nil {
-			fib.Book = nbook
-			continue
-		}
-
-		// error? skip
-		fmt.Println("error! bottom fell out", page, keyword, dir)
 	}
 
-	// nothing found
-	if len(fileList) == 1 {
-		// add nothing found
-		fileList = append(fileList, &FileInfoBasic{
-			IsEmpty: true,
-		})
-
-		return &fileList, nil
-	}
-
-	return &fileList, nil
+	return fileList, nil
 }

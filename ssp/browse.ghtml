@@ -23,6 +23,12 @@
 			}
 
 			/****** basic elements ******/
+			#everywhere {
+				margin-left: 2em;
+				width: 2em;
+				height: 2em;	
+			}
+
 			#searchbox {
 				padding: 12px 16px;
 				min-width: 10em;
@@ -249,8 +255,15 @@
 
 		<div class="dropdown">
 			<form>
+				<input type="hidden" name="dir" value="{{.Dir}}"/>
+				{{if (.Everywhere)}}
+				<input type="checkbox" id="everywhere" name="everywhere" value="true" checked/>
+				{{else}}
+				<input type="checkbox" id="everywhere" name="everywhere" value="true"/>
+				{{end}}
+				<label for="everywhere">Everywhere</label>
 				<label for="searchbox">search</label>
-				<input id="searchbox" placeholder="search" type="text" />
+				<input id="searchbox" placeholder="search" type="text" name="keyword" value="{{.Keyword}}"/>
 			</form>
 		</div>
 
@@ -259,9 +272,15 @@
 		</div>
 
 		<div style="margin:1em;">
-			<a href="/browse.html?dir={{.UpDir}}&page=1&keyword={{.Keyword}}&sortby={{.SortBy}}"><button class="nav-dir-button">&nbsp;&nbsp;Up&nbsp;&nbsp;</button></a>
-			<a href="/browse.html?dir={{.Dir}}&page={{calcPage .Page -1}}&keyword={{.Keyword}}&sortby={{.SortBy}}"><button class="nav-dir-button">Prev</button></a>
-			<a href="/browse.html?dir={{.Dir}}&page={{calcPage .Page 1}}&keyword={{.Keyword}}&sortby={{.SortBy}}"><button class="nav-dir-button">Next</button></a>
+			<a href="/browse.html?dir={{.UpDir}}&page=1&sortby={{.SortBy}}">
+				<button class="nav-dir-button">&nbsp;&nbsp;Up&nbsp;&nbsp;</button>
+			</a>
+			<a href="/browse.html?dir={{.Dir}}&page={{calcPage .Page -1}}&keyword={{.Keyword}}&sortby={{.SortBy}}&everywhere={{.Everywhere}}">
+				<button class="nav-dir-button">Prev</button>
+			</a>
+			<a href="/browse.html?dir={{.Dir}}&page={{calcPage .Page 1}}&keyword={{.Keyword}}&sortby={{.SortBy}}&everywhere={{.Everywhere}}">
+				<button class="nav-dir-button">Next</button>
+			</a>
 			<span id="span-page">Page: {{.Page}}</span>
 		</div>
 
@@ -284,7 +303,7 @@
 			<div class="directory">
 				<div class="text">Empty...</div>
 			</div>
-            {{else if $fileInfo.IsBook}}
+			{{else if $fileInfo.IsBook}}
 			<div class="file">
 				<a bookcode="{{ $fileInfo.ID }}" href="/read.html?book={{ $fileInfo.ID }}&page={{ $fileInfo.Page }}">
 					<img src="/api/thumbnail/{{ $fileInfo.ID }}" alt="cover" />

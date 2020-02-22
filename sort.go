@@ -67,40 +67,40 @@ func stringPartition(arr []string, filter *regexp.Regexp, low, high int) int {
 func filterBy(inBooks []*Book, filter, byType string) []*Book {
 	books := []*Book{}
 
-	filter = strings.ToLower(filter)
-	keywords := strings.Split(filter, " ")
+	search := strings.ToLower(filter)
+	keywords := strings.Split(search, " ")
+	keywords = StringSliceFlatten(keywords)
 
-	regexs := []*regexp.Regexp{}
-	for _, keyword := range keywords {
-		re := regexp.MustCompile("(?i)" + strings.TrimSpace(keyword))
-		regexs = append(regexs, re)
+	// no filter, return books as is
+	if len(keywords) == 0 {
+		return inBooks
 	}
 
+	// filter supplied
 OUTER:
 	for _, book := range inBooks {
-		// just add if no filter
-		if len(regexs) == 0 {
-			books = append(books, book)
-			continue OUTER
-		}
+		foundKeywords := 0
 
-	INNER:
-		// if there is filter, make sure target matches
-		for _, re := range regexs {
-			target := ""
+		for _, keyword := range keywords {
+			target := strings.ToLower(book.Title)
 			switch byType {
-			case "title":
-				target = strings.ToLower(book.Title)
 			case "author":
 				target = strings.ToLower(book.Author)
+			case "author-title":
+				target = strings.ToLower(book.Author + book.Title)
 			}
 
-			if re.FindStringIndex(target) != nil {
-				books = append(books, book)
+			// no match, next book
+			if !strings.Contains(target, keyword) {
 				continue OUTER
-			} else {
-				continue INNER
 			}
+
+			foundKeywords++
+		}
+
+		// all keywords found, add book
+		if foundKeywords >= len(keywords) {
+			books = append(books, book)
 		}
 	}
 
@@ -115,6 +115,10 @@ func filterByAuthor(books []*Book, filter string) []*Book {
 	return filterBy(books, filter, "author")
 }
 
+func filterByAuthorTitle(books []*Book, filter string) []*Book {
+	return filterBy(books, filter, "author-title")
+}
+
 func sortByTitle(books []*Book) []*Book {
 	booksQuicksort(books, "title", 0, len(books))
 
@@ -123,6 +127,13 @@ func sortByTitle(books []*Book) []*Book {
 
 func sortByAuthor(books []*Book) []*Book {
 	booksQuicksort(books, "author", 0, len(books))
+
+	return books
+}
+
+func sortByAuthorTitle(books []*Book) []*Book {
+	// sort by author then boook title
+	booksQuicksort(books, "author-title", 0, len(books))
 
 	return books
 }
@@ -160,6 +171,19 @@ func booksPartition(arr []*Book, byType string, low, high int) int {
 		case "author":
 			a := arr[j].Author
 			b := pivot.Author
+
+			// natural compare
+			if AlphaNumCaseCompare(a, b) {
+				i++
+
+				var temp *Book = arr[i]
+				arr[i] = arr[j]
+				arr[j] = temp
+			}
+
+		case "author-title":
+			a := arr[j].Author + arr[j].Title
+			b := pivot.Author + pivot.Title
 
 			// natural compare
 			if AlphaNumCaseCompare(a, b) {

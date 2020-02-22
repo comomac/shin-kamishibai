@@ -199,6 +199,7 @@ func (db *FlatDB) Import(dbPath string) error {
 		}
 
 		db.mutex.Lock()
+		db.books = append(db.books, book)
 		db.ibooks = append(db.ibooks, ibook)
 		db.mapperID[book.ID] = ibook
 		db.mapperPath[book.Fullpath] = ibook
@@ -624,6 +625,20 @@ func (db *FlatDB) SearchBookByNameAndSize(fname string, size uint64) []*Book {
 
 	return books
 }
+
+// Search find Books base on title and author
+func (db *FlatDB) Search(search string) []*Book {
+	db.mutex.Lock()
+	defer db.mutex.Unlock()
+
+	books := filterByAuthorTitle(db.books, search)
+
+	return books
+}
+
+//
+// helper code ------------------------------------------------------------------------------------------------------
+//
 
 // csvToBook convert string to book
 func csvToBook(line string) (*Book, error) {

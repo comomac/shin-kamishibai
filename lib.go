@@ -171,3 +171,19 @@ func MathRound(x float64) float64 {
 	}
 	return t
 }
+
+// StringSliceFlatten removes any zero space string in slice and trim leading, trailing spaces
+func StringSliceFlatten(in []string) []string {
+	ss := []string{}
+
+	for _, s := range in {
+		s = strings.TrimSpace(s)
+		if len(s) == 0 {
+			continue
+		}
+
+		ss = append(ss, s)
+	}
+
+	return ss
+}
