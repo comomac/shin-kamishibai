@@ -16,8 +16,14 @@ To make manga reader (client side) work with old/outdated/retro/obscure software
 
 ## Requirements
 
+### server
+
 Go version >= 1.2 [https://golang.org](https://golang.org)
-Browser support cookie and css
+
+### client
+
+Browser support cookie and css  
+IE 5.5 on Windows 95
 
 ## Build
 
