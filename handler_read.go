@@ -54,10 +54,14 @@ func readGet(cfg *Config, db *FlatDB, fRead fileReader) func(http.ResponseWriter
 
 		// read template
 		data := struct {
-			Book *Book
+			Dir     string
+			DirPage int
+			Book    *Book
 			// Resolution?
 		}{
-			Book: book,
+			Dir:     filepath.Dir(book.Fullpath),
+			DirPage: 1,
+			Book:    book,
 		}
 		// helper func for template
 		funcMap := template.FuncMap{

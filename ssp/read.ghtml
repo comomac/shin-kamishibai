@@ -55,7 +55,10 @@
 					Author: <span id="span-book-author">{{ .Book.Author }}</span>
 				</div>
 				<div>
-					Title: <span id="span-book-title">{{ .Book.Title }} {{ .Book.Number }}</span>
+					Title: <span id="span-book-title">{{ .Book.Title }}</span>
+				</div>
+				<div>
+					Number: <span id="span-book-number">{{ .Book.Number }}</span>
 				</div>
 				<div>
 					Page: <span id="span-book-page">{{ .Book.Page }}</span> / <span id="span-book-pages">{{ .Book.Pages }}</span>
@@ -63,7 +66,7 @@
 			</div>
 			<div id="div-toggle-fullscreen"></div>
 			<div>
-				<a class="a-link-page" href="/browse.html">Browse</a>
+				<a class="a-link-page" href="/browse.html?dir={{ .Dir }}">Browse</a>
 			</div>
 		</div>
 		<div class="row">
@@ -77,24 +80,33 @@
 			<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ calcPage .Book 50 }}">+50</a>
 		</div>
 		<div class="row">
-			<form>
-				<input type="hidden" name="book" value="{{.Book.ID}}" />
-				<input type="hidden" name="page" value="{{calcPage .Book -1}}" />
-				<input type="submit" value="Prev" style="width: 100%; height: 3em;" />
-			</form>
+			<noscript>
+				<form>
+					<input type="hidden" name="book" value="{{.Book.ID}}" />
+					<input type="hidden" name="page" value="{{ calcPage .Book -1 }}" />
+					<input type="submit" value="Prev" style="width: 100%; height: 3em;" />
+				</form>
+			</noscript>
 			<!-- book image -->
 			<div class="div-img" id="div-img-1">
-				<a href="/read.html?book={{ .Book.ID }}&page={{ calcPage .Book 1 }}">
+				<a href="/read.html?book={{ .Book.ID }}&page={{ calcPage .Book 1 }}" id="a-img-manga">
 					<img src="/api/read/{{.Book.ID}}/{{ .Book.Page }}" class="img-manga" id="img-1" />
 				</a>
 			</div>
-						<form>
-				<input type="hidden" name="book" value="{{.Book.ID}}" />
-				<input type="hidden" name="page" value="{{calcPage .Book -1}}" />
-				<input type="submit" value="Prev" style="width: 100%; height: 3em;" />
-			</form>
+			<noscript>
+				<form>
+					<input type="hidden" name="book" value="{{.Book.ID}}" />
+					<input type="hidden" name="page" value="{{ calcPage .Book -1 }}" />
+					<input type="submit" value="Prev" style="width: 100%; height: 3em;" />
+				</form>
+			</noscript>
 		</div>
 		<script>
+			var bookID = "{{.Book.ID}}";
+			var page = {{.Book.Page}};
+			var maxPage = {{.Book.Pages}};
+
+			// enable full screen for supported device
 			if (document.documentElement.requestFullscreen) {
 				var el = document.getElementById("div-toggle-fullscreen");
 				el.innerHTML = "<a href='#'>Full Screen</a>";
@@ -107,6 +119,35 @@
 					document.exitFullscreen();
 				}
 			}
+
+			// device with js uses js to nav
+			var el_sbp = document.getElementById("span-book-page");
+			var el_a = document.getElementById("a-img-manga");
+			el_a.removeAttribute("href");
+			var el_img = document.getElementById("img-1");
+			el_img.onclick = function(mouseEvent) {
+				if (mouseEvent.offsetX < (this.offsetWidth / 10) * 3) {
+					page = page - 1;
+				} else if (mouseEvent.offsetX > (this.offsetWidth / 10) * 7) {
+					page = page + 1;
+				} else {
+					return;
+				}
+				
+				if (page < 1) {
+					page = 1;
+				}
+				if (page > maxPage) {
+					page = maxPage;
+				}
+
+				this.setAttribute("src", "/api/read/" + bookID + "/" + page);
+				if (window.history.replaceState) {
+					window.history.replaceState({}, "Kamishibai", "/read.html?book=" + bookID + "&page=" + page);
+				}
+
+				el_sbp.innerText = page;
+			};
 		</script>
 	</body>
 </html>
