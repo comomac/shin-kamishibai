@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -27,14 +26,14 @@ func (svr *Server) Start() {
 
 	// public folder access
 
-	// debug with local files
-	fserv := http.FileServer(http.Dir(svr.Config.PathDir + "/web"))
-	fRead := ioutil.ReadFile
+	// // debug with local files
+	// fserv := http.FileServer(http.Dir(svr.Config.PathDir + "/web"))
+	// fRead := ioutil.ReadFile
 
-	// // use packed file (binfile.go)
-	// fs := fakeFileSystem{__binmapName}
-	// fRead := fs.ReadFile
-	// fserv := http.FileServer(fs)
+	// use packed file (binfile.go)
+	fs := fakeFileSystem{__binmapName}
+	fRead := fs.ReadFile
+	fserv := http.FileServer(fs)
 
 	h.HandleFunc("/", handlerFS(fserv))
 
