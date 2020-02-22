@@ -24,7 +24,7 @@ type FileInfoBasic struct {
 	Name    string    `json:"name,omitempty"`     // file, dir
 	ModTime time.Time `json:"mod_time,omitempty"` // file modified time
 	More    bool      `json:"more,omitempty"`     // indicate more files behind
-	*Book
+	Book              // not using pointer so can manipulate if necessary
 }
 
 // ItemsPerPage use for pagination
@@ -93,7 +93,7 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 
 				r := int(MathRound(float64(pg) / float64(pgs) * 10))
 				rr := "read"
-				if r == 0 && pg > 0 {
+				if r == 0 && pg > 1 {
 					rr += " read5"
 				} else if r > 0 {
 					rr += fmt.Sprintf(" read%d0", r)
@@ -272,14 +272,19 @@ OUTER:
 			// find book by path
 			book := db.GetBookByPath(fileFullPath)
 			if book != nil {
-				fib.Book = book
+				fib.Book = *book
 			} else {
 				// book not found, add now
 				nbook, err := db.AddFile(fileFullPath)
 				if err != nil {
 					return nil, err
 				}
-				fib.Book = nbook
+				fib.Book = *nbook
+			}
+
+			// make page 0 to 1 so wont crash on reading
+			if fib.Book.Page <= 0 {
+				fib.Book.Page = 1
 			}
 
 			fileList = append(fileList, fib)
@@ -299,7 +304,12 @@ func search(db *FlatDB, search string) (FileList, error) {
 			IsBook:  true,
 			Name:    filepath.Base(book.Fullpath),
 			ModTime: time.Unix(int64(book.Mtime), 0),
-			Book:    book,
+			Book:    *book,
+		}
+
+		// make page 0 to 1 so wont crash on reading
+		if fib.Book.Page <= 0 {
+			fib.Book.Page = 1
 		}
 
 		fileList = append(fileList, fib)
