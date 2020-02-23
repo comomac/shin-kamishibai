@@ -71,6 +71,7 @@ func main() {
 	// file counter
 	i := 0
 
+	// add folders
 	wdirs := []string{"web", "ssp"}
 	for _, wdir := range wdirs {
 		err = filepath.Walk(wdir, func(fpath string, info os.FileInfo, err error) error {
@@ -113,55 +114,33 @@ func main() {
 				binMap[fpath] = i
 			}
 
-			// convert binary to base64
-			b, err := ioutil.ReadFile(fpath)
-			check(err)
-			bs := base64.URLEncoding.EncodeToString(b)
-
-			bf := BinFile{
-				Name:    info.Name(),
-				Size:    info.Size(),
-				Mode:    info.Mode(),
-				ModTime: info.ModTime(),
-				IsDir:   info.IsDir(),
-				Data64:  bs,
-			}
-
-			fptr.WriteString(fmt.Sprintf("var __binfile%d = ", i))
-
-			td, terr := template.New(fmt.Sprintf("data%d", i)).Parse(binfileTemplate)
-			tmpl := template.Must(td, terr)
-			err = tmpl.Execute(fptr, bf)
+			err = addFile(i, fpath, info, fptr)
 			check(err)
 
-			bdat := bf.Data64
-			max := int(math.Ceil(float64(len(bdat)) / 100))
-			fptr.WriteString(`Data64: `)
-			for i := 0; i < max; i++ {
-				head := i * 100
-				tail := (i + 1) * 100
-				if tail > len(bdat) {
-					tail = len(bdat)
-				}
-
-				if i == 0 && max == 1 {
-					fptr.WriteString(`"` + bdat[head:tail] + `",`)
-				} else if i == 0 {
-					fptr.WriteString(`"` + bdat[head:tail] + `" +`)
-				} else if i == max-1 {
-					fptr.WriteString("\t\t" + `"` + bdat[head:tail] + `",`)
-				} else {
-					fptr.WriteString("\t\t" + `"` + bdat[head:tail] + `" +`)
-				}
-				fptr.WriteString("\n")
-			}
-			fptr.WriteString("}\n\n")
-
-			fmt.Println(i, bf.Size, fpath)
+			fmt.Println(i, info.Size(), fpath)
 
 			return nil
 		})
 		check(err)
+	}
+
+	// add files
+	wfiles := []string{
+		"sample-conf.json",
+	}
+	for _, wfile := range wfiles {
+		ff, err := os.Open(wfile)
+		check(err)
+		fstat, err := ff.Stat()
+		check(err)
+
+		i++
+		binMap[wfile] = i
+
+		err = addFile(i, wfile, fstat, fptr)
+		check(err)
+
+		fmt.Println(i, fstat.Size(), wfile)
 	}
 
 	td, terr := template.New(fmt.Sprintf("map%d", i)).Parse(binmapTemplate)
@@ -173,4 +152,56 @@ func main() {
 	fptr.Close()
 
 	fmt.Println("done")
+}
+
+func addFile(fNum int, fpath string, info os.FileInfo, fptr *os.File) error {
+	// convert binary to base64
+	b, err := ioutil.ReadFile(fpath)
+	if err != nil {
+		return err
+	}
+	bs := base64.URLEncoding.EncodeToString(b)
+
+	bf := BinFile{
+		Name:    info.Name(),
+		Size:    info.Size(),
+		Mode:    info.Mode(),
+		ModTime: info.ModTime(),
+		IsDir:   info.IsDir(),
+		Data64:  bs,
+	}
+
+	fptr.WriteString(fmt.Sprintf("var __binfile%d = ", fNum))
+
+	td, terr := template.New(fmt.Sprintf("data%d", fNum)).Parse(binfileTemplate)
+	tmpl := template.Must(td, terr)
+	err = tmpl.Execute(fptr, bf)
+	if err != nil {
+		return err
+	}
+
+	bdat := bf.Data64
+	max := int(math.Ceil(float64(len(bdat)) / 100))
+	fptr.WriteString(`Data64: `)
+	for i := 0; i < max; i++ {
+		head := i * 100
+		tail := (i + 1) * 100
+		if tail > len(bdat) {
+			tail = len(bdat)
+		}
+
+		if i == 0 && max == 1 {
+			fptr.WriteString(`"` + bdat[head:tail] + `",`)
+		} else if i == 0 {
+			fptr.WriteString(`"` + bdat[head:tail] + `" +`)
+		} else if i == max-1 {
+			fptr.WriteString("\t\t" + `"` + bdat[head:tail] + `",`)
+		} else {
+			fptr.WriteString("\t\t" + `"` + bdat[head:tail] + `" +`)
+		}
+		fptr.WriteString("\n")
+	}
+	fptr.WriteString("}\n\n")
+
+	return nil
 }
