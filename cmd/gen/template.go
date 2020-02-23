@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bytes"
+	"compress/lzw"
 	"encoding/base64"
 	"errors"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -13,15 +16,17 @@ import (
 // note another copy of BinFile in generate because go1.4 dont
 // support glob in windows 2000, so 2 copies of type BinFile def
 type BinFile struct {
-	Name    string
-	Size    int64
-	Mode    os.FileMode
-	ModTime time.Time
-	IsDir   bool
-	Sys     interface{}
-	ready   bool   // is the data filled and ready to serve?
-	data    []byte // used during program runtime
-	Data64  string // used during generate
+	Name         string
+	Size         int64
+	Mode         os.FileMode
+	ModTime      time.Time
+	IsDir        bool
+	Sys          interface{}
+	ready        bool   // is the data filled and ready to serve?
+	data         []byte // used during program runtime
+	IsCompressed bool   // is it compressed?
+	Compression  string // what kind of compression algorithm and setting
+	Data64       string // used during generate
 }
 
 // Seek whence values
@@ -86,8 +91,30 @@ func (h httpFile) Read(p []byte) (n int, err error) {
 			log.Println("decode failed", bf.Name)
 			return -1, err
 		}
-		bf.data = b
+
+		var dat []byte
+		if bf.IsCompressed && bf.Compression == "lzw-msb-8" {
+			buf := bytes.NewBuffer(b)
+			r := lzw.NewReader(buf, lzw.MSB, 8)
+			var buf2 bytes.Buffer
+			_, err = io.Copy(&buf2, r)
+			if err != nil {
+				log.Println("decompress copy failed", bf.Name)
+				return -1, err
+			}
+			err = r.Close()
+			if err != nil {
+				log.Println("decompress close failed", bf.Name)
+				return -1, err
+			}
+			dat = buf2.Bytes()
+		} else {
+			dat = b
+		}
+
+		bf.data = dat
 		bf.Data64 = ""
+		bf.IsCompressed = false
 		bf.ready = true
 	}
 

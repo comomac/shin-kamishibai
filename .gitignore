@@ -4,5 +4,7 @@ config*.json
 *.log
 go.sum
 binfile.go
+example/
+profile.out
 /shin-kamishibai
 /shin-kamishibai_*
