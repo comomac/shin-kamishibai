@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/pprof"
 	"strconv"
 	"strings"
 )
@@ -34,6 +35,8 @@ func (svr *Server) Start() {
 	fs := fakeFileSystem{__binmapName}
 	fRead := fs.ReadFile
 	fserv := http.FileServer(fs)
+
+	h.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
 
 	h.HandleFunc("/", handlerFS(fserv))
 
