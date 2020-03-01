@@ -5,20 +5,22 @@ package main
 import (
 	"archive/zip"
 	"bytes"
-	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 )
 
 // FlatDBCharsPage is number of characters reserved for the pages/page
@@ -32,6 +34,17 @@ const FlatDBCharsEpoch = "%010d"
 
 // RegexSupportedImageExt supported image extension
 var RegexSupportedImageExt = regexp.MustCompile(`(?i)\.(jpg|jpeg|gif|png)$`)
+
+// errors for flatdb
+var (
+	ErrNotFile         = errors.New("not a file")
+	ErrDotFile         = errors.New("no dot file")
+	ErrNotBook         = errors.New("not a book file")
+	ErrDupBook         = errors.New("dup book")
+	ErrNilIBook        = errors.New("ibook is nil")
+	ErrDBColumnChanged = errors.New("db column has changed")
+	ErrCSVIncomplete   = errors.New("incomplete csv line")
+)
 
 // Book contains all the information of book
 type Book struct {
@@ -50,6 +63,27 @@ type Book struct {
 	Mtime    uint64 `json:"mtime"`          // fs modified time
 	Itime    uint64 `json:"itime"`          // import time
 	Rtime    uint64 `json:"rtime"`          // read time
+}
+
+// aid debugging
+func (b Book) String() string {
+	return fmt.Sprintf(
+		`{ID:%s Title:%q Author:%q Number:%q Ranking:%d Fav:%d Cond:%d Pages:%d Page:%d Size:%d Inode:%d Mtime:%d Itime:%d Rtime:%d Fullpath:%q }`,
+		b.ID,
+		b.Title,
+		b.Author,
+		b.Number,
+		b.Ranking,
+		b.Fav,
+		b.Cond,
+		b.Pages,
+		b.Page,
+		b.Size,
+		b.Inode,
+		b.Mtime,
+		b.Itime,
+		b.Rtime,
+		b.Fullpath)
 }
 
 // IBook in-memory book, contains extra info on book, used for database
@@ -71,12 +105,13 @@ type FlatDB struct {
 	books        []*Book
 	ibooks       []*IBook
 	authors      []*Author
-	mapperID     map[string]*IBook   // map books by id (unique)
-	mapperPath   map[string]*IBook   // map books by file path (unique)
-	mapperTitle  map[string][]*IBook // group books by title (array)
-	mapperAuthor map[string][]*IBook // group books by author (array)
-	Path         string              // where the database is stored
-	FileModDate  int64               // file last modified date
+	mapperID     map[string]*Book   // map books by id (unique)
+	mapperIID    map[string]*IBook  // map ibooks by id (unique)
+	mapperPath   map[string]*Book   // map books by file path (unique)
+	mapperTitle  map[string][]*Book // group books by title (array)
+	mapperAuthor map[string][]*Book // group books by author (array)
+	Path         string             // where the database is stored
+	FileModDate  int64              // file last modified date
 }
 
 // convert string to uint64
@@ -122,10 +157,11 @@ func bookCond(fp string) uint64 {
 func (db *FlatDB) New(dbPath string) {
 	db.mutex = &sync.Mutex{}
 	db.Path = dbPath
-	db.mapperID = make(map[string]*IBook)
-	db.mapperPath = make(map[string]*IBook)
-	db.mapperTitle = make(map[string][]*IBook)
-	db.mapperAuthor = make(map[string][]*IBook)
+	db.mapperID = make(map[string]*Book)
+	db.mapperIID = make(map[string]*IBook)
+	db.mapperPath = make(map[string]*Book)
+	db.mapperTitle = make(map[string][]*Book)
+	db.mapperAuthor = make(map[string][]*Book)
 }
 
 // Clear all data
@@ -133,12 +169,14 @@ func (db *FlatDB) Clear() {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
 
+	db.books = nil
 	db.ibooks = nil
 	db.authors = nil
-	db.mapperID = make(map[string]*IBook)
-	db.mapperPath = make(map[string]*IBook)
-	db.mapperTitle = make(map[string][]*IBook)
-	db.mapperAuthor = make(map[string][]*IBook)
+	db.mapperID = make(map[string]*Book)
+	db.mapperIID = make(map[string]*IBook)
+	db.mapperPath = make(map[string]*Book)
+	db.mapperTitle = make(map[string][]*Book)
+	db.mapperAuthor = make(map[string][]*Book)
 }
 
 // Load data using default file path
@@ -183,12 +221,19 @@ func (db *FlatDB) Import(dbPath string) error {
 	for _, line := range lines {
 		// skip blank
 		if len(line) == 0 {
+			prevLen += uint64(len(line) + 1)
+			continue
+		}
+		// skip leading #
+		if line[0:1] == "#" {
+			prevLen += uint64(len(line) + 1)
 			continue
 		}
 
-		book, _ := csvToBook(line)
-		// skip incomplete record
-		if book == nil {
+		// parse csv line
+		book, err := csvToBook(line)
+		if err != nil {
+			prevLen += uint64(len(line) + 1)
 			continue
 		}
 
@@ -201,10 +246,11 @@ func (db *FlatDB) Import(dbPath string) error {
 		db.mutex.Lock()
 		db.books = append(db.books, book)
 		db.ibooks = append(db.ibooks, ibook)
-		db.mapperID[book.ID] = ibook
-		db.mapperPath[book.Fullpath] = ibook
-		db.mapperTitle[book.Title] = append(db.mapperTitle[book.Title], ibook)
-		db.mapperAuthor[book.Author] = append(db.mapperAuthor[book.Author], ibook)
+		db.mapperID[book.ID] = book
+		db.mapperIID[book.ID] = ibook
+		db.mapperPath[book.Fullpath] = book
+		db.mapperTitle[book.Title] = append(db.mapperTitle[book.Title], book)
+		db.mapperAuthor[book.Author] = append(db.mapperAuthor[book.Author], book)
 		db.mutex.Unlock()
 
 		prevLen += uint64(len(line) + 1)
@@ -238,10 +284,9 @@ func (db *FlatDB) UpdatePage(id string, page int) (int, error) {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
 
-	ibook := db.mapperID[id]
+	ibook := db.mapperIID[id]
 	if ibook == nil {
-		err := errors.New("ibook is nil")
-		return 0, err
+		return 0, ErrNilIBook
 	}
 	ibook.Page = uint64(page)
 
@@ -259,8 +304,7 @@ func (db *FlatDB) UpdatePage(id string, page int) (int, error) {
 
 	// make sure the column spacing is still the same. ascii 44 is comma
 	if strs[3] != 44 || strs[5] != 44 || strs[10] != 44 || strs[15] != 44 {
-		err := errors.New("db column has changed")
-		return 0, err
+		return 0, ErrDBColumnChanged
 	}
 
 	// page with extended chars
@@ -306,7 +350,6 @@ func (db *FlatDB) AddBook(bookPath string) (*Book, error) {
 
 	pages, err := cbzGetPages(bookPath)
 	if err != nil {
-		fmt.Println("error! failed to add book", bookPath, err)
 		return nil, err
 	}
 
@@ -350,38 +393,12 @@ func visit(db *FlatDB) func(string, os.FileInfo, error) error {
 		if f.IsDir() {
 			return nil
 		}
-		// skip dot file
-		if strings.HasPrefix(fpath, ".") {
-			return nil
-		}
 		if strings.HasPrefix(f.Name(), ".") {
 			return nil
 		}
-		// skip non cbz extension
-		fpath2 := strings.ToLower(fpath)
-		if !strings.HasSuffix(fpath2, ".cbz") {
-			return nil
-		}
 
-		// get file state, e.g. size
-		fstat, err := os.Stat(fpath)
-		if err != nil {
-			return err
-		}
-
-		// make sure books are unique so no duplicate db record
-		fname := path.Base(fpath)
-		books := db.SearchBookByNameAndSize(fname, uint64(fstat.Size()))
-		if len(books) > 0 {
-			// skip
-			return nil
-		}
-
-		_, err = db.AddBook(fpath)
-		if err != nil {
-			return err
-		}
-		fmt.Println("Added book", fpath)
+		// add book, with sanity checks
+		db.AddFile(fpath)
 
 		return nil
 	}
@@ -399,30 +416,30 @@ func (db *FlatDB) AddFile(fpath string) (*Book, error) {
 
 	// skip folder
 	if f.IsDir() {
-		return nil, errors.New("not a file")
+		return nil, ErrNotFile
 	}
 	// skip dot file
 	if strings.HasPrefix(f.Name(), ".") {
-		return nil, errors.New("no dot file")
+		return nil, ErrDotFile
 	}
 	// skip non cbz extension
 	lname := strings.ToLower(f.Name())
 	if !strings.HasSuffix(lname, ".cbz") {
-		return nil, errors.New("not a cbz")
+		return nil, ErrNotBook
 	}
 
 	// make sure books are unique so no duplicate db record
-	books := db.SearchBookByNameAndSize(f.Name(), uint64(f.Size()))
-	if len(books) > 0 {
+	book := db.GetBookByPath(fpath)
+	if book != nil {
 		// skip
-		return nil, errors.New("dup book found")
+		return nil, ErrDupBook
 	}
 
-	book, err := db.AddBook(fpath)
+	book, err = db.AddBook(fpath)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("Added book", fpath)
+	log.Println("Added book", fpath)
 
 	return book, nil
 }
@@ -567,6 +584,7 @@ func cbzGetPages(fp string) (int, error) {
 	if err != nil {
 		return -1, err
 	}
+	defer runtime.GC()
 	defer zr.Close()
 
 	i := 0
@@ -576,8 +594,11 @@ func cbzGetPages(fp string) (int, error) {
 		}
 	}
 
+	// force free memory with GC
+	zr = nil
+
 	if i == 0 {
-		return -1, errors.New("not a cbz")
+		return -1, ErrNotBook
 	}
 
 	return i, nil
@@ -585,16 +606,10 @@ func cbzGetPages(fp string) (int, error) {
 
 // GetBookByID get Book object by book id
 func (db *FlatDB) GetBookByID(bookID string) *Book {
-
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
 
-	ibook := db.mapperID[bookID]
-	if ibook == nil {
-		return nil
-	}
-
-	return ibook.Book
+	return db.mapperID[bookID]
 }
 
 // GetBookByPath get Book object by file path
@@ -602,12 +617,7 @@ func (db *FlatDB) GetBookByPath(fpath string) *Book {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
 
-	// not working for some reason
-	ibook := db.mapperPath[fpath]
-	if ibook == nil {
-		return nil
-	}
-	return db.mapperPath[fpath].Book
+	return db.mapperPath[fpath]
 }
 
 // SearchBookByNameAndSize get Books object by filename and size
@@ -617,9 +627,9 @@ func (db *FlatDB) SearchBookByNameAndSize(fname string, size uint64) []*Book {
 
 	var books []*Book
 
-	for _, ibook := range db.ibooks {
-		if ibook.Size == size && path.Base(ibook.Fullpath) == fname {
-			books = append(books, ibook.Book)
+	for _, book := range db.books {
+		if book.Size == size && path.Base(book.Fullpath) == fname {
+			books = append(books, book)
 		}
 	}
 
@@ -642,15 +652,48 @@ func (db *FlatDB) Search(search string) []*Book {
 
 // csvToBook convert string to book
 func csvToBook(line string) (*Book, error) {
-	r := csv.NewReader(strings.NewReader(line))
-	records, err := r.Read()
-	if err != nil {
-		return nil, err
+	chrs := explode(line, -1)
+
+	records := []string{}
+	innerC := false
+	innerStr := ""
+	for i, chr := range chrs {
+		// add quote
+		if chr == "\"" && i < len(chrs) && chrs[i-1] == "\"" {
+			continue
+		}
+		if chr == "\"" && i < len(chrs)-1 && chrs[i+1] == "\"" {
+			innerStr += "\""
+			continue
+		}
+		// flip between quotes
+		if chr == "\"" {
+			innerC = !innerC
+			continue
+		}
+
+		if !innerC {
+			if chr != "," {
+				innerStr += chr
+				continue
+			}
+
+			if chr == "," {
+				// seperator, record buffer and start next column
+				records = append(records, innerStr)
+				innerStr = ""
+				continue
+			}
+		}
+
+		innerStr += chr
 	}
+	// add last column
+	records = append(records, innerStr)
 
 	// incomplete record
 	if len(records) != 15 {
-		return nil, errors.New("incomplete line")
+		return nil, ErrCSVIncomplete
 	}
 
 	book := &Book{
@@ -672,6 +715,30 @@ func csvToBook(line string) (*Book, error) {
 	}
 
 	return book, nil
+}
+
+// copied from strings.explode
+// explode splits s into a slice of UTF-8 strings,
+// one string per Unicode character up to a maximum of n (n < 0 means no limit).
+// Invalid UTF-8 sequences become correct encodings of U+FFFD.
+func explode(s string, n int) []string {
+	l := utf8.RuneCountInString(s)
+	if n < 0 || n > l {
+		n = l
+	}
+	a := make([]string, n)
+	for i := 0; i < n-1; i++ {
+		ch, size := utf8.DecodeRuneInString(s)
+		a[i] = s[:size]
+		s = s[size:]
+		if ch == utf8.RuneError {
+			a[i] = string(utf8.RuneError)
+		}
+	}
+	if n > 0 {
+		a[n-1] = s
+	}
+	return a
 }
 
 // bookToCSV convert Book to csv bytes
@@ -699,12 +766,25 @@ func bookToCSV(book *Book) []byte {
 		book.Fullpath,                             // 14
 	}
 
-	var b bytes.Buffer
-	w := csv.NewWriter(&b)
-	w.Write(records)
-	w.Flush() // commit or data is empty
+	result := []string{}
+	for _, str := range records {
+		result = append(result, stringToCSVSafe(str))
+	}
+	strResult := strings.Join(result, ",") + "\n"
 
-	return b.Bytes()
+	return []byte(strResult)
+}
+
+// stringToCSVSafe convert string to csv safe string
+func stringToCSVSafe(str string) string {
+	if strings.Index(str, ",") == -1 && strings.Index(str, "\"") == -1 {
+		return str
+	}
+
+	// escape "
+	str2 := strings.ReplaceAll(str, "\"", "\"\"")
+
+	return "\"" + str2 + "\""
 }
 
 //
@@ -750,67 +830,41 @@ func ConvFtoJ(in, out string) error {
 	strs := string(dat)
 	lines := strings.Split(strs, "\n")
 
-	ibooks := []IBook{}
+	books := []*Book{}
 	var prevLen uint64
 
 	for _, line := range lines {
 		// skip blank
 		if len(line) == 0 {
+			prevLen += uint64(len(line) + 1)
+			continue
+		}
+		// skip leading #
+		if line[0:1] == "#" {
+			prevLen += uint64(len(line) + 1)
 			continue
 		}
 
-		r := csv.NewReader(strings.NewReader(line))
-		records, err := r.Read()
+		// parse csv line
+		book, err := csvToBook(line)
 		if err != nil {
-			return err
-		}
-
-		// skip incomplete
-		if len(records) != 14 {
+			prevLen += uint64(len(line) + 1)
 			continue
 		}
 
-		book := &Book{
-			ID:       records[0],
-			Title:    records[11],
-			Author:   records[12],
-			Number:   records[13],
-			Fullpath: records[14],
-			Cond:     bookCond(records[1]),
-			Pages:    mustUint64(records[2]),
-			Page:     mustUint64(records[3]),
-			Ranking:  mustUint64(records[4]),
-			Fav:      mustUint64(records[5]),
-			Size:     mustUint64(records[6]),
-			Inode:    mustUint64(records[7]),
-			Mtime:    mustUint64(records[8]),
-			Itime:    mustUint64(records[9]),
-			Rtime:    mustUint64(records[10]),
-		}
-		// fmt.Println(i, book.ID)
-
-		ibook := &IBook{
-			Address: prevLen,
-			Book:    book,
-			Length:  uint64(len(line)),
-		}
-
-		ibooks = append(ibooks, *ibook)
+		books = append(books, book)
 
 		prevLen += uint64(len(line) + 1)
 	}
 
 	jbooks := make(map[string]*Book)
-	for _, ibook := range ibooks {
-		// fmt.Println(ibook, ibook.Book)
-		book := *ibook.Book // dereference, create clone
-		book2 := &book
+	for _, book := range books {
+		book2 := *book // dereference, make clone
 		book2.Cond = 0
 		book2.ID = ""
-		jbooks[ibook.ID] = book2
+		jbooks[book2.ID] = &book2
 	}
 
-	// fmt.Println(ibooks)
 	jstr, err := json.MarshalIndent(jbooks, "", "  ")
 	if err != nil {
 		return err
@@ -822,8 +876,6 @@ func ConvFtoJ(in, out string) error {
 	}
 	defer f.Close()
 	f.Write(jstr)
-
-	fmt.Println(lines[100])
 
 	return nil
 }
