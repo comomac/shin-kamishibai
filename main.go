@@ -15,6 +15,7 @@ func loadDirs(db *FlatDB, allowedDirs []string) {
 		}
 	}
 	fmt.Println("dirs loaded")
+	fmt.Println("books", len(db.books))
 }
 
 func main() {
