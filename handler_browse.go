@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -59,9 +60,9 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 		dir = filepath.Clean(dir)
 
 		if everywhere {
-			fmt.Println("searching (", page, ")", keyword)
+			log.Println("searching (", page, ")", keyword)
 		} else {
-			fmt.Println("listing dir (", page, ")", dir)
+			log.Println("listing dir (", page, ")", dir)
 		}
 
 		// browse template

@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -72,7 +72,7 @@ func (cfg *Config) Read(fpath string) error {
 		// save new cfg file
 		err := cfg.Save(cfg.PathConfig)
 		if err != nil {
-			fmt.Println("failed to save config file (b)")
+			log.Println("failed to save config file (b)")
 			return err
 		}
 	}

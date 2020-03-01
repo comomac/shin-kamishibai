@@ -232,8 +232,6 @@ func readPage(db *FlatDB, updateBookmark bool) func(http.ResponseWriter, *http.R
 
 		fp := book.Fullpath
 
-		fmt.Println("page", page, fp)
-
 		if uint64(page) > book.Pages {
 			w.WriteHeader(http.StatusNotFound)
 			return

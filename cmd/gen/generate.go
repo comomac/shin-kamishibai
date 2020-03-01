@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
+	"log"
 	"math"
 	"os"
 	"path/filepath"
@@ -57,7 +58,7 @@ var allowedExt = []string{"jpg", "jpeg", "png", "gif", "htm", "html", "css", "js
 var compressExt = []string{"htm", "html", "css", "js", "ghtml", "json", "txt", "md"}
 
 func main() {
-	fmt.Println("starting...")
+	log.Println("starting...")
 
 	var err error
 
@@ -124,7 +125,7 @@ func main() {
 			err = addFile(i, fpath, info, fptr)
 			check(err)
 
-			fmt.Println(i, info.Size(), fpath)
+			log.Println(i, info.Size(), fpath)
 
 			return nil
 		})
@@ -147,7 +148,7 @@ func main() {
 		err = addFile(i, wfile, fstat, fptr)
 		check(err)
 
-		fmt.Println(i, fstat.Size(), wfile)
+		log.Println(i, fstat.Size(), wfile)
 	}
 
 	td, terr := template.New(fmt.Sprintf("map%d", i)).Parse(binmapTemplate)
@@ -158,7 +159,7 @@ func main() {
 	fptr.WriteString("}")
 	fptr.Close()
 
-	fmt.Println("done")
+	log.Println("done")
 }
 
 func addFile(fNum int, fpath string, info os.FileInfo, fptr *os.File) error {

@@ -32,7 +32,7 @@ func ImageScale(reader io.Reader, miW, miH int) ([]byte, error) {
 	}
 	bounds := m.Bounds()
 	imgW, imgH = float64(bounds.Max.X), float64(bounds.Max.Y)
-	// fmt.Println(imgW, imgH)
+
 	// image ratio
 	ratio = float64(imgW) / float64(imgH)
 
@@ -66,14 +66,10 @@ func ImageResize(reader io.Reader, owidth int, oheight int) ([]byte, error) {
 
 	bounds := m.Bounds()
 
-	// fmt.Printf("%+v", bounds)
-	// fmt.Println("dimension", bounds.Max.X, "x", bounds.Max.Y)
-
 	// ratio
 	var rx, ry float32
 	rx = float32(owidth) / float32(bounds.Max.X)
 	ry = float32(oheight) / float32(bounds.Max.Y)
-	// fmt.Println("ratio x, y", rx, ry)
 
 	// new blank canvas
 	newImg := image.NewRGBA(
@@ -90,14 +86,9 @@ func ImageResize(reader io.Reader, owidth int, oheight int) ([]byte, error) {
 			ix := int(float32(x) / rx)
 			iy := int(float32(y) / ry)
 
-			// r, g, b, a := m.At(x, y).RGBA()
-			// rgba := m.At(x, y)
 			rgba := m.At(ix, iy)
 
-			// fmt.Println("xy:", x, ix, y, iy, rgba)
-
 			newImg.Set(x, y, rgba)
-			// newImg.Set(x, y, color.White)
 		}
 	}
 

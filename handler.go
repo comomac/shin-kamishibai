@@ -22,6 +22,7 @@ func getPage(httpSession *SessionStore, cfg *Config, handler http.Handler) func(
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
+
 		// not logged in, show login page
 		value := httpSession.Get(w, r, LoggedIn)
 		if value != true {
