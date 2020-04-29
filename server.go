@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/pprof"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -43,6 +44,10 @@ func (svr *Server) Start() {
 	// public api, page
 	h.HandleFunc("/login", loginPOST(httpSession, cfg))
 	h.HandleFunc("/login.html", loginGet(cfg, db, fRead))
+	h.HandleFunc("/free", func(w http.ResponseWriter, r *http.Request) {
+		runtime.GC()
+		w.Write([]byte("freed"))
+	})
 
 	// private api, page
 	h.HandleFunc("/api/thumbnail/", renderThumbnail(db, cfg)) // /thumbnail/{bookID}              get book cover thumbnail

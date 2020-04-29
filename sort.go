@@ -11,9 +11,15 @@ import (
 //
 
 func sortNatural(arr []string, filter *regexp.Regexp) []string {
-	stringQuicksort(arr, filter, 0, len(arr)-1)
+	newArr := append([]string{}, arr...)
+	// free memory
+	defer func() {
+		newArr = nil
+	}()
 
-	return arr
+	stringQuicksort(newArr, filter, 0, len(arr)-1)
+
+	return newArr
 }
 
 func stringQuicksort(arr []string, filter *regexp.Regexp, low, high int) {
