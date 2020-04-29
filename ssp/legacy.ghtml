@@ -164,6 +164,10 @@
 
 		<div id="dir-lists" style="">
 			{{$dir := .Dir }}
+			{{$page := .Page }}
+			{{$keyword := .Keyword }}
+			{{$sortby := .SortBy }}
+			{{$everywhere := .Everywhere }}
 			{{range $i, $fileInfo := .FileList}}
 			{{if (eq $i 0)}}
 			{{else if $fileInfo.IsDir}}
@@ -175,7 +179,9 @@
 			</div>
 			{{else if $fileInfo.More}}
 			<div class="directory">
-				<div class="text">More...</div>
+				<a href="/browse.html?dir={{ $dir }}&page={{calcPage $page 1}}&keyword={{$keyword}}&sortby={{$sortby}}&everywhere={{$everywhere}}">
+					<div class="text">More...</div>
+				</a>
 			</div>
 			{{else if $fileInfo.IsEmpty}}
 			<div class="directory">
@@ -190,6 +196,13 @@
 				</a>
 			</div>
 			{{ end }}
+			{{ end }}
+			{{if (gt $page 1)}}
+			<div class="directory">
+				<a href="/browse.html?dir={{.Dir}}&page={{calcPage .Page -1}}&keyword={{.Keyword}}&sortby={{.SortBy}}&everywhere={{.Everywhere}}">
+					<div class="text">Prev...</div>
+				</a>
+			</div>
 			{{ end }}
 		</div>
 	</body>
