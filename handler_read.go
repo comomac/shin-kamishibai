@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
@@ -117,6 +116,7 @@ func renderThumbnail(db *FlatDB, cfg *Config) func(http.ResponseWriter, *http.Re
 		items := strings.Split(r.URL.Path, "/")
 		bookID := items[len(items)-1]
 
+		var err error
 		var imgDat []byte
 
 		// check if book is in db
@@ -146,52 +146,10 @@ func renderThumbnail(db *FlatDB, cfg *Config) func(http.ResponseWriter, *http.Re
 			return
 		}
 
-		zr, err := zip.OpenReader(book.Fullpath)
-		if err != nil {
-			responseError(w, err)
-			return
-		}
-		defer zr.Close()
-
-		// get zip file list
-		files := []string{}
-		for _, f := range zr.File {
-			if !RegexSupportedImageExt.MatchString(f.Name) {
-				continue
-			}
-
-			files = append(files, f.Name)
-		}
-
-		// do natural sort
-		sortNatural(files, RegexSupportedImageExt)
-
-		// get first image file
-		var rc io.ReadCloser
-		for _, f := range zr.File {
-			if f.Name != files[0] {
-				continue
-			}
-
-			// get image data
-			rc, err = f.Open()
-			if err != nil {
-				rc.Close()
-				responseError(w, err)
-				return
-			}
-			defer rc.Close()
-			break
-		}
-
 		// generate thumb
-		imgDat, err = ImageThumb(rc)
+		imgDat, err = db.GetPageCoverByID(book.ID)
 		if err != nil {
 			responseError(w, err)
-			return
-		}
-		if len(imgDat) == 0 {
-			responseError(w, errors.New("image length is zero"))
 			return
 		}
 
@@ -275,7 +233,7 @@ func cbzPage(bookPath string, page int) ([]byte, error) {
 	}
 
 	// do natural sort
-	sortNatural(files, RegexSupportedImageExt)
+	files = sortNatural(files, RegexSupportedImageExt)
 
 	// image data to serve
 	var imgDat []byte

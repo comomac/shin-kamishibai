@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -15,7 +16,6 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -37,6 +37,7 @@ var RegexSupportedImageExt = regexp.MustCompile(`(?i)\.(jpg|jpeg|gif|png)$`)
 
 // errors for flatdb
 var (
+	ErrNoBookID        = errors.New("no such book id")
 	ErrNotFile         = errors.New("not a file")
 	ErrDotFile         = errors.New("no dot file")
 	ErrNotBook         = errors.New("not a book file")
@@ -192,6 +193,7 @@ func (db *FlatDB) Reload() {
 
 // Import data from alternative path
 func (db *FlatDB) Import(dbPath string) error {
+	fmt.Println("importing...")
 	// make sure db exists
 	fstat, err := os.Stat(db.Path)
 	if os.IsNotExist(err) {
@@ -584,7 +586,6 @@ func cbzGetPages(fp string) (int, error) {
 	if err != nil {
 		return -1, err
 	}
-	defer runtime.GC()
 	defer zr.Close()
 
 	i := 0
@@ -618,6 +619,61 @@ func (db *FlatDB) GetBookByPath(fpath string) *Book {
 	defer db.mutex.Unlock()
 
 	return db.mapperPath[fpath]
+}
+
+// GetPageCoverByID get book cover page
+func (db *FlatDB) GetPageCoverByID(bookID string) ([]byte, error) {
+	book := db.GetBookByID(bookID)
+	if book == nil {
+		return nil, ErrNotBook
+	}
+
+	zr, err := zip.OpenReader(book.Fullpath)
+	if err != nil {
+		return nil, err
+	}
+	defer zr.Close()
+
+	// get zip file list
+	files := []string{}
+	for _, f := range zr.File {
+		if !RegexSupportedImageExt.MatchString(f.Name) {
+			continue
+		}
+
+		files = append(files, f.Name)
+	}
+
+	// do natural sort
+	files = sortNatural(files, RegexSupportedImageExt)
+
+	// get first image file
+	var rc io.ReadCloser
+	for _, f := range zr.File {
+		if f.Name != files[0] {
+			continue
+		}
+
+		// get image data
+		rc, err = f.Open()
+		if err != nil {
+			rc.Close()
+			return nil, err
+		}
+		defer rc.Close()
+		break
+	}
+
+	// generate thumb
+	imgDat, err := ImageThumb(rc)
+	if err != nil {
+		return nil, err
+	}
+	if len(imgDat) == 0 {
+		return nil, errors.New("image size is zero")
+	}
+
+	return imgDat, nil
 }
 
 // SearchBookByNameAndSize get Books object by filename and size
