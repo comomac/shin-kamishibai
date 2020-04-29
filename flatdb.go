@@ -838,7 +838,7 @@ func stringToCSVSafe(str string) string {
 	}
 
 	// escape "
-	str2 := strings.ReplaceAll(str, "\"", "\"\"")
+	str2 := strings.Replace(str, "\"", "\"\"", -1)
 
 	return "\"" + str2 + "\""
 }
