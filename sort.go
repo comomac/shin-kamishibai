@@ -36,32 +36,24 @@ func stringPartition(arr []string, filter *regexp.Regexp, low, high int) int {
 
 	var i int = (low - 1)
 
-	for j := low; j < high; j++ {
-		a := &arr[j]
-		b := pivot
-
+	for j := low; j <= high-1; j++ {
 		// deref for pure string, and for manipulation
-		a2 := *a
-		b2 := *b
+		a := arr[j]
+		b := *pivot
 		if filter != nil {
 			// filtered
-			a2 = filter.ReplaceAllString(a2, "")
-			b2 = filter.ReplaceAllString(b2, "")
+			a = filter.ReplaceAllString(a, "")
+			b = filter.ReplaceAllString(b, "")
 		}
 
 		// natural compare
-		if AlphaNumCaseCompare(a2, b2) {
+		if AlphaNumCaseCompare(a, b) {
 			i++
-
-			var temp *string = &arr[i]
-			arr[i] = arr[j]
-			arr[j] = *temp
+			arr[i], arr[j] = arr[j], arr[i]
 		}
 	}
 
-	var temp1 *string = &arr[i+1]
-	arr[i+1] = arr[high]
-	arr[high] = *temp1
+	arr[i+1], arr[high] = arr[high], arr[i+1]
 
 	return i + 1
 }
@@ -162,16 +154,13 @@ func booksPartition(arr []*Book, byType string, low, high int) int {
 		switch byType {
 		case "title":
 			// sort by title + volume/chapter (cuz author could have multiple title)
-			a := fmt.Sprintf("%s %s", arr[i].Title, arr[i].Number)
+			a := fmt.Sprintf("%s %s", arr[j].Title, arr[j].Number)
 			b := fmt.Sprintf("%s %s", pivot.Title, pivot.Number)
 
 			// natural compare
 			if AlphaNumCaseCompare(a, b) {
 				i++
-
-				var temp *Book = arr[i]
-				arr[i] = arr[j]
-				arr[j] = temp
+				arr[i], arr[j] = arr[j], arr[i]
 			}
 
 		case "author":
@@ -181,10 +170,7 @@ func booksPartition(arr []*Book, byType string, low, high int) int {
 			// natural compare
 			if AlphaNumCaseCompare(a, b) {
 				i++
-
-				var temp *Book = arr[i]
-				arr[i] = arr[j]
-				arr[j] = temp
+				arr[i], arr[j] = arr[j], arr[i]
 			}
 
 		case "author-title":
@@ -194,17 +180,63 @@ func booksPartition(arr []*Book, byType string, low, high int) int {
 			// natural compare
 			if AlphaNumCaseCompare(a, b) {
 				i++
-
-				var temp *Book = arr[i]
-				arr[i] = arr[j]
-				arr[j] = temp
+				arr[i], arr[j] = arr[j], arr[i]
 			}
 		}
 	}
 
-	var temp1 *Book = arr[i+1]
-	arr[i+1] = arr[high]
-	arr[high] = temp1
+	arr[i+1], arr[high] = arr[high], arr[i+1]
+
+	return i + 1
+}
+
+//
+// FileInfoBasic, sort
+//
+
+// sort by filename
+func sortByFileName(arr []*FileInfoBasic) []*FileInfoBasic {
+	newArr := append([]*FileInfoBasic{}, arr...)
+	// free memory
+	defer func() {
+		newArr = nil
+	}()
+
+	fibsQuicksort(newArr, "name", 0, len(arr)-1)
+
+	return newArr
+}
+
+func fibsQuicksort(arr []*FileInfoBasic, byType string, low, high int) {
+	if low < high {
+		var pi int = fibsPartition(arr, byType, low, high)
+
+		fibsQuicksort(arr, byType, low, pi-1)
+		fibsQuicksort(arr, byType, pi+1, high)
+	}
+}
+
+func fibsPartition(arr []*FileInfoBasic, byType string, low, high int) int {
+	var pivot *FileInfoBasic = arr[high]
+
+	var i int = (low - 1)
+
+	for j := low; j < high; j++ {
+		switch byType {
+		case "name":
+			// sort by filename
+			a := fmt.Sprintf("%s", arr[j].Name)
+			b := fmt.Sprintf("%s", pivot.Name)
+
+			// natural compare
+			if AlphaNumCaseCompare(a, b) {
+				i++
+				arr[i], arr[j] = arr[j], arr[i]
+			}
+		}
+	}
+
+	arr[i+1], arr[high] = arr[high], arr[i+1]
 
 	return i + 1
 }

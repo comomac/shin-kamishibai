@@ -75,8 +75,8 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 			Keyword     string
 			SortBy      string
 			FileList    FileList
-			DirIsMore      bool
-			DirIsEmpty     bool
+			DirIsMore   bool
+			DirIsEmpty  bool
 		}{
 			AllowedDirs: cfg.AllowedDirs,
 			Everywhere:  everywhere,
@@ -290,7 +290,9 @@ OUTER:
 		}
 	}
 
-	return fileList, nil
+	fileList2 := sortByFileName(fileList)
+
+	return fileList2, nil
 }
 
 func search(db *FlatDB, search string) (FileList, error) {

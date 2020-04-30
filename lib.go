@@ -101,6 +101,9 @@ func chunkify(s string) []string {
 // AlphaNumCaseCompare returns true if the first string precedes the second one according to natural order
 // https://github.com/facette/natsort/blob/master/natsort.go
 func AlphaNumCaseCompare(a, b string) bool {
+	a = strings.ToLower(a)
+	b = strings.ToLower(b)
+	
 	chunksA := chunkify(a)
 	chunksB := chunkify(b)
 
