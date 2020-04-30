@@ -286,10 +286,6 @@
 
 		<div id="dir-lists">
 			{{$dir := .Dir }}
-			{{$page := .Page }}
-			{{$keyword := .Keyword }}
-			{{$sortby := .SortBy }}
-			{{$everywhere := .Everywhere }}
 			{{range $i, $fileInfo := .FileList}}
 			{{if (eq $i 0)}}
 			{{else if $fileInfo.IsDir}}
@@ -298,16 +294,6 @@
 					<img src="/images/folder.png" alt="folder" />
 					<div class="text">{{ $fileInfo.Name }}</div>
 				</a>
-			</div>
-			{{else if $fileInfo.More}}
-			<div class="directory">
-				<a href="/browse.html?dir={{ $dir }}&page={{calcPage $page 1}}&keyword={{$keyword}}&sortby={{$sortby}}&everywhere={{$everywhere}}">
-					<div class="text">More...</div>
-				</a>
-			</div>
-			{{else if $fileInfo.IsEmpty}}
-			<div class="directory">
-				<div class="text">Empty...</div>
 			</div>
 			{{else if $fileInfo.IsBook}}
 			<div class="file">
@@ -319,11 +305,23 @@
 			</div>
 			{{ end }}
 			{{ end }}
-			{{if (gt $page 1)}}
+			{{if (gt .Page 1)}}
 			<div class="directory">
 				<a href="/browse.html?dir={{.Dir}}&page={{calcPage .Page -1}}&keyword={{.Keyword}}&sortby={{.SortBy}}&everywhere={{.Everywhere}}">
 					<div class="text">Prev...</div>
 				</a>
+			</div>
+			{{ end }}
+			{{if .DirIsMore }}
+			<div class="directory">
+				<a href="/browse.html?dir={{.Dir}}&page={{calcPage .Page 1}}&keyword={{.Keyword}}&sortby={{.SortBy}}&everywhere={{.Everywhere}}">
+					<div class="text">More...</div>
+				</a>
+			</div>
+			{{ end }}
+			{{if .DirIsEmpty }}
+			<div class="directory">
+				<div class="text">Empty...</div>
 			</div>
 			{{ end }}
 		</div>

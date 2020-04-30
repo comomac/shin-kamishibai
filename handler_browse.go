@@ -75,6 +75,8 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 			Keyword     string
 			SortBy      string
 			FileList    FileList
+			DirIsMore      bool
+			DirIsEmpty     bool
 		}{
 			AllowedDirs: cfg.AllowedDirs,
 			Everywhere:  everywhere,
@@ -190,15 +192,11 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 
 		if len(lists) > tail {
 			// indicate more files
-			fileList = append(fileList, &FileInfoBasic{
-				More: true,
-			})
+			data.DirIsMore = true
 		}
 		if len(fileList) == 1 {
 			// indicate no more file
-			fileList = append(fileList, &FileInfoBasic{
-				IsEmpty: true,
-			})
+			data.DirIsEmpty = true
 		}
 
 		// fill file list data
