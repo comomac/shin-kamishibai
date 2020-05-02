@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"bytes"
 	"image"
+	_ "image/gif"
 	"image/jpeg"
+	_ "image/png"
 	"io"
 )
 
