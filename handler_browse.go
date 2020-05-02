@@ -47,6 +47,9 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 		everywhere := strings.ToLower(query.Get("everywhere")) == "true"
 		// TODO implement sortBy
 		sortBy := strings.ToLower(query.Get("sortby"))
+		if sortBy == "" {
+			sortBy = "name"
+		}
 		spage := query.Get("page")
 		page, err := strconv.Atoi(spage)
 		if err != nil {
@@ -59,16 +62,33 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 		// have clean path, prevent .. bypass
 		dir = filepath.Clean(dir)
 
+		// list of path that page can nav up to
+		paths := []string{}
+
 		if everywhere {
 			log.Println("searching (", page, ")", keyword)
 		} else {
 			log.Println("listing dir (", page, ")", dir)
+
+			// setting up paths, from actual dir to root, reverse order
+			// for nav use
+			pd := dir
+			i := 0 // failsafe
+			for i < 30 {
+				paths = append(paths, pd)
+				if pd == "/" || pd == "." {
+					break
+				}
+				pd = filepath.Dir(pd)
+				i++
+			}
 		}
 
 		// browse template
 		data := struct {
 			AllowedDirs []string
 			Everywhere  bool
+			Paths       []string
 			Dir         string
 			UpDir       string
 			Page        int
@@ -80,6 +100,7 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 		}{
 			AllowedDirs: cfg.AllowedDirs,
 			Everywhere:  everywhere,
+			Paths:       paths,
 			Dir:         dir,
 			UpDir:       filepath.Dir(dir),
 			Page:        page,
@@ -89,6 +110,9 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 		}
 		// helper func for template
 		funcMap := template.FuncMap{
+			"dirBase": func(fullpath string) string {
+				return filepath.Base(fullpath)
+			},
 			"readpc": func(fi *FileInfoBasic) string {
 				// read percentage tag
 				pg := fi.Page

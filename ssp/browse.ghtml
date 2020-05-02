@@ -249,7 +249,10 @@
 		<div class="dropdown">
 			<button class="dropbtn">Path</button>
 			<div class="dropdown-content" id="div-paths">
-				<a href="#dir=/" class="pure-menu-link">/</a>
+				{{$sortBy := .SortBy}}
+				{{range $i, $path := .Paths }}
+				<a href="/browse.html?dir={{ $path }}&sortby={{$sortBy}}">{{ dirBase $path }}</a>
+				{{end}}
 			</div>
 		</div>
 
