@@ -199,7 +199,7 @@
 			{{ end }}
 			{{if .DirIsEmpty }}
 			<div class="directory">
-				<div class="text">Empty...</div>
+				<div class="text">EOF...</div>
 			</div>
 			{{ end }}
 		</div>
