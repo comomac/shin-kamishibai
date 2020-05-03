@@ -31,6 +31,9 @@ type FileInfoBasic struct {
 // ItemsPerPage use for pagination
 var ItemsPerPage = 18
 
+// SortMaxSize maximum allowed size for sorting, otherwise it will skip sort
+var SortMaxSize = 300
+
 // browseGet http GET lists the folder content, only the folder and the manga will be shown
 func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -163,6 +166,8 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 
 		// data to client
 		fileList := FileList{}
+		var lstat int
+		// chopped lists by pagination
 		var lists FileList
 
 		if everywhere {
@@ -173,7 +178,7 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 			})
 
 			// build library list
-			lists, err = search(db, keyword)
+			lstat, lists, err = search(db, keyword, page)
 			if err != nil {
 				responseError(w, err)
 				return
@@ -195,32 +200,22 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 			})
 
 			// build dir list
-			lists, err = listDir(db, dir, keyword)
+			lstat, lists, err = listDir(db, dir, keyword, page)
 			if err != nil {
 				responseError(w, err)
 				return
 			}
 		}
 
-		// pagination
-		head := (page - 1) * ItemsPerPage
-		if head > len(lists) {
-			head = len(lists)
-		}
-		tail := (page) * ItemsPerPage
-		if tail > len(lists) {
-			tail = len(lists)
-		}
-		choppedFileList := lists[head:tail]
-		fileList = append(fileList, choppedFileList...)
+		fileList = append(fileList, lists...)
 
-		if len(lists) > tail {
-			// indicate more files
-			data.DirIsMore = true
-		}
-		if len(fileList) == 1 {
-			// indicate no more file
+		if lstat == 1 {
+			// no more files
 			data.DirIsEmpty = true
+		}
+		if lstat == 2 {
+			// more files
+			data.DirIsMore = true
 		}
 
 		// fill file list data
@@ -237,18 +232,25 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 	}
 }
 
-func listDir(db *FlatDB, dir, search string) (FileList, error) {
+func listDir(db *FlatDB, dir, search string, page int) (status int, fileList FileList, err error) {
+	/* status
+	-1 error
+	 0 no any particular state
+	 1 no more list to follow
+	 2 more list to follow
+	*/
+	status = -1
+
 	// listing dir
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
-		return nil, err
+		return status, nil, err
 	}
 
 	search = strings.ToLower(search)
 	keywords := strings.Split(search, " ")
 	keywords = StringSliceFlatten(keywords)
 
-	fileList := FileList{}
 OUTER:
 	for _, file := range files {
 		// no dot file/folder
@@ -283,44 +285,88 @@ OUTER:
 
 		} else if strings.HasSuffix(fulltext, ".cbz") {
 			// a book
-			fileFullPath := dir + "/" + file.Name()
 
 			// create and store blank book entry
 			fib := &FileInfoBasic{
 				IsBook:  true,
+				Path:    dir,
 				Name:    file.Name(),
 				ModTime: file.ModTime(),
-			}
-
-			// find book by path
-			book := db.GetBookByPath(fileFullPath)
-			if book != nil {
-				fib.Book = *book
-			} else {
-				// book not found, add now
-				nbook, err := db.AddFile(fileFullPath)
-				if err != nil {
-					return nil, err
-				}
-				fib.Book = *nbook
-			}
-
-			// make page 0 to 1 so wont crash on reading
-			if fib.Book.Page <= 0 {
-				fib.Book.Page = 1
 			}
 
 			fileList = append(fileList, fib)
 		}
 	}
 
-	fileList2 := sortByFileName(fileList)
+	// sort by natural order, if small enough, or lag happens
+	if len(fileList) <= SortMaxSize {
+		fileList = sortByFileName(fileList)
+	}
 
-	return fileList2, nil
+	// pagination
+	head := (page - 1) * ItemsPerPage
+	if head > len(fileList) {
+		head = len(fileList)
+	}
+	tail := (page) * ItemsPerPage
+	if tail > len(fileList) {
+		tail = len(fileList)
+
+		// reached the end, no more files
+		status = 1
+	} else {
+		// indicate more files
+		status = 2
+	}
+	// chopped file list
+	fileList = fileList[head:tail]
+
+	// sort again, because earlier sort could be big and skipped
+	fileList = sortByFileName(fileList)
+
+	// look up book details
+	// doing this way to reduce cpu/disk load, only load the relevant page
+	for _, fib := range fileList {
+		if !fib.IsBook {
+			continue
+		}
+
+		// fib.Fullpath is blank, cuz inhertance from blank Book parent
+		fileFullPath := fib.Path + "/" + fib.Name
+
+		// find book by path
+		book := db.GetBookByPath(fileFullPath)
+		if book != nil {
+			fib.Book = *book
+		} else {
+			// book not found, add now
+			nbook, err := db.AddFile(fileFullPath)
+			if err != nil {
+				return status, nil, err
+			}
+			fib.Book = *nbook
+
+			// clear or eat memory cuz not being used
+			fib.Path = ""
+		}
+
+		// make page 0 to 1 so wont crash on reading
+		if fib.Book.Page <= 0 {
+			fib.Book.Page = 1
+		}
+	}
+
+	return status, fileList, nil
 }
 
-func search(db *FlatDB, search string) (FileList, error) {
-	fileList := FileList{}
+func search(db *FlatDB, search string, page int) (status int, fileList FileList, err error) {
+	/* status
+	-1 error
+	 0 no any particular state
+	 1 no more list to follow
+	 2 more list to follow
+	*/
+	status = -1
 
 	books := db.Search(search)
 	for _, book := range books {
@@ -340,5 +386,31 @@ func search(db *FlatDB, search string) (FileList, error) {
 		fileList = append(fileList, fib)
 	}
 
-	return fileList, nil
+	// sort by natural order, if small enough, or lag happens
+	if len(fileList) <= SortMaxSize {
+		fileList = sortByFileName(fileList)
+	}
+
+	// pagination
+	head := (page - 1) * ItemsPerPage
+	if head > len(fileList) {
+		head = len(fileList)
+	}
+	tail := (page) * ItemsPerPage
+	if tail > len(fileList) {
+		tail = len(fileList)
+
+		// reached the end, no more files
+		status = 1
+	} else {
+		// indicate more files
+		status = 2
+	}
+	// chopped file list
+	fileList = fileList[head:tail]
+
+	// sort again, because earlier sort could be big and skipped
+	fileList = sortByFileName(fileList)
+
+	return status, fileList, nil
 }
