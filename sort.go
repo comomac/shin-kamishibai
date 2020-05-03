@@ -118,20 +118,20 @@ func filterByAuthorTitle(books []*Book, filter string) []*Book {
 }
 
 func sortByTitle(books []*Book) []*Book {
-	booksQuicksort(books, "title", 0, len(books))
+	booksQuicksort(books, "title", 0, len(books)-1)
 
 	return books
 }
 
 func sortByAuthor(books []*Book) []*Book {
-	booksQuicksort(books, "author", 0, len(books))
+	booksQuicksort(books, "author", 0, len(books)-1)
 
 	return books
 }
 
 func sortByAuthorTitle(books []*Book) []*Book {
 	// sort by author then boook title
-	booksQuicksort(books, "author-title", 0, len(books))
+	booksQuicksort(books, "author-title", 0, len(books)-1)
 
 	return books
 }
