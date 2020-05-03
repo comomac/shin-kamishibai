@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"fmt"
 	"math"
@@ -98,14 +99,64 @@ func chunkify(s string) []string {
 	return chunkifyRegexp.FindAllString(s, -1)
 }
 
+// faster than chunkify x2~5 without use of regex
+func chunkifyX(line string) []string {
+	var buf bytes.Buffer
+	var isText bool
+	var flip bool
+
+	for i, r := range line {
+		// first chr
+		if i == 0 {
+			if r >= 48 && r <= 57 {
+				isText = false
+			} else {
+				isText = true
+			}
+		}
+
+		if r >= 48 && r <= 57 {
+			// 0-9
+			if !isText {
+				flip = false
+			} else {
+				flip = true
+			}
+
+			isText = false
+		} else {
+			if isText {
+				flip = false
+			} else {
+				flip = true
+			}
+
+			isText = true
+		}
+
+		if flip {
+			buf.WriteString("\n")
+		}
+		buf.WriteRune(r)
+
+		flip = false
+	}
+
+	var result []string
+
+	result = strings.Split(buf.String(), "\n")
+
+	return result
+}
+
 // AlphaNumCaseCompare returns true if the first string precedes the second one according to natural order
 // https://github.com/facette/natsort/blob/master/natsort.go
 func AlphaNumCaseCompare(a, b string) bool {
 	a = strings.ToLower(a)
 	b = strings.ToLower(b)
-	
-	chunksA := chunkify(a)
-	chunksB := chunkify(b)
+
+	chunksA := chunkifyX(a)
+	chunksB := chunkifyX(b)
 
 	nChunksA := len(chunksA)
 	nChunksB := len(chunksB)
