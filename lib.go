@@ -108,26 +108,20 @@ func chunkifyX(line string) []string {
 	for i, r := range line {
 		// first chr
 		if i == 0 {
-			if r >= 48 && r <= 57 {
-				isText = false
-			} else {
+			if r < 48 || r > 57 {
 				isText = true
 			}
 		}
 
 		if r >= 48 && r <= 57 {
 			// 0-9
-			if !isText {
-				flip = false
-			} else {
+			if isText {
 				flip = true
 			}
 
 			isText = false
 		} else {
-			if isText {
-				flip = false
-			} else {
+			if !isText {
 				flip = true
 			}
 
@@ -142,11 +136,7 @@ func chunkifyX(line string) []string {
 		flip = false
 	}
 
-	var result []string
-
-	result = strings.Split(buf.String(), "\n")
-
-	return result
+	return strings.Split(buf.String(), "\n")
 }
 
 // AlphaNumCaseCompare returns true if the first string precedes the second one according to natural order
