@@ -68,6 +68,15 @@
 			<div>
 				<a class="a-link-page" href="/browse.html?dir={{ .Dir }}">Browse</a>
 			</div>
+			{{ if eq .Book.Fav 0 }}
+			<div>
+				<a class="a-link-page" href="/read.html?fav=1&book={{ .Book.ID }}&page={{ .Book.Page }}">Fav</a>
+			</div>
+			{{ else }}
+			<div>
+				<a class="a-link-page" href="/read.html?fav=0&book={{ .Book.ID }}&page={{ .Book.Page }}">Unfav</a>
+			</div>
+			{{ end }}
 		</div>
 		<div class="row">
 			<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ calcPage .Book -5 }}">-5</a>

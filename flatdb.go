@@ -90,8 +90,8 @@ func (b Book) String() string {
 // IBook in-memory book, contains extra info on book, used for database
 type IBook struct {
 	*Book
-	Address uint64 `json:"-"`
-	Length  uint64 `json:"-"`
+	Address uint64 `json:"-"` // db file, book line record byte position
+	Length  uint64 `json:"-"` // db file, book line record length
 }
 
 // Author holds info regards to book
@@ -315,6 +315,49 @@ func (db *FlatDB) UpdatePage(id string, page int) (int, error) {
 	// absolute position for the page
 	posPage := int64(ibook.Address + 11)
 	b2len, err := f.WriteAt(b2.Bytes(), posPage)
+
+	return b2len, err
+}
+
+// UpdateFav change database record favourited, returns written byte size
+func (db *FlatDB) UpdateFav(id string, fav bool) (int, error) {
+	fmt.Println(">>>>> UpdateFav", id, fav)
+	db.mutex.Lock()
+	defer db.mutex.Unlock()
+
+	ibook := db.mapperIID[id]
+	if ibook == nil {
+		return 0, ErrNilIBook
+	}
+	if fav {
+		ibook.Fav = 1
+	} else {
+		ibook.Fav = 0
+	}
+
+	// read out from db
+	b := make([]byte, ibook.Length)
+
+	f, err := os.OpenFile(db.Path, os.O_RDWR, 0644)
+	if err != nil {
+		return 0, err
+	}
+	defer f.Close()
+
+	f.ReadAt(b, int64(ibook.Address))
+	strs := string(b)
+
+	// make sure the column spacing is still the same. ascii 44 is comma
+	if strs[3] != 44 || strs[5] != 44 || strs[10] != 44 || strs[15] != 44 {
+		return 0, ErrDBColumnChanged
+	}
+
+	// convert uint64 to str
+	strFav := fmt.Sprintf("%d", ibook.Fav)
+	b2 := bytes.NewBufferString(strFav)
+	// absolute position for the fav
+	posFav := int64(ibook.Address + 18)
+	b2len, err := f.WriteAt(b2.Bytes(), posFav)
 
 	return b2len, err
 }

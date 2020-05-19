@@ -34,6 +34,7 @@ func readGet(cfg *Config, db *FlatDB, fRead fileReader) func(http.ResponseWriter
 
 		bookID := query.Get("book")
 		spage := query.Get("page")
+		fav := query.Get("fav")
 		page, err := strconv.Atoi(spage)
 		if err != nil {
 			page = 1
@@ -48,8 +49,14 @@ func readGet(cfg *Config, db *FlatDB, fRead fileReader) func(http.ResponseWriter
 			responseBadRequest(w, errors.New("invalid page number"))
 			return
 		}
-		// set page temporary
+		// set page temporary so reflect the html
 		book.Page = uint64(page)
+		// set fav temporary so reflect the html
+		if fav == "1" {
+			book.Fav = 1
+		} else if fav == "0" {
+			book.Fav = 0
+		}
 
 		// read template
 		data := struct {
@@ -98,6 +105,13 @@ func readGet(cfg *Config, db *FlatDB, fRead fileReader) func(http.ResponseWriter
 
 		w.Header().Set("Content-Type", "text/html")
 		w.Write([]byte(buf.String()))
+
+		// set/unset book favourite permanently
+		if fav == "1" {
+			db.UpdateFav(bookID, true)
+		} else if fav == "0" {
+			db.UpdateFav(bookID, false)
+		}
 
 		// set page read permanently
 		db.UpdatePage(bookID, page)

@@ -82,8 +82,8 @@
 				margin: 0.5em;
 			}
 
-			.directory img,
-			.file img {
+			.directory img.dir-thumbnail,
+			.file img.book-thumbnail {
 				display: block;
 				margin-left: auto;
 				margin-right: auto;
@@ -95,9 +95,8 @@
 			}
 
 			/****** book total pages ******/
-			.book-pages {
+			.book-pages, .book-fav {
 				position: absolute;
-				top: 0px;
 				right: 0px;
 				color: #fff;
 				background-color: #6c757d;
@@ -110,6 +109,12 @@
 				white-space: nowrap;
 				vertical-align: baseline;
 				border-radius: 0.25rem;
+			}
+			.book-pages {
+				top: 0px;
+			}
+			.book-fav {
+				top: 30px;
 			}
 
 			/****** media dir column ******/
@@ -294,16 +299,19 @@
 			{{else if $fileInfo.IsDir}}
 			<div class="directory">
 				<a dir="{{ $fileInfo.Path }}" href="/browse.html?dir={{ $dir }}/{{ $fileInfo.Name }}">
-					<img src="/images/folder.png" alt="folder" />
+					<img class="dir-thumbnail" src="/images/folder.png" alt="folder" />
 					<div class="text">{{ $fileInfo.Name }}</div>
 				</a>
 			</div>
 			{{else if $fileInfo.IsBook}}
 			<div class="file">
 				<a bookcode="{{ $fileInfo.ID }}" href="/read.html?book={{ $fileInfo.ID }}&page={{ $fileInfo.Page }}">
-					<img src="/api/thumbnail/{{ $fileInfo.ID }}" alt="cover" />
+					<img class="book-thumbnail" src="/api/thumbnail/{{ $fileInfo.ID }}" alt="cover" />
 					<div class="{{readpc $fileInfo }}">{{ $fileInfo.Name }}</div>
 					<span class="book-pages">{{ $fileInfo.Pages }}</span>
+					{{ if eq $fileInfo.Fav 1 }}
+					<img class="book-fav" src="/images/heart.png" alt="fav" />
+					{{ end }}
 				</a>
 			</div>
 			{{ end }}
