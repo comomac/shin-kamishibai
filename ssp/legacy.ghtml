@@ -66,8 +66,8 @@
 				margin: 0.5em;
 			}
 
-			.directory img,
-			.file img {
+			.directory img.dir-thumbnail,
+			.file img.book-thumbnail {
 				display: block;
 				margin-left: auto;
 				margin-right: auto;
@@ -84,6 +84,10 @@
 				color: #fff;
 				background-color: #6c757d;
 				font-weight: 700;
+			}
+			.book-pages img.book-fav {
+				width: 16px;
+				height: 16px;
 			}
 		</style>
 	</head>
@@ -169,16 +173,21 @@
 			{{else if $fileInfo.IsDir}}
 			<div class="directory" style="background-color: magenta;">
 				<a href="/legacy.html?dir={{ $dir }}/{{ $fileInfo.Name }}">
-					<img src="/images/folder.png" alt="folder" />
+					<img class="dir-thumbnail" src="/images/folder.png" alt="folder" />
 					<div class="text">{{ $fileInfo.Name }}</div>
 				</a>
 			</div>
 			{{else if $fileInfo.IsBook}}
 			<div class="file">
 				<a href="/read.html?book={{ $fileInfo.ID }}&page={{ $fileInfo.Page }}">
-					<img src="/api/thumbnail/{{ $fileInfo.ID }}" alt="cover" />
+					<img class="book-thumbnail" src="/api/thumbnail/{{ $fileInfo.ID }}" alt="cover" />
 					<div class="{{readpc $fileInfo }}">{{ $fileInfo.Name }}</div>
-					<span class="book-pages">{{ $fileInfo.Pages }}</span>
+					<span class="book-pages">
+						{{ $fileInfo.Pages }}
+						{{ if eq $fileInfo.Fav 1 }}
+						<img class="book-fav" src="/images/heart.png" alt="fav" />
+						{{ end }}
+					</span>
 				</a>
 			</div>
 			{{ end }}
