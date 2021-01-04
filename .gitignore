@@ -2,7 +2,6 @@ cache
 config*.json
 *.code-workspace
 *.log
-go.sum
 binfile.go
 example/
 profile.out
