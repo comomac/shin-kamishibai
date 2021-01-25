@@ -21,8 +21,15 @@ func (svr *Server) Start() {
 	cfg := svr.Config
 	db := svr.Database
 
-	// setup session
-	httpSession := &SessionStore{}
+	// setup sessions
+	httpSession := &SessionStore{
+		serverConfig: cfg,
+	}
+	// previous sessions
+	err := httpSession.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	h := http.NewServeMux()
 

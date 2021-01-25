@@ -1,8 +1,14 @@
 package main
 
 import (
+	"bytes"
+	"encoding/gob"
 	"errors"
+	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
+	"path"
 	"time"
 )
 
@@ -15,7 +21,8 @@ import (
 
 // SessionStore holds all the http sessions and other details
 type SessionStore struct {
-	sessions []*session
+	sessions     []*session
+	serverConfig *Config
 }
 
 // session http session state
@@ -58,12 +65,13 @@ func (ss *SessionStore) create(w http.ResponseWriter, r *http.Request) *session 
 	}
 
 	ss.sessions = append(ss.sessions, newSession)
+	ss.save()
 
 	// set browser session cookie
 	cki := &http.Cookie{
-		Name:     "SessionID",
-		Value:    newSession.ID,
-		Path:     "/",
+		Name:  "SessionID",
+		Value: newSession.ID,
+		Path:  "/",
 		// commented out so works with go1.8
 		// SameSite: http.SameSiteStrictMode,
 	}
@@ -102,6 +110,50 @@ func (ss *SessionStore) ready(w http.ResponseWriter, r *http.Request) *session {
 	return s
 }
 
+// saves the sessions from memory into drive for long term storage
+func (ss *SessionStore) save() error {
+	b := new(bytes.Buffer)
+	err := gob.NewEncoder(b).Encode(ss.sessions)
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile(path.Join(ss.serverConfig.PathDir, "sessions"), b.Bytes(), 0664)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Load previously saved session from drive to memory
+func (ss *SessionStore) Load() error {
+	f := path.Join(ss.serverConfig.PathDir, "sessions")
+
+	_, err := os.Stat(f)
+	if os.IsNotExist(err) {
+		// previous sessions not exist, continue
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	b, err := ioutil.ReadFile(f)
+	if err != nil {
+		return err
+	}
+
+	bb := bytes.NewBuffer(b)
+
+	err = gob.NewDecoder(bb).Decode(&ss.sessions)
+	if err != nil {
+		return err
+	}
+	log.Printf("sessions loaded (%d)\n", len(ss.sessions))
+	return nil
+}
+
 // ID get current session id
 func (ss *SessionStore) ID(w http.ResponseWriter, r *http.Request) string {
 	s := ss.ready(w, r)
@@ -114,6 +166,8 @@ func (ss *SessionStore) Set(w http.ResponseWriter, r *http.Request, key string, 
 	s := ss.ready(w, r)
 
 	s.Values[key] = value
+
+	ss.save()
 }
 
 // Get current session data
@@ -138,6 +192,7 @@ func (ss *SessionStore) Delete(w http.ResponseWriter, r *http.Request) {
 // Clear all sessions
 func (ss *SessionStore) Clear() {
 	ss.sessions = []*session{}
+	ss.save()
 }
 
 // Scrub clear all expired sessions
@@ -151,4 +206,5 @@ func (ss *SessionStore) Scrub() {
 	}
 
 	ss.sessions = nss
+	ss.save()
 }
