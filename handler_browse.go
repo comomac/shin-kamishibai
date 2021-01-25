@@ -77,9 +77,9 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 			// for nav use
 			pd := dir
 			i := 0 // failsafe
-			for i < 30 {
+			for i < 15 {
 				paths = append(paths, pd)
-				if pd == "/" || pd == "\\" || pd == "." {
+				if pd == "/" || pd == "." || strings.HasSuffix(pd, ":\\") /* win drive */ {
 					break
 				}
 				pd = filepath.Dir(pd)
