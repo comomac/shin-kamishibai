@@ -36,7 +36,9 @@ func UserHome(s ...string) string {
 
 // StringSliceContain search the string slice and see if it contains the searched word, match from first character
 func StringSliceContain(strSlice []string, strSearch string) bool {
+	strSearch = strings.Replace(strSearch, "\\", "/", -1)
 	for _, str := range strSlice {
+		str = strings.Replace(str, "\\", "/", -1)
 		if strings.Index(strSearch, str) == 0 {
 			return true
 		}
