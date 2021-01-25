@@ -112,8 +112,8 @@
 		</div>
 		<script>
 			var bookID = "{{.Book.ID}}";
-			var page = "{{.Book.Page}}";
-			var maxPage = "{{.Book.Pages}}";
+			var page = {{.Book.Page}};
+			var maxPage = {{.Book.Pages}};
 
 			// enable full screen for supported device
 			if (document.documentElement.requestFullscreen) {
