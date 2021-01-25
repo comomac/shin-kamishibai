@@ -152,7 +152,7 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 		}
 
 		// no dir chosen
-		if dir == "" || dir == "." {
+		if (dir == "" || dir == ".") && !everywhere {
 			err = tmpl.Execute(&buf, data)
 			if err != nil {
 				responseError(w, err)
