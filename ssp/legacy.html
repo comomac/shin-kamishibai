@@ -128,12 +128,18 @@
 			<tr>
 				{{range $i, $s := .AllowedDirs}}
 				<td>
-				<form>
-					<input type="hidden" name="dir" value="{{$s}}" />
-					<input type="submit" class="nav-dir-button" value="{{$s}}" />
-				</form>
+					<form>
+						<input type="hidden" name="dir" value="{{$s}}" />
+						<input type="submit" class="nav-dir-button" value="{{$s}}" />
+					</form>
 				</td>
 				{{end}}
+				<td>
+					<form>
+						<input type="hidden" name="dir" value="___history___" />
+						<input type="submit" class="nav-dir-button" value="History" />
+					</form>
+				</td>
 			</tr>
 			<tr>
 				<td spanrow="3">

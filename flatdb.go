@@ -286,8 +286,23 @@ func (db *FlatDB) Export(dbPath string) error {
 	return nil
 }
 
+// check if csv line commas are still valid
+func validCommaPos(line string) bool {
+	poss := []int{
+		3, 5, 10, 15, 17, 19, 30, 41, 52, 63, 74,
+	}
+	for _, pos := range poss {
+		// ascii 44 is comma
+		if line[pos] != 44 {
+			fmt.Println("fail", pos)
+			return false
+		}
+	}
+	return true
+}
+
 // UpdatePage change database record on page read, returns written byte size
-func (db *FlatDB) UpdatePage(id string, page int) (int, error) {
+func (db *FlatDB) UpdatePage(id string, page int) (writeSize int, err error) {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
 
@@ -296,6 +311,7 @@ func (db *FlatDB) UpdatePage(id string, page int) (int, error) {
 		return 0, ErrNilIBook
 	}
 	ibook.Page = int64(page)
+	ibook.Rtime = time.Now().Unix()
 
 	// read out from db
 	b := make([]byte, ibook.Length)
@@ -309,19 +325,34 @@ func (db *FlatDB) UpdatePage(id string, page int) (int, error) {
 	f.ReadAt(b, int64(ibook.Address))
 	strs := string(b)
 
-	// make sure the column spacing is still the same. ascii 44 is comma
-	if strs[3] != 44 || strs[5] != 44 || strs[10] != 44 || strs[15] != 44 {
+	// make sure the column spacing is still the same
+	if !validCommaPos(strs) {
 		return 0, ErrDBColumnChanged
 	}
 
 	// page with extended chars
 	strPage := fmt.Sprintf(FlatDBCharsPage, ibook.Page)
-	b2 := bytes.NewBufferString(strPage)
-	// absolute position for the page
+	bPage := bytes.NewBufferString(strPage)
+	// absolute position for the page, Page
 	posPage := int64(ibook.Address + 11)
-	b2len, err := f.WriteAt(b2.Bytes(), posPage)
+	bSize, err := f.WriteAt(bPage.Bytes(), posPage)
+	if err != nil {
+		return
+	}
+	writeSize += bSize
 
-	return b2len, err
+	// epoch with extended chars
+	strRtime := fmt.Sprintf(FlatDBCharsEpoch, ibook.Rtime)
+	bRtime := bytes.NewBufferString(strRtime)
+	// absolute position for the read time, RTime
+	posRtime := int64(ibook.Address + 64)
+	bSize, err = f.WriteAt(bRtime.Bytes(), posRtime)
+	if err != nil {
+		return
+	}
+	writeSize += bSize
+
+	return
 }
 
 // UpdateFav change database record favourited, returns written byte size
@@ -352,8 +383,8 @@ func (db *FlatDB) UpdateFav(id string, fav bool) (int, error) {
 	f.ReadAt(b, int64(ibook.Address))
 	strs := string(b)
 
-	// make sure the column spacing is still the same. ascii 44 is comma
-	if strs[3] != 44 || strs[5] != 44 || strs[10] != 44 || strs[15] != 44 {
+	// make sure the column spacing is still the same
+	if !validCommaPos(strs) {
 		return 0, ErrDBColumnChanged
 	}
 
@@ -851,23 +882,23 @@ func bookToCSV(book *Book) []byte {
 	fname := path.Base(book.Fullpath)
 
 	// DO NOT change ordering, can only append in future
-	// use this a reference
+	// use this a reference, book.XX
 	records := []string{
-		book.ID,                                   //  0
-		fmt.Sprint(book.Cond),                     //  1
-		fmt.Sprintf(FlatDBCharsPage, book.Pages),  //  2
-		fmt.Sprintf(FlatDBCharsPage, book.Page),   //  3
-		fmt.Sprint(book.Ranking),                  //  4
-		fmt.Sprint(book.Fav),                      //  5
-		fmt.Sprintf(FlatDBCharsFSize, book.Size),  //  6
-		fmt.Sprintf(FlatDBCharsEpoch, book.Inode), //  7
-		fmt.Sprintf(FlatDBCharsEpoch, book.Mtime), //  8
-		fmt.Sprintf(FlatDBCharsEpoch, book.Itime), //  9
-		fmt.Sprintf(FlatDBCharsEpoch, book.Rtime), // 10
-		getTitle(fname),                           // book.Title,   // 11
-		getAuthor(fname),                          // book.Author,  // 12
-		getNumber(fname),                          // book.Number,  // 13
-		book.Fullpath,                             // 14
+		book.ID,                                   //  0  ID
+		fmt.Sprint(book.Cond),                     //  1  Cond
+		fmt.Sprintf(FlatDBCharsPage, book.Pages),  //  2  Pages
+		fmt.Sprintf(FlatDBCharsPage, book.Page),   //  3  Page
+		fmt.Sprint(book.Ranking),                  //  4  Ranking
+		fmt.Sprint(book.Fav),                      //  5  Fav
+		fmt.Sprintf(FlatDBCharsFSize, book.Size),  //  6  Size
+		fmt.Sprintf(FlatDBCharsEpoch, book.Inode), //  7  Inode
+		fmt.Sprintf(FlatDBCharsEpoch, book.Mtime), //  8  Mtime
+		fmt.Sprintf(FlatDBCharsEpoch, book.Itime), //  9  Itime
+		fmt.Sprintf(FlatDBCharsEpoch, book.Rtime), // 10  Rtime
+		getTitle(fname),                           // 11  Title
+		getAuthor(fname),                          // 12  Author
+		getNumber(fname),                          // 13  Number
+		book.Fullpath,                             // 14  Fullpath
 	}
 
 	result := []string{}

@@ -220,7 +220,10 @@ func readPage(db *FlatDB, updateBookmark bool) func(http.ResponseWriter, *http.R
 		}
 
 		if updateBookmark {
-			db.UpdatePage(bookID, page)
+			_, err = db.UpdatePage(bookID, page)
+			if err != nil {
+				fmt.Printf("error: failed to update page %+v\n", err)
+			}
 		}
 
 		ctype := http.DetectContentType(imgDat)

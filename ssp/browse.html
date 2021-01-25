@@ -262,6 +262,15 @@
 		</div>
 
 		<div class="dropdown">
+			<button class="dropbtn">History</button>
+			<div class="dropdown-content">
+				<a href="/browse.html?dir=___history___&page={{.Page}}&keyword={{.Keyword}}&sortby=name">All</a>
+				<a href="/browse.html?dir=___history_unfinished___&page={{.Page}}&keyword={{.Keyword}}&sortby=name">Unfinished</a>
+				<a href="/browse.html?dir=___history_finished___&page={{.Page}}&keyword={{.Keyword}}&sortby=name">Finished</a>
+			</div>
+		</div>
+
+		<div class="dropdown">
 			<form>
 				<input type="hidden" name="dir" value="{{.Dir}}"/>
 				{{if (.Everywhere)}}
