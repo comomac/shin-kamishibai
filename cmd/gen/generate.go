@@ -54,8 +54,8 @@ type BinFile struct {
 	Data64       string // used during generate
 }
 
-var allowedExt = []string{"jpg", "jpeg", "png", "gif", "htm", "html", "css", "js", "ghtml"}
-var compressExt = []string{"htm", "html", "css", "js", "ghtml", "json", "txt", "md"}
+var allowedExt = []string{"jpg", "jpeg", "png", "gif", "htm", "html", "css", "js"}
+var compressExt = []string{"htm", "html", "css", "js", "json", "txt", "md"}
 
 func main() {
 	log.Println("starting...")

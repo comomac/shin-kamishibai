@@ -84,7 +84,7 @@ func readGet(cfg *Config, db *FlatDB, fRead fileReader) func(http.ResponseWriter
 				return b
 			},
 		}
-		tmplStr, err := fRead("ssp/read.ghtml")
+		tmplStr, err := fRead("ssp/read.html")
 		if err != nil {
 			responseError(w, err)
 			return
