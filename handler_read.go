@@ -50,7 +50,7 @@ func readGet(cfg *Config, db *FlatDB, fRead fileReader) func(http.ResponseWriter
 			return
 		}
 		// set page temporary so reflect the html
-		book.Page = uint64(page)
+		book.Page = int64(page)
 		// set fav temporary so reflect the html
 		if fav == "1" {
 			book.Fav = 1
@@ -84,7 +84,7 @@ func readGet(cfg *Config, db *FlatDB, fRead fileReader) func(http.ResponseWriter
 				return b
 			},
 		}
-		tmplStr, err := fRead("ssp/read.ghtml")
+		tmplStr, err := fRead("ssp/read.html")
 		if err != nil {
 			responseError(w, err)
 			return
@@ -195,6 +195,10 @@ func readPage(db *FlatDB, updateBookmark bool) func(http.ResponseWriter, *http.R
 			responseBadRequest(w, err)
 			return
 		}
+		if page <= 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 
 		book := db.GetBookByID(bookID)
 		if book == nil {
@@ -204,7 +208,7 @@ func readPage(db *FlatDB, updateBookmark bool) func(http.ResponseWriter, *http.R
 
 		fp := book.Fullpath
 
-		if uint64(page) > book.Pages {
+		if page > int(book.Pages) {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
@@ -216,7 +220,10 @@ func readPage(db *FlatDB, updateBookmark bool) func(http.ResponseWriter, *http.R
 		}
 
 		if updateBookmark {
-			db.UpdatePage(bookID, page)
+			_, err = db.UpdatePage(bookID, page)
+			if err != nil {
+				fmt.Printf("error: failed to update page %+v\n", err)
+			}
 		}
 
 		ctype := http.DetectContentType(imgDat)

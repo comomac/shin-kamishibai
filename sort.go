@@ -233,10 +233,38 @@ func fibsPartition(arr []*FileInfoBasic, byType string, low, high int) int {
 				i++
 				arr[i], arr[j] = arr[j], arr[i]
 			}
+
+		case "readTime":
+			// sort by read time
+			a := arr[j].Rtime
+			b := pivot.Rtime
+
+			// natural compare
+			if a > b {
+				i++
+				arr[i], arr[j] = arr[j], arr[i]
+			}
 		}
 	}
 
 	arr[i+1], arr[high] = arr[high], arr[i+1]
 
 	return i + 1
+}
+
+//
+// read order sort
+//
+
+// sort by read time, most recent one first
+func sortByReadTime(arr []*FileInfoBasic) []*FileInfoBasic {
+	newArr := append([]*FileInfoBasic{}, arr...)
+	// free memory
+	defer func() {
+		newArr = nil
+	}()
+
+	fibsQuicksort(newArr, "readTime", 0, len(arr)-1)
+
+	return newArr
 }

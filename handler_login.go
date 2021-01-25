@@ -89,7 +89,7 @@ func loginGet(cfg *Config, db *FlatDB, fRead fileReader) func(http.ResponseWrite
 		}
 		// helper func for template
 		funcMap := template.FuncMap{}
-		tmplBytes, err := fRead("ssp/login.ghtml")
+		tmplBytes, err := fRead("ssp/login.html")
 		if err != nil {
 			responseError(w, err)
 			return

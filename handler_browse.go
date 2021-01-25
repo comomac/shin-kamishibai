@@ -77,9 +77,9 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 			// for nav use
 			pd := dir
 			i := 0 // failsafe
-			for i < 30 {
+			for i < 15 {
 				paths = append(paths, pd)
-				if pd == "/" || pd == "." {
+				if pd == "/" || pd == "." || strings.HasSuffix(pd, ":\\") /* win drive */ {
 					break
 				}
 				pd = filepath.Dir(pd)
@@ -152,7 +152,7 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 		}
 
 		// no dir chosen
-		if dir == "" || dir == "." {
+		if (dir == "" || dir == ".") && !everywhere {
 			err = tmpl.Execute(&buf, data)
 			if err != nil {
 				responseError(w, err)
@@ -179,6 +179,29 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 
 			// build library list
 			lstat, lists, err = search(db, keyword, page)
+			if err != nil {
+				responseError(w, err)
+				return
+			}
+
+		} else if dir == "___history___" || dir == "___history_unfinished___" || dir == "___history_finished___" {
+
+			// add first one as the dir info to save space
+			fileList = append(fileList, &FileInfoBasic{
+				IsDir: true,
+				Path:  "My Read History",
+			})
+
+			readState := 0
+			if dir == "___history_unfinished___" {
+				readState = 1
+			}
+			if dir == "___history_finished___" {
+				readState = 2
+			}
+
+			// build history list
+			lstat, lists, err = listByReadHistory(db, keyword, page, readState)
 			if err != nil {
 				responseError(w, err)
 				return
@@ -411,6 +434,84 @@ func search(db *FlatDB, search string, page int) (status int, fileList FileList,
 
 	// sort again, because earlier sort could be big and skipped
 	fileList = sortByFileName(fileList)
+
+	return status, fileList, nil
+}
+
+func listByReadHistory(db *FlatDB, search string, page int, readState int) (status int, fileList FileList, err error) {
+	/* status
+	-1 error
+	 0 no any particular state
+	 1 no more list to follow
+	 2 more list to follow
+
+	   read state
+	0  all
+	1  unfinished
+	2  finished
+	*/
+	status = -1
+
+	books := db.Search(search)
+	for _, book := range books {
+		// skip unread books
+		if book.Rtime == 0 {
+			continue
+		}
+		switch readState {
+		case 1:
+			// skip if require unfinish but finished
+			if book.Page >= book.Pages {
+				continue
+			}
+		case 2:
+			// skip if require finish but unfinished
+			if book.Page < book.Pages {
+				continue
+			}
+		}
+
+		// create and store blank book entry
+		fib := &FileInfoBasic{
+			IsBook:  true,
+			Name:    filepath.Base(book.Fullpath),
+			ModTime: time.Unix(int64(book.Mtime), 0),
+			Book:    *book,
+		}
+
+		// make page 0 to 1 so wont crash on reading
+		if fib.Book.Page <= 0 {
+			fib.Book.Page = 1
+		}
+
+		fileList = append(fileList, fib)
+	}
+
+	// sort by read order
+	if len(fileList) <= SortMaxSize {
+		fileList = sortByReadTime(fileList)
+	}
+
+	// pagination
+	head := (page - 1) * ItemsPerPage
+	if head > len(fileList) {
+		head = len(fileList)
+	}
+	tail := (page) * ItemsPerPage
+	if tail > len(fileList) {
+		tail = len(fileList)
+
+		// reached the end, no more files
+		status = 1
+	} else {
+		// indicate more files
+		status = 2
+	}
+	// chopped file list
+	fileList = fileList[head:tail]
+
+	// sort again, because earlier sort could be big and skipped
+	fileList = sortByReadTime(fileList)
 
 	return status, fileList, nil
 }

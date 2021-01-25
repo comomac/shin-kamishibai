@@ -54,17 +54,22 @@ type Book struct {
 	Author   string `json:"author"`         // book author, seperated by comma
 	Number   string `json:"number"`         // volume, chapter, etc
 	Fullpath string `json:"-"`              // book file path
-	Ranking  uint64 `json:"ranking"`        // 1-5 ranking, least to most liked
-	Fav      uint64 `json:"fav"`            // favourite, 0 false, 1 true
-	Cond     uint64 `json:"cond,omitempty"` // 0 unknown, 1 exists, 2 not exist, 3 deleted, 4 inaccessible
-	Pages    uint64 `json:"pages"`          // total pages
-	Page     uint64 `json:"page"`           // read upto
-	Size     uint64 `json:"size"`           // fs file size
-	Inode    uint64 `json:"-"`              // fs inode
-	Mtime    uint64 `json:"mtime"`          // fs modified time
-	Itime    uint64 `json:"itime"`          // import time
-	Rtime    uint64 `json:"rtime"`          // read time
+	Ranking  int64  `json:"ranking"`        // 1-5 ranking, least to most liked
+	Fav      int64  `json:"fav"`            // favourite, 0 false, 1 true
+	Cond     int64  `json:"cond,omitempty"` // 0 unknown, 1 exists, 2 not exist, 3 deleted, 4 inaccessible
+	Pages    int64  `json:"pages"`          // total pages
+	Page     int64  `json:"page"`           // read upto
+	Size     int64  `json:"size"`           // fs file size
+	Inode    int64  `json:"-"`              // fs inode
+	Mtime    int64  `json:"mtime"`          // fs modified time
+	Itime    int64  `json:"itime"`          // import time
+	Rtime    int64  `json:"rtime"`          // read time
 }
+
+// Note:
+// using int64 instead of uint64 because go1.2 template dont support "eq", getting error such as
+// `error calling eq: incompatible types for comparison`
+// and also many of go function uses or return int64 type
 
 // aid debugging
 func (b Book) String() string {
@@ -115,13 +120,13 @@ type FlatDB struct {
 	FileModDate  int64              // file last modified date
 }
 
-// convert string to uint64
-func mustUint64(s string) uint64 {
-	i, err := strconv.Atoi(s)
+// convert string to int64
+func mustInt64(s string) int64 {
+	i, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
 		panic(err)
 	}
-	return uint64(i)
+	return i
 }
 
 // generate random characters for the unique book ID, argument needs length
@@ -143,7 +148,7 @@ func genChar(minLen int) string {
 }
 
 // bookCond gives a numeric representation of the state of book file
-func bookCond(fp string) uint64 {
+func bookCond(fp string) int64 {
 	_, err := os.Stat(fp)
 	if err == nil {
 		return 1
@@ -281,8 +286,23 @@ func (db *FlatDB) Export(dbPath string) error {
 	return nil
 }
 
+// check if csv line commas are still valid
+func validCommaPos(line string) bool {
+	poss := []int{
+		3, 5, 10, 15, 17, 19, 30, 41, 52, 63, 74,
+	}
+	for _, pos := range poss {
+		// ascii 44 is comma
+		if line[pos] != 44 {
+			fmt.Println("fail", pos)
+			return false
+		}
+	}
+	return true
+}
+
 // UpdatePage change database record on page read, returns written byte size
-func (db *FlatDB) UpdatePage(id string, page int) (int, error) {
+func (db *FlatDB) UpdatePage(id string, page int) (writeSize int, err error) {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
 
@@ -290,7 +310,8 @@ func (db *FlatDB) UpdatePage(id string, page int) (int, error) {
 	if ibook == nil {
 		return 0, ErrNilIBook
 	}
-	ibook.Page = uint64(page)
+	ibook.Page = int64(page)
+	ibook.Rtime = time.Now().Unix()
 
 	// read out from db
 	b := make([]byte, ibook.Length)
@@ -304,19 +325,34 @@ func (db *FlatDB) UpdatePage(id string, page int) (int, error) {
 	f.ReadAt(b, int64(ibook.Address))
 	strs := string(b)
 
-	// make sure the column spacing is still the same. ascii 44 is comma
-	if strs[3] != 44 || strs[5] != 44 || strs[10] != 44 || strs[15] != 44 {
+	// make sure the column spacing is still the same
+	if !validCommaPos(strs) {
 		return 0, ErrDBColumnChanged
 	}
 
 	// page with extended chars
 	strPage := fmt.Sprintf(FlatDBCharsPage, ibook.Page)
-	b2 := bytes.NewBufferString(strPage)
-	// absolute position for the page
+	bPage := bytes.NewBufferString(strPage)
+	// absolute position for the page, Page
 	posPage := int64(ibook.Address + 11)
-	b2len, err := f.WriteAt(b2.Bytes(), posPage)
+	bSize, err := f.WriteAt(bPage.Bytes(), posPage)
+	if err != nil {
+		return
+	}
+	writeSize += bSize
 
-	return b2len, err
+	// epoch with extended chars
+	strRtime := fmt.Sprintf(FlatDBCharsEpoch, ibook.Rtime)
+	bRtime := bytes.NewBufferString(strRtime)
+	// absolute position for the read time, RTime
+	posRtime := int64(ibook.Address + 64)
+	bSize, err = f.WriteAt(bRtime.Bytes(), posRtime)
+	if err != nil {
+		return
+	}
+	writeSize += bSize
+
+	return
 }
 
 // UpdateFav change database record favourited, returns written byte size
@@ -347,8 +383,8 @@ func (db *FlatDB) UpdateFav(id string, fav bool) (int, error) {
 	f.ReadAt(b, int64(ibook.Address))
 	strs := string(b)
 
-	// make sure the column spacing is still the same. ascii 44 is comma
-	if strs[3] != 44 || strs[5] != 44 || strs[10] != 44 || strs[15] != 44 {
+	// make sure the column spacing is still the same
+	if !validCommaPos(strs) {
 		return 0, ErrDBColumnChanged
 	}
 
@@ -408,11 +444,11 @@ func (db *FlatDB) AddBook(bookPath string) (*Book, error) {
 		Number:   getNumber(fname),
 		Fullpath: bookPath,
 		Cond:     bookCond(bookPath),
-		Pages:    uint64(pages),
-		Size:     uint64(fstat.Size()),
+		Pages:    pages,
+		Size:     fstat.Size(),
 		// Inode:    fstat2.Ino,
-		Mtime: uint64(fstat.ModTime().Unix()),
-		Itime: uint64(time.Now().Unix()),
+		Mtime: fstat.ModTime().Unix(),
+		Itime: time.Now().Unix(),
 	}
 
 	f, err := os.OpenFile(db.Path, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
@@ -624,14 +660,14 @@ func getNumber(str string) string {
 }
 
 // cbzGetPages find out how many pages in cbz
-func cbzGetPages(fp string) (int, error) {
+func cbzGetPages(fp string) (int64, error) {
 	zr, err := zip.OpenReader(fp)
 	if err != nil {
 		return -1, err
 	}
 	defer zr.Close()
 
-	i := 0
+	var i int64
 	for _, f := range zr.File {
 		if RegexSupportedImageExt.MatchString(f.Name) {
 			i++
@@ -720,7 +756,7 @@ func (db *FlatDB) GetPageCoverByID(bookID string) ([]byte, error) {
 }
 
 // SearchBookByNameAndSize get Books object by filename and size
-func (db *FlatDB) SearchBookByNameAndSize(fname string, size uint64) []*Book {
+func (db *FlatDB) SearchBookByNameAndSize(fname string, size int64) []*Book {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
 
@@ -802,15 +838,15 @@ func csvToBook(line string) (*Book, error) {
 		Number:   records[13],
 		Fullpath: records[14],
 		Cond:     bookCond(records[1]),
-		Pages:    mustUint64(records[2]),
-		Page:     mustUint64(records[3]),
-		Ranking:  mustUint64(records[4]),
-		Fav:      mustUint64(records[5]),
-		Size:     mustUint64(records[6]),
-		Inode:    mustUint64(records[7]),
-		Mtime:    mustUint64(records[8]),
-		Itime:    mustUint64(records[9]),
-		Rtime:    mustUint64(records[10]),
+		Pages:    mustInt64(records[2]),
+		Page:     mustInt64(records[3]),
+		Ranking:  mustInt64(records[4]),
+		Fav:      mustInt64(records[5]),
+		Size:     mustInt64(records[6]),
+		Inode:    mustInt64(records[7]),
+		Mtime:    mustInt64(records[8]),
+		Itime:    mustInt64(records[9]),
+		Rtime:    mustInt64(records[10]),
 	}
 
 	return book, nil
@@ -846,23 +882,23 @@ func bookToCSV(book *Book) []byte {
 	fname := path.Base(book.Fullpath)
 
 	// DO NOT change ordering, can only append in future
-	// use this a reference
+	// use this a reference, book.XX
 	records := []string{
-		book.ID,                                   //  0
-		fmt.Sprint(book.Cond),                     //  1
-		fmt.Sprintf(FlatDBCharsPage, book.Pages),  //  2
-		fmt.Sprintf(FlatDBCharsPage, book.Page),   //  3
-		fmt.Sprint(book.Ranking),                  //  4
-		fmt.Sprint(book.Fav),                      //  5
-		fmt.Sprintf(FlatDBCharsFSize, book.Size),  //  6
-		fmt.Sprintf(FlatDBCharsEpoch, book.Inode), //  7
-		fmt.Sprintf(FlatDBCharsEpoch, book.Mtime), //  8
-		fmt.Sprintf(FlatDBCharsEpoch, book.Itime), //  9
-		fmt.Sprintf(FlatDBCharsEpoch, book.Rtime), // 10
-		getTitle(fname),                           // book.Title,   // 11
-		getAuthor(fname),                          // book.Author,  // 12
-		getNumber(fname),                          // book.Number,  // 13
-		book.Fullpath,                             // 14
+		book.ID,                                   //  0  ID
+		fmt.Sprint(book.Cond),                     //  1  Cond
+		fmt.Sprintf(FlatDBCharsPage, book.Pages),  //  2  Pages
+		fmt.Sprintf(FlatDBCharsPage, book.Page),   //  3  Page
+		fmt.Sprint(book.Ranking),                  //  4  Ranking
+		fmt.Sprint(book.Fav),                      //  5  Fav
+		fmt.Sprintf(FlatDBCharsFSize, book.Size),  //  6  Size
+		fmt.Sprintf(FlatDBCharsEpoch, book.Inode), //  7  Inode
+		fmt.Sprintf(FlatDBCharsEpoch, book.Mtime), //  8  Mtime
+		fmt.Sprintf(FlatDBCharsEpoch, book.Itime), //  9  Itime
+		fmt.Sprintf(FlatDBCharsEpoch, book.Rtime), // 10  Rtime
+		getTitle(fname),                           // 11  Title
+		getAuthor(fname),                          // 12  Author
+		getNumber(fname),                          // 13  Number
+		book.Fullpath,                             // 14  Fullpath
 	}
 
 	result := []string{}
