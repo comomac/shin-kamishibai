@@ -79,7 +79,7 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 			i := 0 // failsafe
 			for i < 30 {
 				paths = append(paths, pd)
-				if pd == "/" || pd == "." {
+				if pd == "/" || pd == "\\" || pd == "." {
 					break
 				}
 				pd = filepath.Dir(pd)
