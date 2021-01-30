@@ -18,13 +18,13 @@ type FileList []*FileInfoBasic
 
 // FileInfoBasic basic FileInfo to identify file for dir list
 type FileInfoBasic struct {
-	IsDir   bool      `json:"is_dir,omitempty"`
-	IsEmpty bool      `json:"is_empty,omitempty"`
-	IsBook  bool      `json:"is_book,omitempty"`
-	Path    string    `json:"path,omitempty"`     // first item, the current directory
-	Name    string    `json:"name,omitempty"`     // file, dir
+	IsDir   bool      `json:"is_dir,omitempty"`   // listing, is it dir?
+	IsEmpty bool      `json:"is_empty,omitempty"` // listing, is dir empty?
+	IsBook  bool      `json:"is_book,omitempty"`  // listing, is it book?
+	Path    string    `json:"path,omitempty"`     // listing, first item - the current directory
+	Name    string    `json:"name,omitempty"`     // name of file or dir
 	ModTime time.Time `json:"mod_time,omitempty"` // file modified time
-	More    bool      `json:"more,omitempty"`     // indicate more files behind
+	More    bool      `json:"more,omitempty"`     // listing, more files next page
 	Book              // not using pointer so can manipulate if necessary
 }
 
@@ -393,6 +393,15 @@ func search(db *FlatDB, search string, page int) (status int, fileList FileList,
 
 	books := db.Search(search)
 	for _, book := range books {
+		// skip if book not exist
+		isExist, err := IsFileExists(book.Fullpath)
+		if err != nil {
+			continue
+		}
+		if !isExist {
+			continue
+		}
+
 		// create and store blank book entry
 		fib := &FileInfoBasic{
 			IsBook:  true,
