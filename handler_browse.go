@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -54,6 +53,13 @@ func isSpecialPath(dirPath string) bool {
 	}
 	return false
 }
+
+const (
+	sortOrderByFileName    = "name"
+	sortOrderByFileModTime = "time"
+	sortOrderByReadTime    = "read"
+	sortOrderByAuthor      = "author"
+)
 
 // browseGet http GET lists the folder content, only the folder and the manga will be shown
 func browseGet(cfg *Config, db *FlatDB, tmpl *template.Template) func(http.ResponseWriter, *http.Request) {
@@ -204,7 +210,7 @@ func browseGet(cfg *Config, db *FlatDB, tmpl *template.Template) func(http.Respo
 				}
 
 				// build history list
-				lstat, lists, err = listByReadHistory(db, keyword, page, readState)
+				lstat, lists, err = listByReadHistory(db, keyword, page, readState, sortBy)
 				if err != nil {
 					responseError(w, err)
 					return
@@ -227,7 +233,7 @@ func browseGet(cfg *Config, db *FlatDB, tmpl *template.Template) func(http.Respo
 			})
 
 			// build dir list
-			lstat, lists, err = listDir(db, dir, keyword, page)
+			lstat, lists, err = listDir(db, dir, keyword, page, sortBy)
 			if err != nil {
 				responseError(w, err)
 				return
@@ -259,7 +265,7 @@ func browseGet(cfg *Config, db *FlatDB, tmpl *template.Template) func(http.Respo
 	}
 }
 
-func listDir(db *FlatDB, dir, search string, page int) (status int, fileList FileList, err error) {
+func listDir(db *FlatDB, dir, search string, page int, sortOrderBy string) (status int, fileList FileList, err error) {
 	/* status
 	-1 error
 	 0 no any particular state
@@ -327,7 +333,18 @@ OUTER:
 
 	// sort by natural order, if small enough, or lag happens
 	if len(fileList) <= SortMaxSize {
-		fileList = sortByFileName(fileList)
+		switch sortOrderBy {
+		case sortOrderByFileName:
+			fileList = sortByFileName(fileList)
+		case sortOrderByFileModTime:
+			fileList = sortByFileModTime(fileList)
+		case sortOrderByReadTime:
+			fileList = sortByReadTime(fileList)
+		case sortOrderByAuthor:
+			fileList = sortByAuthorTitle(fileList)
+		default:
+			fileList = sortByFileName(fileList)
+		}
 	}
 
 	// pagination
@@ -349,7 +366,18 @@ OUTER:
 	fileList = fileList[head:tail]
 
 	// sort again, because earlier sort could be big and skipped
-	fileList = sortByFileName(fileList)
+	switch sortOrderBy {
+	case sortOrderByFileName:
+		fileList = sortByFileName(fileList)
+	case sortOrderByFileModTime:
+		fileList = sortByFileModTime(fileList)
+	case sortOrderByReadTime:
+		fileList = sortByReadTime(fileList)
+	case sortOrderByAuthor:
+		fileList = sortByAuthorTitle(fileList)
+	default:
+		fileList = sortByFileName(fileList)
+	}
 
 	// look up book details
 	// doing this way to reduce cpu/disk load, only load the relevant page
@@ -451,7 +479,7 @@ func search(db *FlatDB, search string, page int) (status int, fileList FileList,
 	return status, fileList, nil
 }
 
-func listByReadHistory(db *FlatDB, search string, page int, readState int) (status int, fileList FileList, err error) {
+func listByReadHistory(db *FlatDB, search string, page int, readState int, sortOrderBy string) (status int, fileList FileList, err error) {
 	/* status
 	-1 error
 	 0 no any particular state
@@ -466,7 +494,6 @@ func listByReadHistory(db *FlatDB, search string, page int, readState int) (stat
 	status = -1
 
 	books := db.Search(search)
-	fmt.Println(11111, books)
 	for _, book := range books {
 		// skip unread books
 		if book.Rtime == 0 {
@@ -503,7 +530,18 @@ func listByReadHistory(db *FlatDB, search string, page int, readState int) (stat
 
 	// sort by read order
 	if len(fileList) <= SortMaxSize {
-		fileList = sortByReadTime(fileList)
+		switch sortOrderBy {
+		case sortOrderByFileName:
+			fileList = sortByFileName(fileList)
+		case sortOrderByFileModTime:
+			fileList = sortByFileModTime(fileList)
+		case sortOrderByReadTime:
+			fileList = sortByReadTime(fileList)
+		case sortOrderByAuthor:
+			fileList = sortByAuthorTitle(fileList)
+		default:
+			fileList = sortByReadTime(fileList)
+		}
 	}
 
 	// pagination
@@ -525,7 +563,18 @@ func listByReadHistory(db *FlatDB, search string, page int, readState int) (stat
 	fileList = fileList[head:tail]
 
 	// sort again, because earlier sort could be big and skipped
-	fileList = sortByReadTime(fileList)
+	switch sortOrderBy {
+	case sortOrderByFileName:
+		fileList = sortByFileName(fileList)
+	case sortOrderByFileModTime:
+		fileList = sortByFileModTime(fileList)
+	case sortOrderByReadTime:
+		fileList = sortByReadTime(fileList)
+	case sortOrderByAuthor:
+		fileList = sortByAuthorTitle(fileList)
+	default:
+		fileList = sortByReadTime(fileList)
+	}
 
 	return status, fileList, nil
 }

@@ -244,10 +244,12 @@
 		</div>
 
 		<div class="dropdown">
-			<button class="dropbtn">Order by</button>
+			<button class="dropbtn">Sort by</button>
 			<div class="dropdown-content">
-				<a href="/browse/?dir={{.Dir}}&page={{.Page}}&keyword={{.Keyword}}&sortby=name">&#128292; filename</a>
-				<a href="/browse/?dir={{.Dir}}&page={{.Page}}&keyword={{.Keyword}}&sortby=date">&#128197; filedate</a>
+				<a href="/browse.html?dir={{.Dir}}&page={{.Page}}&keyword={{.Keyword}}&sortby=name">&#128292; filename</a>
+				<a href="/browse.html?dir={{.Dir}}&page={{.Page}}&keyword={{.Keyword}}&sortby=time">&#128197; filetime</a>
+				<a href="/browse.html?dir={{.Dir}}&page={{.Page}}&keyword={{.Keyword}}&sortby=read">&#128083; read</a>
+				<a href="/browse.html?dir={{.Dir}}&page={{.Page}}&keyword={{.Keyword}}&sortby=author">&#128056; author</a>
 			</div>
 		</div>
 
