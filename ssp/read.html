@@ -135,6 +135,13 @@
 			el_a.removeAttribute("href");
 			var el_img = document.getElementById("img-1");
 			el_img.onclick = function(mouseEvent) {
+				if (!mouseEvent) {
+					// early browser mouse event will not exist
+					page = page + 1;
+					window.location = "read.html?book="+bookID+"&page="+ page;
+					return;
+				}
+
 				if (mouseEvent.offsetX < (this.offsetWidth / 10) * 3) {
 					page = page - 1;
 				} else if (mouseEvent.offsetX > (this.offsetWidth / 10) * 7) {
