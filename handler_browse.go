@@ -65,8 +65,22 @@ func browseGet(cfg *Config, db *FlatDB, tmpl *template.Template) func(http.Respo
 
 		query := r.URL.Query()
 
+		// if multiple dir parameter is specified, pick by priority
+		// order: specialPath... , specialPathEverywhere, dir
+		dirs, ok := query["dir"]
+		if ok && len(dirs) > 1 {
+			for _, x := range dirs {
+				switch x {
+				case string(specialPathEveryWhere):
+					query.Set("dir", string(specialPathEveryWhere))
+					break
+				}
+			}
+			http.Redirect(w, r, r.URL.Path+"?"+query.Encode(), http.StatusTemporaryRedirect)
+			return
+		}
+
 		dir := query.Get("dir")
-		fmt.Println(1111111, query)
 		keyword := strings.ToLower(query.Get("keyword"))
 		// TODO implement sortBy
 		sortBy := strings.ToLower(query.Get("sortby"))
@@ -107,7 +121,7 @@ func browseGet(cfg *Config, db *FlatDB, tmpl *template.Template) func(http.Respo
 			}
 		}
 
-		// browse template
+		// browse template struct
 		data := struct {
 			AllowedDirs []string
 			Everywhere  bool
@@ -155,6 +169,9 @@ func browseGet(cfg *Config, db *FlatDB, tmpl *template.Template) func(http.Respo
 		if isSpecialPath(dir) {
 			switch specialPath(dir) {
 			case specialPathEveryWhere:
+				// tick everywhere checkbox
+				data.Everywhere = true
+
 				// add first one as the dir info to save space
 				fileList = append(fileList, &FileInfoBasic{
 					IsDir: true,
@@ -449,6 +466,7 @@ func listByReadHistory(db *FlatDB, search string, page int, readState int) (stat
 	status = -1
 
 	books := db.Search(search)
+	fmt.Println(11111, books)
 	for _, book := range books {
 		// skip unread books
 		if book.Rtime == 0 {
