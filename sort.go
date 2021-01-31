@@ -62,7 +62,7 @@ func stringPartition(arr []string, filter *regexp.Regexp, low, high int) int {
 // Books filter, sort
 //
 
-func filterBy(inBooks []*Book, filter, byType string) []*Book {
+func filterBooksBy(inBooks []*Book, filter, byType string) []*Book {
 	books := []*Book{}
 
 	search := strings.ToLower(filter)
@@ -105,31 +105,31 @@ OUTER:
 	return books
 }
 
-func filterByTitle(books []*Book, filter string) []*Book {
-	return filterBy(books, filter, "title")
+func filterBooksByTitle(books []*Book, filter string) []*Book {
+	return filterBooksBy(books, filter, "title")
 }
 
-func filterByAuthor(books []*Book, filter string) []*Book {
-	return filterBy(books, filter, "author")
+func filterBooksByAuthor(books []*Book, filter string) []*Book {
+	return filterBooksBy(books, filter, "author")
 }
 
-func filterByAuthorTitle(books []*Book, filter string) []*Book {
-	return filterBy(books, filter, "author-title")
+func filterBooksByAuthorTitle(books []*Book, filter string) []*Book {
+	return filterBooksBy(books, filter, "author-title")
 }
 
-func sortByTitle(books []*Book) []*Book {
+func sortBooksByTitle(books []*Book) []*Book {
 	booksQuicksort(books, "title", 0, len(books)-1)
 
 	return books
 }
 
-func sortByAuthor(books []*Book) []*Book {
+func sortBooksByAuthor(books []*Book) []*Book {
 	booksQuicksort(books, "author", 0, len(books)-1)
 
 	return books
 }
 
-func sortByAuthorTitle(books []*Book) []*Book {
+func sortBooksByAuthorTitle(books []*Book) []*Book {
 	// sort by author then boook title
 	booksQuicksort(books, "author-title", 0, len(books)-1)
 
@@ -191,21 +191,8 @@ func booksPartition(arr []*Book, byType string, low, high int) int {
 }
 
 //
-// FileInfoBasic, sort
+// FileInfoBasic, support functions
 //
-
-// sort by filename
-func sortByFileName(arr []*FileInfoBasic) []*FileInfoBasic {
-	newArr := append([]*FileInfoBasic{}, arr...)
-	// free memory
-	defer func() {
-		newArr = nil
-	}()
-
-	fibsQuicksort(newArr, "name", 0, len(arr)-1)
-
-	return newArr
-}
 
 func fibsQuicksort(arr []*FileInfoBasic, byType string, low, high int) {
 	if low < high {
@@ -223,7 +210,7 @@ func fibsPartition(arr []*FileInfoBasic, byType string, low, high int) int {
 
 	for j := low; j < high; j++ {
 		switch byType {
-		case "name":
+		case sortOrderByFileName:
 			// sort by filename
 			a := fmt.Sprintf("%s", arr[j].Name)
 			b := fmt.Sprintf("%s", pivot.Name)
@@ -233,11 +220,30 @@ func fibsPartition(arr []*FileInfoBasic, byType string, low, high int) int {
 				i++
 				arr[i], arr[j] = arr[j], arr[i]
 			}
+		case sortOrderByFileModTime:
+			// sort by file time
+			a := arr[j].ModTime
+			b := pivot.ModTime
 
-		case "readTime":
+			// natural compare
+			if a.Before(b) {
+				i++
+				arr[i], arr[j] = arr[j], arr[i]
+			}
+		case sortOrderByReadTime:
 			// sort by read time
 			a := arr[j].Rtime
 			b := pivot.Rtime
+
+			// natural compare
+			if a > b {
+				i++
+				arr[i], arr[j] = arr[j], arr[i]
+			}
+		case sortOrderByAuthor:
+			// sort by author and title
+			a := arr[j].Book.Author + " " + arr[j].Book.Title + " " + arr[j].Book.Number
+			b := pivot.Book.Author + " " + arr[j].Book.Title + " " + arr[j].Book.Number
 
 			// natural compare
 			if a > b {
@@ -253,8 +259,21 @@ func fibsPartition(arr []*FileInfoBasic, byType string, low, high int) int {
 }
 
 //
-// read order sort
+// FileInfoBasic, sort types
 //
+
+// sort by filename
+func sortByFileName(arr []*FileInfoBasic) []*FileInfoBasic {
+	newArr := append([]*FileInfoBasic{}, arr...)
+	// free memory
+	defer func() {
+		newArr = nil
+	}()
+
+	fibsQuicksort(newArr, sortOrderByFileName, 0, len(arr)-1)
+
+	return newArr
+}
 
 // sort by read time, most recent one first
 func sortByReadTime(arr []*FileInfoBasic) []*FileInfoBasic {
@@ -264,7 +283,33 @@ func sortByReadTime(arr []*FileInfoBasic) []*FileInfoBasic {
 		newArr = nil
 	}()
 
-	fibsQuicksort(newArr, "readTime", 0, len(arr)-1)
+	fibsQuicksort(newArr, sortOrderByReadTime, 0, len(arr)-1)
+
+	return newArr
+}
+
+// sort by file modification time
+func sortByFileModTime(arr []*FileInfoBasic) []*FileInfoBasic {
+	newArr := append([]*FileInfoBasic{}, arr...)
+	// free memory
+	defer func() {
+		newArr = nil
+	}()
+
+	fibsQuicksort(newArr, sortOrderByFileModTime, 0, len(arr)-1)
+
+	return newArr
+}
+
+// sort by author by title by number
+func sortByAuthorTitle(arr []*FileInfoBasic) []*FileInfoBasic {
+	newArr := append([]*FileInfoBasic{}, arr...)
+	// free memory
+	defer func() {
+		newArr = nil
+	}()
+
+	fibsQuicksort(newArr, sortOrderByAuthor, 0, len(arr)-1)
 
 	return newArr
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -18,13 +17,13 @@ type FileList []*FileInfoBasic
 
 // FileInfoBasic basic FileInfo to identify file for dir list
 type FileInfoBasic struct {
-	IsDir   bool      `json:"is_dir,omitempty"`
-	IsEmpty bool      `json:"is_empty,omitempty"`
-	IsBook  bool      `json:"is_book,omitempty"`
-	Path    string    `json:"path,omitempty"`     // first item, the current directory
-	Name    string    `json:"name,omitempty"`     // file, dir
+	IsDir   bool      `json:"is_dir,omitempty"`   // listing, is it dir?
+	IsEmpty bool      `json:"is_empty,omitempty"` // listing, is dir empty?
+	IsBook  bool      `json:"is_book,omitempty"`  // listing, is it book?
+	Path    string    `json:"path,omitempty"`     // listing, first item - the current directory
+	Name    string    `json:"name,omitempty"`     // name of file or dir
 	ModTime time.Time `json:"mod_time,omitempty"` // file modified time
-	More    bool      `json:"more,omitempty"`     // indicate more files behind
+	More    bool      `json:"more,omitempty"`     // listing, more files next page
 	Book              // not using pointer so can manipulate if necessary
 }
 
@@ -34,8 +33,36 @@ var ItemsPerPage = 18
 // SortMaxSize maximum allowed size for sorting, otherwise it will skip sort
 var SortMaxSize = 300
 
+// special path that is used for special condition for using non-dir path
+type specialPath string
+
+const (
+	specialPathEveryWhere        specialPath = "__everywhere__"
+	specialPathHistory           specialPath = "__history__"
+	specialPathHistoryFinished   specialPath = "__history_finished__"
+	specialPathHistoryUnfinished specialPath = "__history_unfinished__"
+)
+
+func isSpecialPath(dirPath string) bool {
+	switch specialPath(dirPath) {
+	case specialPathEveryWhere,
+		specialPathHistory,
+		specialPathHistoryFinished,
+		specialPathHistoryUnfinished:
+		return true
+	}
+	return false
+}
+
+const (
+	sortOrderByFileName    = "name"
+	sortOrderByFileModTime = "time"
+	sortOrderByReadTime    = "read"
+	sortOrderByAuthor      = "author"
+)
+
 // browseGet http GET lists the folder content, only the folder and the manga will be shown
-func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile string) func(http.ResponseWriter, *http.Request) {
+func browseGet(cfg *Config, db *FlatDB, tmpl *template.Template) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -44,10 +71,23 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 
 		query := r.URL.Query()
 
+		// if multiple dir parameter is specified, pick by priority
+		// order: specialPath... , specialPathEverywhere, dir
+		dirs, ok := query["dir"]
+		if ok && len(dirs) > 1 {
+			for _, x := range dirs {
+				switch x {
+				case string(specialPathEveryWhere):
+					query.Set("dir", string(specialPathEveryWhere))
+					break
+				}
+			}
+			http.Redirect(w, r, r.URL.Path+"?"+query.Encode(), http.StatusTemporaryRedirect)
+			return
+		}
+
 		dir := query.Get("dir")
 		keyword := strings.ToLower(query.Get("keyword"))
-		// search entire library
-		everywhere := strings.ToLower(query.Get("everywhere")) == "true"
 		// TODO implement sortBy
 		sortBy := strings.ToLower(query.Get("sortby"))
 		if sortBy == "" {
@@ -68,7 +108,7 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 		// list of path that page can nav up to
 		paths := []string{}
 
-		if everywhere {
+		if isSpecialPath(dir) {
 			log.Println("searching (", page, ")", keyword)
 		} else {
 			log.Println("listing dir (", page, ")", dir)
@@ -87,7 +127,7 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 			}
 		}
 
-		// browse template
+		// browse template struct
 		data := struct {
 			AllowedDirs []string
 			Everywhere  bool
@@ -102,7 +142,6 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 			DirIsEmpty  bool
 		}{
 			AllowedDirs: cfg.AllowedDirs,
-			Everywhere:  everywhere,
 			Paths:       paths,
 			Dir:         dir,
 			UpDir:       filepath.Dir(dir),
@@ -111,48 +150,11 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 			SortBy:      sortBy,
 			FileList:    FileList{},
 		}
-		// helper func for template
-		funcMap := template.FuncMap{
-			"dirBase": func(fullpath string) string {
-				return filepath.Base(fullpath)
-			},
-			"readpc": func(fi *FileInfoBasic) string {
-				// read percentage tag
-				pg := fi.Page
-				pgs := fi.Pages
 
-				r := int(MathRound(float64(pg) / float64(pgs) * 10))
-				rr := "read"
-				if r == 0 && pg > 1 {
-					rr += " read5"
-				} else if r > 0 {
-					rr += fmt.Sprintf(" read%d0", r)
-				}
-				return rr
-			},
-			"calcPage": func(a, b int) int {
-				c := a + b
-				if c < 1 {
-					c = 1
-				}
-
-				return c
-			},
-		}
-		tmplStr, err := fRead(htmlTemplateFile)
-		if err != nil {
-			responseError(w, err)
-			return
-		}
 		buf := bytes.Buffer{}
-		tmpl, err := template.New("browse").Funcs(funcMap).Parse(string(tmplStr))
-		if err != nil {
-			responseError(w, err)
-			return
-		}
 
 		// no dir chosen
-		if (dir == "" || dir == ".") && !everywhere {
+		if dir == "" || dir == "." {
 			err = tmpl.Execute(&buf, data)
 			if err != nil {
 				responseError(w, err)
@@ -170,41 +172,49 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 		// chopped lists by pagination
 		var lists FileList
 
-		if everywhere {
-			// add first one as the dir info to save space
-			fileList = append(fileList, &FileInfoBasic{
-				IsDir: true,
-				Path:  "My Entire Library",
-			})
+		if isSpecialPath(dir) {
+			switch specialPath(dir) {
+			case specialPathEveryWhere:
+				// tick everywhere checkbox
+				data.Everywhere = true
 
-			// build library list
-			lstat, lists, err = search(db, keyword, page)
-			if err != nil {
-				responseError(w, err)
-				return
-			}
+				// add first one as the dir info to save space
+				fileList = append(fileList, &FileInfoBasic{
+					IsDir: true,
+					Path:  "My Entire Library",
+				})
 
-		} else if dir == "___history___" || dir == "___history_unfinished___" || dir == "___history_finished___" {
+				// build library list
+				lstat, lists, err = search(db, keyword, page)
+				if err != nil {
+					responseError(w, err)
+					return
+				}
 
-			// add first one as the dir info to save space
-			fileList = append(fileList, &FileInfoBasic{
-				IsDir: true,
-				Path:  "My Read History",
-			})
+			case specialPathHistory,
+				specialPathHistoryFinished,
+				specialPathHistoryUnfinished:
 
-			readState := 0
-			if dir == "___history_unfinished___" {
-				readState = 1
-			}
-			if dir == "___history_finished___" {
-				readState = 2
-			}
+				// add first one as the dir info to save space
+				fileList = append(fileList, &FileInfoBasic{
+					IsDir: true,
+					Path:  "My Read History",
+				})
 
-			// build history list
-			lstat, lists, err = listByReadHistory(db, keyword, page, readState)
-			if err != nil {
-				responseError(w, err)
-				return
+				readState := 0
+				switch specialPath(dir) {
+				case specialPathHistoryUnfinished:
+					readState = 1
+				case specialPathHistoryFinished:
+					readState = 2
+				}
+
+				// build history list
+				lstat, lists, err = listByReadHistory(db, keyword, page, readState, sortBy)
+				if err != nil {
+					responseError(w, err)
+					return
+				}
 			}
 
 		} else {
@@ -223,7 +233,7 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 			})
 
 			// build dir list
-			lstat, lists, err = listDir(db, dir, keyword, page)
+			lstat, lists, err = listDir(db, dir, keyword, page, sortBy)
 			if err != nil {
 				responseError(w, err)
 				return
@@ -255,7 +265,7 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 	}
 }
 
-func listDir(db *FlatDB, dir, search string, page int) (status int, fileList FileList, err error) {
+func listDir(db *FlatDB, dir, search string, page int, sortOrderBy string) (status int, fileList FileList, err error) {
 	/* status
 	-1 error
 	 0 no any particular state
@@ -323,7 +333,18 @@ OUTER:
 
 	// sort by natural order, if small enough, or lag happens
 	if len(fileList) <= SortMaxSize {
-		fileList = sortByFileName(fileList)
+		switch sortOrderBy {
+		case sortOrderByFileName:
+			fileList = sortByFileName(fileList)
+		case sortOrderByFileModTime:
+			fileList = sortByFileModTime(fileList)
+		case sortOrderByReadTime:
+			fileList = sortByReadTime(fileList)
+		case sortOrderByAuthor:
+			fileList = sortByAuthorTitle(fileList)
+		default:
+			fileList = sortByFileName(fileList)
+		}
 	}
 
 	// pagination
@@ -345,7 +366,18 @@ OUTER:
 	fileList = fileList[head:tail]
 
 	// sort again, because earlier sort could be big and skipped
-	fileList = sortByFileName(fileList)
+	switch sortOrderBy {
+	case sortOrderByFileName:
+		fileList = sortByFileName(fileList)
+	case sortOrderByFileModTime:
+		fileList = sortByFileModTime(fileList)
+	case sortOrderByReadTime:
+		fileList = sortByReadTime(fileList)
+	case sortOrderByAuthor:
+		fileList = sortByAuthorTitle(fileList)
+	default:
+		fileList = sortByFileName(fileList)
+	}
 
 	// look up book details
 	// doing this way to reduce cpu/disk load, only load the relevant page
@@ -393,6 +425,15 @@ func search(db *FlatDB, search string, page int) (status int, fileList FileList,
 
 	books := db.Search(search)
 	for _, book := range books {
+		// skip if book not exist
+		isExist, err := IsFileExists(book.Fullpath)
+		if err != nil {
+			continue
+		}
+		if !isExist {
+			continue
+		}
+
 		// create and store blank book entry
 		fib := &FileInfoBasic{
 			IsBook:  true,
@@ -438,7 +479,7 @@ func search(db *FlatDB, search string, page int) (status int, fileList FileList,
 	return status, fileList, nil
 }
 
-func listByReadHistory(db *FlatDB, search string, page int, readState int) (status int, fileList FileList, err error) {
+func listByReadHistory(db *FlatDB, search string, page int, readState int, sortOrderBy string) (status int, fileList FileList, err error) {
 	/* status
 	-1 error
 	 0 no any particular state
@@ -489,7 +530,18 @@ func listByReadHistory(db *FlatDB, search string, page int, readState int) (stat
 
 	// sort by read order
 	if len(fileList) <= SortMaxSize {
-		fileList = sortByReadTime(fileList)
+		switch sortOrderBy {
+		case sortOrderByFileName:
+			fileList = sortByFileName(fileList)
+		case sortOrderByFileModTime:
+			fileList = sortByFileModTime(fileList)
+		case sortOrderByReadTime:
+			fileList = sortByReadTime(fileList)
+		case sortOrderByAuthor:
+			fileList = sortByAuthorTitle(fileList)
+		default:
+			fileList = sortByReadTime(fileList)
+		}
 	}
 
 	// pagination
@@ -511,7 +563,18 @@ func listByReadHistory(db *FlatDB, search string, page int, readState int) (stat
 	fileList = fileList[head:tail]
 
 	// sort again, because earlier sort could be big and skipped
-	fileList = sortByReadTime(fileList)
+	switch sortOrderBy {
+	case sortOrderByFileName:
+		fileList = sortByFileName(fileList)
+	case sortOrderByFileModTime:
+		fileList = sortByFileModTime(fileList)
+	case sortOrderByReadTime:
+		fileList = sortByReadTime(fileList)
+	case sortOrderByAuthor:
+		fileList = sortByAuthorTitle(fileList)
+	default:
+		fileList = sortByReadTime(fileList)
+	}
 
 	return status, fileList, nil
 }

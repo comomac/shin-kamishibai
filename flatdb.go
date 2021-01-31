@@ -776,7 +776,7 @@ func (db *FlatDB) Search(search string) []*Book {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
 
-	books := filterByAuthorTitle(db.books, search)
+	books := filterBooksByAuthorTitle(db.books, search)
 
 	return books
 }

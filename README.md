@@ -43,10 +43,3 @@ For Windows 2000
 3. Copy `web` to the same place as config
 4. Start by running `./shin-kamishibai` in terminal
 5. Open web browser and browse `http://localhost:2525`
-
-## License:
-
----
-
-BSD 3-clause
-Mac Ma gitmac at runbox.com (C) 2013-2020 Copyright

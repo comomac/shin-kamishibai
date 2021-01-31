@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"path"
 	"time"
 )
@@ -130,13 +129,13 @@ func (ss *SessionStore) save() error {
 func (ss *SessionStore) Load() error {
 	f := path.Join(ss.serverConfig.PathDir, "sessions")
 
-	_, err := os.Stat(f)
-	if os.IsNotExist(err) {
-		// previous sessions not exist, continue
-		return nil
-	}
+	isExist, err := IsFileExists(f)
 	if err != nil {
 		return err
+	}
+	if !isExist {
+		// previous sessions not exist, continue
+		return nil
 	}
 
 	b, err := ioutil.ReadFile(f)

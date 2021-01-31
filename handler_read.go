@@ -23,7 +23,7 @@ type BooksResponse []*Book
 type MapBooksResponse map[string]*Book
 
 // readGet http Get read page
-func readGet(cfg *Config, db *FlatDB, fRead fileReader) func(http.ResponseWriter, *http.Request) {
+func readGet(cfg *Config, db *FlatDB, tmpl *template.Template) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -69,34 +69,9 @@ func readGet(cfg *Config, db *FlatDB, fRead fileReader) func(http.ResponseWriter
 			DirPage: 1,
 			Book:    book,
 		}
-		// helper func for template
-		funcMap := template.FuncMap{
-			"calcPage": func(bk Book, a int) int {
-				b := int(bk.Page) + a
-
-				if b < 1 {
-					b = 1
-				}
-				if b > int(bk.Pages) {
-					b = int(bk.Pages)
-				}
-
-				return b
-			},
-		}
-		tmplStr, err := fRead("ssp/read.html")
-		if err != nil {
-			responseError(w, err)
-			return
-		}
-		buf := bytes.Buffer{}
-		tmpl, err := template.New("read").Funcs(funcMap).Parse(string(tmplStr))
-		if err != nil {
-			responseError(w, err)
-			return
-		}
 
 		// exec template
+		buf := bytes.Buffer{}
 		err = tmpl.Execute(&buf, data)
 		if err != nil {
 			responseError(w, err)
