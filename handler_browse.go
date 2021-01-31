@@ -34,8 +34,29 @@ var ItemsPerPage = 18
 // SortMaxSize maximum allowed size for sorting, otherwise it will skip sort
 var SortMaxSize = 300
 
+// special path that is used for special condition for using non-dir path
+type specialPath string
+
+const (
+	specialPathEveryWhere        specialPath = "__everywhere__"
+	specialPathHistory           specialPath = "__history__"
+	specialPathHistoryFinished   specialPath = "__history_finished__"
+	specialPathHistoryUnfinished specialPath = "__history_unfinished__"
+)
+
+func isSpecialPath(dirPath string) bool {
+	switch specialPath(dirPath) {
+	case specialPathEveryWhere,
+		specialPathHistory,
+		specialPathHistoryFinished,
+		specialPathHistoryUnfinished:
+		return true
+	}
+	return false
+}
+
 // browseGet http GET lists the folder content, only the folder and the manga will be shown
-func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile string) func(http.ResponseWriter, *http.Request) {
+func browseGet(cfg *Config, db *FlatDB, tmpl *template.Template) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.WriteHeader(http.StatusNotFound)
@@ -45,9 +66,8 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 		query := r.URL.Query()
 
 		dir := query.Get("dir")
+		fmt.Println(1111111, query)
 		keyword := strings.ToLower(query.Get("keyword"))
-		// search entire library
-		everywhere := strings.ToLower(query.Get("everywhere")) == "true"
 		// TODO implement sortBy
 		sortBy := strings.ToLower(query.Get("sortby"))
 		if sortBy == "" {
@@ -68,7 +88,7 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 		// list of path that page can nav up to
 		paths := []string{}
 
-		if everywhere {
+		if isSpecialPath(dir) {
 			log.Println("searching (", page, ")", keyword)
 		} else {
 			log.Println("listing dir (", page, ")", dir)
@@ -102,7 +122,6 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 			DirIsEmpty  bool
 		}{
 			AllowedDirs: cfg.AllowedDirs,
-			Everywhere:  everywhere,
 			Paths:       paths,
 			Dir:         dir,
 			UpDir:       filepath.Dir(dir),
@@ -111,48 +130,11 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 			SortBy:      sortBy,
 			FileList:    FileList{},
 		}
-		// helper func for template
-		funcMap := template.FuncMap{
-			"dirBase": func(fullpath string) string {
-				return filepath.Base(fullpath)
-			},
-			"readpc": func(fi *FileInfoBasic) string {
-				// read percentage tag
-				pg := fi.Page
-				pgs := fi.Pages
 
-				r := int(MathRound(float64(pg) / float64(pgs) * 10))
-				rr := "read"
-				if r == 0 && pg > 1 {
-					rr += " read5"
-				} else if r > 0 {
-					rr += fmt.Sprintf(" read%d0", r)
-				}
-				return rr
-			},
-			"calcPage": func(a, b int) int {
-				c := a + b
-				if c < 1 {
-					c = 1
-				}
-
-				return c
-			},
-		}
-		tmplStr, err := fRead(htmlTemplateFile)
-		if err != nil {
-			responseError(w, err)
-			return
-		}
 		buf := bytes.Buffer{}
-		tmpl, err := template.New("browse").Funcs(funcMap).Parse(string(tmplStr))
-		if err != nil {
-			responseError(w, err)
-			return
-		}
 
 		// no dir chosen
-		if (dir == "" || dir == ".") && !everywhere {
+		if dir == "" || dir == "." {
 			err = tmpl.Execute(&buf, data)
 			if err != nil {
 				responseError(w, err)
@@ -170,41 +152,46 @@ func browseGet(cfg *Config, db *FlatDB, fRead fileReader, htmlTemplateFile strin
 		// chopped lists by pagination
 		var lists FileList
 
-		if everywhere {
-			// add first one as the dir info to save space
-			fileList = append(fileList, &FileInfoBasic{
-				IsDir: true,
-				Path:  "My Entire Library",
-			})
+		if isSpecialPath(dir) {
+			switch specialPath(dir) {
+			case specialPathEveryWhere:
+				// add first one as the dir info to save space
+				fileList = append(fileList, &FileInfoBasic{
+					IsDir: true,
+					Path:  "My Entire Library",
+				})
 
-			// build library list
-			lstat, lists, err = search(db, keyword, page)
-			if err != nil {
-				responseError(w, err)
-				return
-			}
+				// build library list
+				lstat, lists, err = search(db, keyword, page)
+				if err != nil {
+					responseError(w, err)
+					return
+				}
 
-		} else if dir == "___history___" || dir == "___history_unfinished___" || dir == "___history_finished___" {
+			case specialPathHistory,
+				specialPathHistoryFinished,
+				specialPathHistoryUnfinished:
 
-			// add first one as the dir info to save space
-			fileList = append(fileList, &FileInfoBasic{
-				IsDir: true,
-				Path:  "My Read History",
-			})
+				// add first one as the dir info to save space
+				fileList = append(fileList, &FileInfoBasic{
+					IsDir: true,
+					Path:  "My Read History",
+				})
 
-			readState := 0
-			if dir == "___history_unfinished___" {
-				readState = 1
-			}
-			if dir == "___history_finished___" {
-				readState = 2
-			}
+				readState := 0
+				switch specialPath(dir) {
+				case specialPathHistoryUnfinished:
+					readState = 1
+				case specialPathHistoryFinished:
+					readState = 2
+				}
 
-			// build history list
-			lstat, lists, err = listByReadHistory(db, keyword, page, readState)
-			if err != nil {
-				responseError(w, err)
-				return
+				// build history list
+				lstat, lists, err = listByReadHistory(db, keyword, page, readState)
+				if err != nil {
+					responseError(w, err)
+					return
+				}
 			}
 
 		} else {

@@ -136,7 +136,7 @@
 				{{end}}
 				<td>
 					<form>
-						<input type="hidden" name="dir" value="___history___" />
+						<input type="hidden" name="dir" value="__history__" />
 						<input type="submit" class="nav-dir-button" value="History" />
 					</form>
 				</td>
@@ -152,7 +152,7 @@
 					<form style="float: left;">
 						<input type="hidden" name="dir" value="{{.Dir}}" />
 						<input type="hidden" name="everywhere" value="{{.Everywhere}}" />
-						<input type="hidden" name="page" value="{{calcPage .Page -1}}" />
+						<input type="hidden" name="page" value="{{browsePageN .Page -1}}" />
 						<input type="hidden" name="keyword" value="{{.Keyword}}" />
 						<input type="hidden" name="sortby" value="{{.SortBy}}" />
 						<input type="submit" class="nav-dir-button" value="Prev" />
@@ -160,7 +160,7 @@
 					<form style="float: left;">
 						<input type="hidden" name="dir" value="{{.Dir}}" />
 						<input type="hidden" name="everywhere" value="{{.Everywhere}}" />
-						<input type="hidden" name="page" value="{{calcPage .Page 1}}" />
+						<input type="hidden" name="page" value="{{browsePageN .Page 1}}" />
 						<input type="hidden" name="keyword" value="{{.Keyword}}" />
 						<input type="hidden" name="sortby" value="{{.SortBy}}" />
 						<input type="submit" class="nav-dir-button" value="Next" />
@@ -200,14 +200,14 @@
 			{{ end }}
 			{{if (gt .Page 1)}}
 			<div class="directory">
-				<a href="/legacy.html?dir={{.Dir}}&page={{calcPage .Page -1}}&keyword={{.Keyword}}&sortby={{.SortBy}}&everywhere={{.Everywhere}}">
+				<a href="/legacy.html?dir={{.Dir}}&page={{browsePageN .Page -1}}&keyword={{.Keyword}}&sortby={{.SortBy}}">
 					<div class="text">Prev...</div>
 				</a>
 			</div>
 			{{ end }}
 			{{if .DirIsMore }}
 			<div class="directory">
-				<a href="/legacy.html?dir={{.Dir}}&page={{calcPage .Page 1}}&keyword={{.Keyword}}&sortby={{.SortBy}}&everywhere={{.Everywhere}}">
+				<a href="/legacy.html?dir={{.Dir}}&page={{browsePageN .Page 1}}&keyword={{.Keyword}}&sortby={{.SortBy}}">
 					<div class="text">More...</div>
 				</a>
 			</div>

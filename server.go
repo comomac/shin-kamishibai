@@ -41,7 +41,7 @@ func (svr *Server) Start() {
 
 	// use packed file (binfile.go)
 	fs := fakeFileSystem{__binmapName}
-	fRead := fs.ReadFile
+	// fRead := fs.ReadFile
 	fserv := http.FileServer(fs)
 
 	h.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
@@ -50,7 +50,7 @@ func (svr *Server) Start() {
 
 	// public api, page
 	h.HandleFunc("/login", loginPOST(httpSession, cfg))
-	h.HandleFunc("/login.html", loginGet(cfg, db, fRead))
+	h.HandleFunc("/login.html", loginGet(cfg, db, tmplLogin))
 	h.HandleFunc("/free", func(w http.ResponseWriter, r *http.Request) {
 		runtime.GC()
 		w.Write([]byte("freed"))
@@ -59,9 +59,9 @@ func (svr *Server) Start() {
 	// private api, page
 	h.HandleFunc("/api/thumbnail/", renderThumbnail(db, cfg)) // /thumbnail/{bookID}              get book cover thumbnail
 	h.HandleFunc("/api/read/", readPage(db, true))            // /read?book={bookID}&page={page}  get image and update last read
-	h.HandleFunc("/browse.html", browseGet(cfg, db, fRead, "ssp/browse.html"))
-	h.HandleFunc("/legacy.html", browseGet(cfg, db, fRead, "ssp/legacy.html"))
-	h.HandleFunc("/read.html", readGet(cfg, db, fRead))
+	h.HandleFunc("/browse.html", browseGet(cfg, db, tmplBrowse))
+	h.HandleFunc("/legacy.html", browseGet(cfg, db, tmplBrowseLegacy))
+	h.HandleFunc("/read.html", readGet(cfg, db, tmplRead))
 
 	// middleware
 	slog := svrLogging(h, httpSession, cfg)

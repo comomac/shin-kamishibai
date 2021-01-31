@@ -79,33 +79,33 @@
 			{{ end }}
 		</div>
 		<div class="row">
-			<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ calcPage .Book -5 }}">-5</a>
-			<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ calcPage .Book 5 }}">+5</a>
-			<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ calcPage .Book -10 }}">-10</a>
-			<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ calcPage .Book 10 }}">+10</a>
-			<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ calcPage .Book -25 }}">-25</a>
-			<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ calcPage .Book 25 }}">+25</a>
-			<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ calcPage .Book -50 }}">-50</a>
-			<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ calcPage .Book 50 }}">+50</a>
+			<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ readPageN .Book -5 }}">-5</a>
+			<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ readPageN .Book 5 }}">+5</a>
+			<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ readPageN .Book -10 }}">-10</a>
+			<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ readPageN .Book 10 }}">+10</a>
+			<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ readPageN .Book -25 }}">-25</a>
+			<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ readPageN .Book 25 }}">+25</a>
+			<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ readPageN .Book -50 }}">-50</a>
+			<a class="a-link-page" href="/read.html?book={{ .Book.ID }}&page={{ readPageN .Book 50 }}">+50</a>
 		</div>
 		<div class="row">
 			<noscript>
 				<form>
 					<input type="hidden" name="book" value="{{.Book.ID}}" />
-					<input type="hidden" name="page" value="{{ calcPage .Book -1 }}" />
+					<input type="hidden" name="page" value="{{ readPageN .Book -1 }}" />
 					<input type="submit" value="Prev" style="width: 100%; height: 3em;" />
 				</form>
 			</noscript>
 			<!-- book image -->
 			<div class="div-img" id="div-img-1">
-				<a href="/read.html?book={{ .Book.ID }}&page={{ calcPage .Book 1 }}" id="a-img-manga">
+				<a href="/read.html?book={{ .Book.ID }}&page={{ readPageN .Book 1 }}" id="a-img-manga">
 					<img src="/api/read/{{.Book.ID}}/{{ .Book.Page }}" class="img-manga" id="img-1" />
 				</a>
 			</div>
 			<noscript>
 				<form>
 					<input type="hidden" name="book" value="{{.Book.ID}}" />
-					<input type="hidden" name="page" value="{{ calcPage .Book -1 }}" />
+					<input type="hidden" name="page" value="{{ readPageN .Book -1 }}" />
 					<input type="submit" value="Prev" style="width: 100%; height: 3em;" />
 				</form>
 			</noscript>

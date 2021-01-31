@@ -264,9 +264,9 @@
 		<div class="dropdown">
 			<button class="dropbtn">History</button>
 			<div class="dropdown-content">
-				<a href="/browse.html?dir=___history___&page={{.Page}}&keyword={{.Keyword}}&sortby=name">All</a>
-				<a href="/browse.html?dir=___history_unfinished___&page={{.Page}}&keyword={{.Keyword}}&sortby=name">Unfinished</a>
-				<a href="/browse.html?dir=___history_finished___&page={{.Page}}&keyword={{.Keyword}}&sortby=name">Finished</a>
+				<a href="/browse.html?dir=__history__&page={{.Page}}&sortby=name">All</a>
+				<a href="/browse.html?dir=__history_unfinished__&page={{.Page}}&sortby=name">Unfinished</a>
+				<a href="/browse.html?dir=__history_finished__&page={{.Page}}&sortby=name">Finished</a>
 			</div>
 		</div>
 
@@ -274,9 +274,9 @@
 			<form>
 				<input type="hidden" name="dir" value="{{.Dir}}"/>
 				{{if (.Everywhere)}}
-				<input type="checkbox" id="everywhere" name="everywhere" value="true" checked/>
+				<input type="checkbox" id="everywhere" name="dir" value="__everywhere__" checked/>
 				{{else}}
-				<input type="checkbox" id="everywhere" name="everywhere" value="true"/>
+				<input type="checkbox" id="everywhere" name="dir" value="__everywhere__"/>
 				{{end}}
 				<label for="everywhere">Everywhere</label>
 				<label for="searchbox">search</label>
@@ -292,10 +292,10 @@
 			<a href="/browse.html?dir={{.UpDir}}&page=1&sortby={{.SortBy}}">
 				<button class="nav-dir-button">&nbsp;&nbsp;Up&nbsp;&nbsp;</button>
 			</a>
-			<a href="/browse.html?dir={{.Dir}}&page={{calcPage .Page -1}}&keyword={{.Keyword}}&sortby={{.SortBy}}&everywhere={{.Everywhere}}">
+			<a href="/browse.html?dir={{.Dir}}&page={{browsePageN .Page -1}}&keyword={{.Keyword}}&sortby={{.SortBy}}">
 				<button class="nav-dir-button">Prev</button>
 			</a>
-			<a href="/browse.html?dir={{.Dir}}&page={{calcPage .Page 1}}&keyword={{.Keyword}}&sortby={{.SortBy}}&everywhere={{.Everywhere}}">
+			<a href="/browse.html?dir={{.Dir}}&page={{browsePageN .Page 1}}&keyword={{.Keyword}}&sortby={{.SortBy}}">
 				<button class="nav-dir-button">Next</button>
 			</a>
 			<span id="span-page">Page: {{.Page}}</span>
@@ -327,14 +327,14 @@
 			{{ end }}
 			{{if (gt .Page 1)}}
 			<div class="directory">
-				<a href="/browse.html?dir={{.Dir}}&page={{calcPage .Page -1}}&keyword={{.Keyword}}&sortby={{.SortBy}}&everywhere={{.Everywhere}}">
+				<a href="/browse.html?dir={{.Dir}}&page={{browsePageN .Page -1}}&keyword={{.Keyword}}&sortby={{.SortBy}}&everywhere={{.Everywhere}}">
 					<div class="text">Prev...</div>
 				</a>
 			</div>
 			{{ end }}
 			{{if .DirIsMore }}
 			<div class="directory">
-				<a href="/browse.html?dir={{.Dir}}&page={{calcPage .Page 1}}&keyword={{.Keyword}}&sortby={{.SortBy}}&everywhere={{.Everywhere}}">
+				<a href="/browse.html?dir={{.Dir}}&page={{browsePageN .Page 1}}&keyword={{.Keyword}}&sortby={{.SortBy}}&everywhere={{.Everywhere}}">
 					<div class="text">More...</div>
 				</a>
 			</div>
