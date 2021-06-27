@@ -52,7 +52,7 @@
 			<div id="div-button-navs-1"></div>
 			<div id="div-book-details">
 				<div>
-					Author: <span id="span-book-author">{{ .Book.Author }}</span>
+					Author: <a href="/browse.html?dir=__author__&page=1&keyword={{ .Book.Author }}"><span id="span-book-author">{{ .Book.Author }}</span></a>
 				</div>
 				<div>
 					Title: <span id="span-book-title">{{ .Book.Title }}</span>

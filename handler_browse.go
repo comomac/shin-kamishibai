@@ -38,6 +38,7 @@ type specialPath string
 
 const (
 	specialPathEveryWhere        specialPath = "__everywhere__"
+	specialPathAuthor            specialPath = "__author__"
 	specialPathHistory           specialPath = "__history__"
 	specialPathHistoryFinished   specialPath = "__history_finished__"
 	specialPathHistoryUnfinished specialPath = "__history_unfinished__"
@@ -46,6 +47,7 @@ const (
 func isSpecialPath(dirPath string) bool {
 	switch specialPath(dirPath) {
 	case specialPathEveryWhere,
+		specialPathAuthor,
 		specialPathHistory,
 		specialPathHistoryFinished,
 		specialPathHistoryUnfinished:
@@ -186,6 +188,21 @@ func browseGet(cfg *Config, db *FlatDB, tmpl *template.Template) func(http.Respo
 
 				// build library list
 				lstat, lists, err = search(db, keyword, page)
+				if err != nil {
+					responseError(w, err)
+					return
+				}
+
+			case specialPathAuthor:
+
+				// add first one as the dir info to save space
+				fileList = append(fileList, &FileInfoBasic{
+					IsDir: true,
+					Path:  "Author - " + keyword,
+				})
+
+				// build history list
+				lstat, lists, err = listByAuthor(db, keyword, page, sortBy)
 				if err != nil {
 					responseError(w, err)
 					return
@@ -475,6 +492,85 @@ func search(db *FlatDB, search string, page int) (status int, fileList FileList,
 
 	// sort again, because earlier sort could be big and skipped
 	fileList = sortByFileName(fileList)
+
+	return status, fileList, nil
+}
+
+func listByAuthor(db *FlatDB, search string, page int, sortOrderBy string) (status int, fileList FileList, err error) {
+	/* status
+	-1 error
+	 0 no any particular state
+	 1 no more list to follow
+	 2 more list to follow
+
+	   read state
+	0  all
+	1  unfinished
+	2  finished
+	*/
+	status = -1
+
+	books := db.Search(search)
+	for _, book := range books {
+		// create and store blank book entry
+		fib := &FileInfoBasic{
+			IsBook:  true,
+			Name:    filepath.Base(book.Fullpath),
+			ModTime: time.Unix(int64(book.Mtime), 0),
+			Book:    *book,
+		}
+
+		// make page 0 to 1 so wont crash on reading
+		if fib.Book.Page <= 0 {
+			fib.Book.Page = 1
+		}
+
+		fileList = append(fileList, fib)
+	}
+
+	// sort by read order
+	if len(fileList) <= SortMaxSize {
+		switch sortOrderBy {
+		case sortOrderByFileName:
+			fileList = sortByFileName(fileList)
+		case sortOrderByFileModTime:
+			fileList = sortByFileModTime(fileList)
+		case sortOrderByReadTime:
+			fileList = sortByReadTime(fileList)
+		default:
+			fileList = sortByReadTime(fileList)
+		}
+	}
+
+	// pagination
+	head := (page - 1) * ItemsPerPage
+	if head > len(fileList) {
+		head = len(fileList)
+	}
+	tail := (page) * ItemsPerPage
+	if tail > len(fileList) {
+		tail = len(fileList)
+
+		// reached the end, no more files
+		status = 1
+	} else {
+		// indicate more files
+		status = 2
+	}
+	// chopped file list
+	fileList = fileList[head:tail]
+
+	// sort again, because earlier sort could be big and skipped
+	switch sortOrderBy {
+	case sortOrderByFileName:
+		fileList = sortByFileName(fileList)
+	case sortOrderByFileModTime:
+		fileList = sortByFileModTime(fileList)
+	case sortOrderByReadTime:
+		fileList = sortByReadTime(fileList)
+	default:
+		fileList = sortByReadTime(fileList)
+	}
 
 	return status, fileList, nil
 }
