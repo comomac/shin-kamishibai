@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-
-	"github.com/comomac/shin-kamishibai/pkg/fdb"
 )
 
 // used for debug and testing
