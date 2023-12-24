@@ -30,10 +30,13 @@ func main() {
 		cfgFilePath = filepath.Join(UserHome(), cfgFilePath[2:])
 	}
 
+	// hardcoded path
+	cfgFilePath = "config.json"
+
 	config := &Config{}
 	err := config.Read(cfgFilePath)
 	if err != nil {
-		fmt.Println("failed to read config file")
+		fmt.Println("failed to read config file: " + cfgFilePath)
 		panic(err)
 	}
 
@@ -42,11 +45,14 @@ func main() {
 	db.New(config.PathDB)
 	db.Load()
 	// load all books recursively
+	fmt.Println("load all books recursively")
 	go loadDirs(db, config.AllowedDirs)
-
+	fmt.Println("finished loading all books recursively")
 	svr := Server{
 		Database: db,
 		Config:   config,
 	}
+	fmt.Println("Start server")
 	svr.Start()
+	fmt.Println("Ending server")
 }

@@ -18,6 +18,8 @@ type Server struct {
 
 // Start launches http server
 func (svr *Server) Start() {
+	fmt.Println("Starting server")
+
 	cfg := svr.Config
 	db := svr.Database
 
@@ -25,12 +27,14 @@ func (svr *Server) Start() {
 	httpSession := &SessionStore{
 		serverConfig: cfg,
 	}
-	// previous sessions
-	err := httpSession.Load()
-	if err != nil {
-		log.Fatal(err)
-	}
 
+	// previous sessions
+	//err := httpSession.Load()
+	//if err != nil {
+	//	fmt.Println("Error loading httpSession for previous sessions")
+	//	log.Fatal(err)
+	//}
+		fmt.Println("debug still going on")
 	h := http.NewServeMux()
 
 	// public folder access

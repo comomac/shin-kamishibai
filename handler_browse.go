@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"fmt"
 )
 
 // FileList contains list of files and folders
@@ -28,10 +29,10 @@ type FileInfoBasic struct {
 }
 
 // ItemsPerPage use for pagination
-var ItemsPerPage = 18
+var ItemsPerPage = 23
 
 // SortMaxSize maximum allowed size for sorting, otherwise it will skip sort
-var SortMaxSize = 300
+//var SortMaxSize = 300
 
 // special path that is used for special condition for using non-dir path
 type specialPath string
@@ -41,6 +42,8 @@ const (
 	specialPathHistory           specialPath = "__history__"
 	specialPathHistoryFinished   specialPath = "__history_finished__"
 	specialPathHistoryUnfinished specialPath = "__history_unfinished__"
+	specialPathFav		     specialPath = "__fav__"
+	specialPathFavAll	     specialPath = "__favall__"
 )
 
 func isSpecialPath(dirPath string) bool {
@@ -48,7 +51,9 @@ func isSpecialPath(dirPath string) bool {
 	case specialPathEveryWhere,
 		specialPathHistory,
 		specialPathHistoryFinished,
-		specialPathHistoryUnfinished:
+		specialPathHistoryUnfinished,
+		specialPathFav,
+		specialPathFavAll:
 		return true
 	}
 	return false
@@ -59,6 +64,7 @@ const (
 	sortOrderByFileModTime = "time"
 	sortOrderByReadTime    = "read"
 	sortOrderByAuthor      = "author"
+	sortOrderByFav         = "fav"
 )
 
 // browseGet http GET lists the folder content, only the folder and the manga will be shown
@@ -215,6 +221,38 @@ func browseGet(cfg *Config, db *FlatDB, tmpl *template.Template) func(http.Respo
 					responseError(w, err)
 					return
 				}
+
+			case specialPathFav:
+
+				// add first one as the dir info to save space
+				fileList = append(fileList, &FileInfoBasic{
+					IsDir: true,
+					Path:  "My Read Fav",
+				})
+
+				// build fav list
+				readState := 0
+				lstat, lists, err = listByReadFav(db, keyword, page, readState, sortBy)
+				if err != nil {
+					responseError(w, err)
+					return
+				}
+
+			case specialPathFavAll:
+
+				// add first one as the dir info to save space
+				fileList = append(fileList, &FileInfoBasic{
+					IsDir: true,
+					Path:  "My Read Fav All",
+				})
+
+				// build fav list
+				readState := 0
+				lstat, lists, err = listByReadFavAll(db, keyword, page, readState, sortBy)
+				if err != nil {
+					responseError(w, err)
+					return
+				}
 			}
 
 		} else {
@@ -331,54 +369,6 @@ OUTER:
 		}
 	}
 
-	// sort by natural order, if small enough, or lag happens
-	if len(fileList) <= SortMaxSize {
-		switch sortOrderBy {
-		case sortOrderByFileName:
-			fileList = sortByFileName(fileList)
-		case sortOrderByFileModTime:
-			fileList = sortByFileModTime(fileList)
-		case sortOrderByReadTime:
-			fileList = sortByReadTime(fileList)
-		case sortOrderByAuthor:
-			fileList = sortByAuthorTitle(fileList)
-		default:
-			fileList = sortByFileName(fileList)
-		}
-	}
-
-	// pagination
-	head := (page - 1) * ItemsPerPage
-	if head > len(fileList) {
-		head = len(fileList)
-	}
-	tail := (page) * ItemsPerPage
-	if tail > len(fileList) {
-		tail = len(fileList)
-
-		// reached the end, no more files
-		status = 1
-	} else {
-		// indicate more files
-		status = 2
-	}
-	// chopped file list
-	fileList = fileList[head:tail]
-
-	// sort again, because earlier sort could be big and skipped
-	switch sortOrderBy {
-	case sortOrderByFileName:
-		fileList = sortByFileName(fileList)
-	case sortOrderByFileModTime:
-		fileList = sortByFileModTime(fileList)
-	case sortOrderByReadTime:
-		fileList = sortByReadTime(fileList)
-	case sortOrderByAuthor:
-		fileList = sortByAuthorTitle(fileList)
-	default:
-		fileList = sortByFileName(fileList)
-	}
-
 	// look up book details
 	// doing this way to reduce cpu/disk load, only load the relevant page
 	for _, fib := range fileList {
@@ -409,6 +399,64 @@ OUTER:
 		if fib.Book.Page <= 0 {
 			fib.Book.Page = 1
 		}
+	}
+
+	// sort by natural order, if small enough, or lag happens
+
+
+	//log.Println("\n\n\n")
+	//log.Println("Dir listing before sort by x")
+	//log.Println(fileList)
+	//log.Println("\n\n\n")
+	//if len(fileList) <= SortMaxSize {
+		switch sortOrderBy {
+		case sortOrderByFileName:
+			fileList = sortByFileName(fileList)
+		case sortOrderByFileModTime:
+			fileList = sortByFileModTime(fileList)
+		case sortOrderByReadTime:
+			fileList = sortByReadTime(fileList)
+		case sortOrderByAuthor:
+			fileList = sortByAuthorTitle(fileList)
+		case sortOrderByFav:
+			fileList = sortByFav(fileList)
+		default:
+			fileList = sortByFileName(fileList)
+		}
+	//}
+
+	// pagination
+	head := (page - 1) * ItemsPerPage
+	if head > len(fileList) {
+		head = len(fileList)
+	}
+	tail := (page) * ItemsPerPage
+	if tail > len(fileList) {
+		tail = len(fileList)
+
+		// reached the end, no more files
+		status = 1
+	} else {
+		// indicate more files
+		status = 2
+	}
+	// chopped file list
+	fileList = fileList[head:tail]
+
+	// sort again, because earlier sort could be big and skipped
+	switch sortOrderBy {
+	case sortOrderByFileName:
+		fileList = sortByFileName(fileList)
+	case sortOrderByFileModTime:
+		fileList = sortByFileModTime(fileList)
+	case sortOrderByReadTime:
+		fileList = sortByReadTime(fileList)
+	case sortOrderByAuthor:
+		fileList = sortByAuthorTitle(fileList)
+	case sortOrderByFav:
+		fileList = sortByFav(fileList)
+	default:
+		fileList = sortByFileName(fileList)
 	}
 
 	return status, fileList, nil
@@ -451,9 +499,9 @@ func search(db *FlatDB, search string, page int) (status int, fileList FileList,
 	}
 
 	// sort by natural order, if small enough, or lag happens
-	if len(fileList) <= SortMaxSize {
+	//if len(fileList) <= SortMaxSize {
 		fileList = sortByFileName(fileList)
-	}
+	//}
 
 	// pagination
 	head := (page - 1) * ItemsPerPage
@@ -529,20 +577,22 @@ func listByReadHistory(db *FlatDB, search string, page int, readState int, sortO
 	}
 
 	// sort by read order
-	if len(fileList) <= SortMaxSize {
-		switch sortOrderBy {
-		case sortOrderByFileName:
-			fileList = sortByFileName(fileList)
-		case sortOrderByFileModTime:
-			fileList = sortByFileModTime(fileList)
-		case sortOrderByReadTime:
-			fileList = sortByReadTime(fileList)
-		case sortOrderByAuthor:
-			fileList = sortByAuthorTitle(fileList)
-		default:
-			fileList = sortByReadTime(fileList)
-		}
+
+	switch sortOrderBy {
+	case sortOrderByFileName:
+		fileList = sortByFileName(fileList)
+	case sortOrderByFileModTime:
+		fileList = sortByFileModTime(fileList)
+	case sortOrderByReadTime:
+		fileList = sortByReadTime(fileList)
+	case sortOrderByAuthor:
+		fileList = sortByAuthorTitle(fileList)
+	case sortOrderByFav:
+		fileList = sortByFav(fileList)
+	default:
+		fileList = sortByReadTime(fileList)
 	}
+
 
 	// pagination
 	head := (page - 1) * ItemsPerPage
@@ -572,9 +622,150 @@ func listByReadHistory(db *FlatDB, search string, page int, readState int, sortO
 		fileList = sortByReadTime(fileList)
 	case sortOrderByAuthor:
 		fileList = sortByAuthorTitle(fileList)
+	case sortOrderByFav:
+		fileList = sortByFav(fileList)
 	default:
 		fileList = sortByReadTime(fileList)
 	}
+
+	return status, fileList, nil
+}
+
+func listByReadFav(db *FlatDB, search string, page int, readState int, sortOrderBy string) (status int, fileList FileList, err error) {
+	/* status
+	-1 error
+	 0 no any particular state
+	 1 no more list to follow
+	 2 more list to follow
+
+	   fav state
+	0  not fav
+	1  fav
+	*/
+	status = -1
+        var nonfavbooks []*Book
+
+	books := db.Search(search)
+	for _, book := range books {
+		// skip non favorited books
+		if book.Fav == 0 {
+			nonfavbooks = append(nonfavbooks, book)
+			continue
+			
+		}
+		
+		// create and store blank book entry
+		fib := &FileInfoBasic{
+			IsBook:  true,
+			Name:    filepath.Base(book.Fullpath),
+			ModTime: time.Unix(int64(book.Mtime), 0),
+			Book:    *book,
+		}
+
+		// make page 0 to 1 so wont crash on reading
+		if fib.Book.Page <= 0 {
+			fib.Book.Page = 1
+		}
+		//fmt.Println("Book: ", book.Fullpath, " Fav: ",  book.Fav)
+		fileList = append(fileList, fib)
+	}
+
+	// pagination
+	head := (page - 1) * ItemsPerPage
+	if head > len(fileList) {
+		head = len(fileList)
+	}
+	tail := (page) * ItemsPerPage
+	if tail > len(fileList) {
+		tail = len(fileList)
+
+		// reached the end, no more files
+		status = 1
+	} else {
+		// indicate more files
+		status = 2
+	}
+	// chopped file list
+	fileList = fileList[head:tail]
+
+	return status, fileList, nil
+}
+
+func listByReadFavAll(db *FlatDB, search string, page int, readState int, sortOrderBy string) (status int, fileList FileList, err error) {
+	/* status
+	-1 error
+	 0 no any particular state
+	 1 no more list to follow
+	 2 more list to follow
+
+	   fav state
+	0  not fav
+	1  fav
+	*/
+	status = -1
+        var nonfavbooks []*Book
+
+	books := db.Search(search)
+	for _, book := range books {
+		// skip non favorited books
+		if book.Fav == 0 {
+			nonfavbooks = append(nonfavbooks, book)
+			continue
+			
+		}
+		
+		// create and store blank book entry
+		fib := &FileInfoBasic{
+			IsBook:  true,
+			Name:    filepath.Base(book.Fullpath),
+			ModTime: time.Unix(int64(book.Mtime), 0),
+			Book:    *book,
+		}
+
+		// make page 0 to 1 so wont crash on reading
+		if fib.Book.Page <= 0 {
+			fib.Book.Page = 1
+		}
+		fmt.Println("Book: ", book.Fullpath, " Fav: ",  book.Fav)
+		fileList = append(fileList, fib)
+	}
+
+	for _, book2 := range nonfavbooks {
+		
+		// create and store blank book entry
+		fib2 := &FileInfoBasic{
+			IsBook:  true,
+			Name:    filepath.Base(book2.Fullpath),
+			ModTime: time.Unix(int64(book2.Mtime), 0),
+			Book:    *book2,
+		}
+
+		// make page 0 to 1 so wont crash on reading
+		if fib2.Book.Page <= 0 {
+			fib2.Book.Page = 1
+		}
+                fmt.Println("Book2: ", book2.Fullpath, " Fav: ",  book2.Fav)
+		fileList = append(fileList, fib2)
+	}
+
+	// pagination
+	head := (page - 1) * ItemsPerPage
+	if head > len(fileList) {
+		head = len(fileList)
+	}
+	tail := (page) * ItemsPerPage
+	if tail > len(fileList) {
+		tail = len(fileList)
+
+		// reached the end, no more files
+		status = 1
+	} else {
+		// indicate more files
+		status = 2
+	}
+	// chopped file list
+	fileList = fileList[head:tail]
+
 
 	return status, fileList, nil
 }

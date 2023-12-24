@@ -205,11 +205,13 @@ func (db *FlatDB) Import(dbPath string) error {
 		// create blank not exist
 		f, err := os.OpenFile(db.Path, os.O_CREATE, 0644)
 		if err != nil {
+	                fmt.Println(db.Path)
 			return err
 		}
 		defer f.Close()
 	}
 	if err != nil {
+	        fmt.Println(db.Path)
 		return err
 	}
 
