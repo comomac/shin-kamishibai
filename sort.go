@@ -1,60 +1,46 @@
 package main
 
 import (
+	"log"
 	"fmt"
+	"sort"
 	"regexp"
 	"strings"
 )
 
-//
 // String sort
-//
 
 func sortNatural(arr []string, filter *regexp.Regexp) []string {
-	newArr := append([]string{}, arr...)
-	// free memory
-	defer func() {
-		newArr = nil
-	}()
-
+	newArr := make([]string, len(arr))
+	copy(newArr, arr)
 	stringQuicksort(newArr, filter, 0, len(arr)-1)
-
 	return newArr
 }
 
 func stringQuicksort(arr []string, filter *regexp.Regexp, low, high int) {
 	if low < high {
-		var pi int = stringPartition(arr, filter, low, high)
-
+		pi := stringPartition(arr, filter, low, high)
 		stringQuicksort(arr, filter, low, pi-1)
 		stringQuicksort(arr, filter, pi+1, high)
 	}
 }
 
 func stringPartition(arr []string, filter *regexp.Regexp, low, high int) int {
-	var pivot *string = &arr[high]
-
-	var i int = (low - 1)
-
-	for j := low; j <= high-1; j++ {
-		// deref for pure string, and for manipulation
+	pivot := arr[high]
+	i := low - 1
+	for j := low; j < high; j++ {
 		a := arr[j]
-		b := *pivot
+		b := pivot
 		if filter != nil {
-			// filtered
 			a = filter.ReplaceAllString(a, "")
 			b = filter.ReplaceAllString(b, "")
 		}
-
-		// natural compare
-		if AlphaNumCaseCompare(a, b) {
+		if a <= b {
 			i++
 			arr[i], arr[j] = arr[j], arr[i]
 		}
 	}
-
 	arr[i+1], arr[high] = arr[high], arr[i+1]
-
 	return i + 1
 }
 
@@ -105,6 +91,7 @@ OUTER:
 	return books
 }
 
+
 func filterBooksByTitle(books []*Book, filter string) []*Book {
 	return filterBooksBy(books, filter, "title")
 }
@@ -135,6 +122,17 @@ func sortBooksByAuthorTitle(books []*Book) []*Book {
 
 	return books
 }
+
+func sortBooksByFav(books []*Book) []*Book {
+    // Custom less function to sort favorited books first
+    less := func(i, j int) bool {
+        return books[i].Fav > books[j].Fav
+    }
+    // Sort the books using the custom less function
+    sort.Slice(books, less)
+    return books
+}
+
 
 func booksQuicksort(arr []*Book, byType string, low, high int) {
 	if low < high {
@@ -182,6 +180,17 @@ func booksPartition(arr []*Book, byType string, low, high int) int {
 				i++
 				arr[i], arr[j] = arr[j], arr[i]
 			}
+
+		case "fav": // not used
+			// sort by title + volume/chapter (cuz author could have multiple title)
+			a := arr[j].Fav
+			b := pivot.Fav
+
+			// natural compare
+			if (a > b) {
+				i++
+				arr[i], arr[j] = arr[j], arr[i]
+			}
 		}
 	}
 
@@ -204,39 +213,35 @@ func fibsQuicksort(arr []*FileInfoBasic, byType string, low, high int) {
 }
 
 func fibsPartition(arr []*FileInfoBasic, byType string, low, high int) int {
-	var pivot *FileInfoBasic = arr[high]
+		var pivot *FileInfoBasic = arr[high]
 
-	var i int = (low - 1)
+		var i int = (low - 1)
 
-	for j := low; j < high; j++ {
-		switch byType {
+		for j := low; j < high; j++ {
+			switch byType {
 		case sortOrderByFileName:
-			// sort by filename
-			a := fmt.Sprintf("%s", arr[j].Name)
-			b := fmt.Sprintf("%s", pivot.Name)
-
-			// natural compare
-			if AlphaNumCaseCompare(a, b) {
-				i++
-				arr[i], arr[j] = arr[j], arr[i]
-			}
+		    // sort by filename
+		    a := arr[j].Name
+		    b := pivot.Name
+		    if a < b {
+		        i++
+		        arr[i], arr[j] = arr[j], arr[i]
+		    }
 		case sortOrderByFileModTime:
-			// sort by file time
-			a := arr[j].ModTime
-			b := pivot.ModTime
-
-			// natural compare
-			if a.Before(b) {
-				i++
-				arr[i], arr[j] = arr[j], arr[i]
-			}
+		    // sort by file modification time
+		    a := arr[j].ModTime
+		    b := pivot.ModTime
+		    if a.After(b) { // newest first
+		        i++
+		        arr[i], arr[j] = arr[j], arr[i]
+		    }
 		case sortOrderByReadTime:
 			// sort by read time
 			a := arr[j].Rtime
 			b := pivot.Rtime
 
 			// natural compare
-			if a > b {
+			if a < b { // oldest read first
 				i++
 				arr[i], arr[j] = arr[j], arr[i]
 			}
@@ -250,6 +255,14 @@ func fibsPartition(arr []*FileInfoBasic, byType string, low, high int) int {
 				i++
 				arr[i], arr[j] = arr[j], arr[i]
 			}
+
+		case sortOrderByFav: // not used
+		    // Define the specific sorting logic based on the favorite status
+		    // Example: Sort favorites before non-favorites
+		    //if arr[j].Book.Fav > pivot.Book.Fav {
+		//	i++
+			arr[i], arr[j] = arr[j], arr[i]
+		  //  }
 		}
 	}
 
@@ -265,51 +278,43 @@ func fibsPartition(arr []*FileInfoBasic, byType string, low, high int) int {
 // sort by filename
 func sortByFileName(arr []*FileInfoBasic) []*FileInfoBasic {
 	newArr := append([]*FileInfoBasic{}, arr...)
-	// free memory
-	defer func() {
-		newArr = nil
-	}()
-
 	fibsQuicksort(newArr, sortOrderByFileName, 0, len(arr)-1)
-
 	return newArr
 }
 
 // sort by read time, most recent one first
 func sortByReadTime(arr []*FileInfoBasic) []*FileInfoBasic {
 	newArr := append([]*FileInfoBasic{}, arr...)
-	// free memory
-	defer func() {
-		newArr = nil
-	}()
-
 	fibsQuicksort(newArr, sortOrderByReadTime, 0, len(arr)-1)
-
 	return newArr
 }
 
 // sort by file modification time
 func sortByFileModTime(arr []*FileInfoBasic) []*FileInfoBasic {
 	newArr := append([]*FileInfoBasic{}, arr...)
-	// free memory
-	defer func() {
-		newArr = nil
-	}()
-
 	fibsQuicksort(newArr, sortOrderByFileModTime, 0, len(arr)-1)
-
 	return newArr
 }
 
 // sort by author by title by number
 func sortByAuthorTitle(arr []*FileInfoBasic) []*FileInfoBasic {
 	newArr := append([]*FileInfoBasic{}, arr...)
-	// free memory
-	defer func() {
-		newArr = nil
-	}()
-
 	fibsQuicksort(newArr, sortOrderByAuthor, 0, len(arr)-1)
-
 	return newArr
+}
+
+// sort by fav
+func sortByFav(arr []*FileInfoBasic) []*FileInfoBasic {
+    newArr := append([]*FileInfoBasic{}, arr...)
+    // Custom less function to sort favorited books first
+    less := func(i, j int) bool {
+	return newArr[i].Fav > newArr[j].Fav
+    }
+    // Sort the books using the custom less function
+    sort.Slice(newArr, less)
+    // Print the sorted books
+    log.Println(arr)
+    log.Println("\n\n\n")
+    log.Println(newArr)
+    return newArr
 }

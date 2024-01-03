@@ -10,20 +10,6 @@
 		<meta content="black" name="apple-mobile-web-app-status-bar-style" />
 		<title>Kamishibai</title>
 		<style>
-
-			body {
-			  background-color: black;
-			  color: white;
-			}
-			@media screen and (prefers-color-scheme: light) {
-			  body {
-			    background-color: white;
-			    color: black;
-			  }
-			}
-
-			a, a:hover, a:active, a:visited { color: white; }
-
 			button {
 				font-size: 2em;
 				background-color: #828282;
@@ -51,32 +37,28 @@
 				min-height: 400px;
 				border: 1px solid black;
 				padding: 2px;
-			}
 
-			.img-manga {
-				display: block;
+<!--				display: block;
 				margin-left: auto;
-				margin-right: auto;
+				margin-right: auto
 				min-width: 600px;
 				min-height: 1200px;
 				max-height: 1200px;
 
 				border: 1px solid black;
 				padding: 2px;
-
+-->
 			}
 
-			.img-manga-fitwidth-height {
-				display: block;
-				margin-left: auto;
-				margin-right: auto;
-				min-width: 600px;
-				min-height: 950px;
-				max-height: 950px;
+			.img-manga {
+	
+				width: 100%;
+				min-width: 300px;
+				min-height: 400px;
 				border: 1px solid black;
 				padding: 2px;
-			}
 
+			}
 			#row-top > div {
 				display: inline;
 			}
@@ -116,20 +98,15 @@
 				<a class="a-link-page" href="/read.html?fav=0&book={{ .Book.ID }}&page={{ .Book.Page }}">Unfav</a>
 			</div>
 			{{ end }}
-<!-- 
-<a href="readwidth.html?book={{ .Book.ID }}&page={{ .Book.Page }}">Toggle Width</a>
--->
-
+<a href="read.html?book={{ .Book.ID }}&page={{ .Book.Page }}">Toggle Width</a>
+<!--
 			<button onclick="
-document.getElementById('img-1').className = 'img-manga-fitwidth'
+document.getElementById('img-1').style='width:100%'
 ">Full Width</button>
 			<button onclick="
-document.getElementById('img-1').className = 'img-manga'
+document.getElementById('img-1').style='width:'
 ">Normal Width</button>
-			<button onclick="
-document.getElementById('img-1').className = 'img-manga-fitwidth-height'
-">Fit Height</button>
-
+-->
 
 		</div>
 		<div class="row">

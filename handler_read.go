@@ -45,6 +45,11 @@ func readGet(cfg *Config, db *FlatDB, tmpl *template.Template) func(http.Respons
 			responseBadRequest(w, errors.New("book not found"))
 			return
 		}
+		if fav == "1" {
+			book.Fav = 1
+		} else if fav == "0" {
+			book.Fav = 0
+		}
 		if page < 1 || page > int(book.Pages) {
 			responseBadRequest(w, errors.New("invalid page number"))
 			return
@@ -52,11 +57,7 @@ func readGet(cfg *Config, db *FlatDB, tmpl *template.Template) func(http.Respons
 		// set page temporary so reflect the html
 		book.Page = int64(page)
 		// set fav temporary so reflect the html
-		if fav == "1" {
-			book.Fav = 1
-		} else if fav == "0" {
-			book.Fav = 0
-		}
+		
 
 		// read template
 		data := struct {
