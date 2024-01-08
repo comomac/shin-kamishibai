@@ -13,7 +13,6 @@ func loadDirs(db *FlatDB, allowedDirs []string) {
 	for _, dir := range allowedDirs {
 		err := db.AddDirR(dir)
 		if err != nil {
-			fmt.Println("failed to add dir -", err)
 		}
 	}
 	elapsed := time.Since(start)
