@@ -3,19 +3,22 @@ package main
 import (
 	"flag"
 	"fmt"
+	"time"
 	"path/filepath"
 	"strings"
 )
 
 func loadDirs(db *FlatDB, allowedDirs []string) {
+	start := time.Now()
 	for _, dir := range allowedDirs {
 		err := db.AddDirR(dir)
 		if err != nil {
-			fmt.Println("failed to add dir -", err)
 		}
 	}
+	elapsed := time.Since(start)
 	fmt.Println("dirs loaded")
 	fmt.Println("books", len(db.books))
+	fmt.Printf("Import took %s\n",elapsed)
 }
 
 func main() {
@@ -46,6 +49,7 @@ func main() {
 	db.Load()
 	// load all books recursively
 	fmt.Println("load all books recursively")
+	
 	go loadDirs(db, config.AllowedDirs)
 	fmt.Println("finished loading all books recursively")
 	svr := Server{
