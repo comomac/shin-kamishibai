@@ -34,12 +34,10 @@ func (svr *Server) Start() {
 	//	fmt.Println("Error loading httpSession for previous sessions")
 	//	log.Fatal(err)
 	//}
-		fmt.Println("debug still going on")
 	h := http.NewServeMux()
 
 	// public folder access
 
-	// // debug with local files
 	// fserv := http.FileServer(http.Dir(svr.Config.PathDir + "/web"))
 	// fRead := ioutil.ReadFile
 

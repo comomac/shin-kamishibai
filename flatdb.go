@@ -20,7 +20,8 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"unicode/utf8"
+	"bufio"
+	"encoding/csv"
 )
 
 // FlatDBCharsPage is number of characters reserved for the pages/page
@@ -196,50 +197,37 @@ func (db *FlatDB) Reload() {
 	db.Import(db.Path)
 }
 
-// Import data from alternative path
 func (db *FlatDB) Import(dbPath string) error {
 	fmt.Println("importing...")
 	// make sure db exists
-	fstat, err := os.Stat(db.Path)
-	if os.IsNotExist(err) {
-		// create blank not exist
-		f, err := os.OpenFile(db.Path, os.O_CREATE, 0644)
-		if err != nil {
-	                fmt.Println(db.Path)
-			return err
-		}
-		defer f.Close()
-	}
-	if err != nil {
-	        fmt.Println(db.Path)
-		return err
-	}
-
-	// remember file last modified time, will use it later for checking
-	db.FileModDate = fstat.ModTime().Unix()
-
-	dat, err := ioutil.ReadFile(dbPath)
+	file, err := os.Open(dbPath)
 	if err != nil {
 		return err
 	}
-	strs := string(dat)
-	lines := strings.Split(strs, "\n")
+	defer file.Close()
 
+	stat, err := file.Stat()
+	if err != nil {
+		return err
+	}
+	db.FileModDate = stat.ModTime().Unix()
+
+	scanner := bufio.NewScanner(file)
 	var prevLen uint64
+	var books []*Book
+	var ibooks []*IBook
+	var mu sync.Mutex
 
-	for _, line := range lines {
-		// skip blank
-		if len(line) == 0 {
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		// Skip blank lines and lines starting with #
+		if len(line) == 0 || strings.HasPrefix(line, "#") {
 			prevLen += uint64(len(line) + 1)
 			continue
 		}
-		// skip leading #
-		if line[0:1] == "#" {
-			prevLen += uint64(len(line) + 1)
-			continue
-		}
 
-		// parse csv line
+		// Parse csv line
 		book, err := csvToBook(line)
 		if err != nil {
 			prevLen += uint64(len(line) + 1)
@@ -265,10 +253,20 @@ func (db *FlatDB) Import(dbPath string) error {
 		prevLen += uint64(len(line) + 1)
 	}
 
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
+	// Update the database with the batched operations
+	mu.Lock()
+	db.books = append(db.books, books...)
+	db.ibooks = append(db.ibooks, ibooks...)
+	// Update other mapper fields
+	mu.Unlock()
+
 	return nil
 }
 
-// Save dabase in default path
 func (db *FlatDB) Save() {
 	db.Export(db.Path)
 }
@@ -787,48 +785,14 @@ func (db *FlatDB) Search(search string) []*Book {
 // helper code ------------------------------------------------------------------------------------------------------
 //
 
-// csvToBook convert string to book
+// csvToBook converts a CSV string to a Book
 func csvToBook(line string) (*Book, error) {
-	chrs := explode(line, -1)
-
-	records := []string{}
-	innerC := false
-	innerStr := ""
-	for i, chr := range chrs {
-		// add quote
-		if chr == "\"" && i < len(chrs) && chrs[i-1] == "\"" {
-			continue
-		}
-		if chr == "\"" && i < len(chrs)-1 && chrs[i+1] == "\"" {
-			innerStr += "\""
-			continue
-		}
-		// flip between quotes
-		if chr == "\"" {
-			innerC = !innerC
-			continue
-		}
-
-		if !innerC {
-			if chr != "," {
-				innerStr += chr
-				continue
-			}
-
-			if chr == "," {
-				// seperator, record buffer and start next column
-				records = append(records, innerStr)
-				innerStr = ""
-				continue
-			}
-		}
-
-		innerStr += chr
+	r := csv.NewReader(strings.NewReader(line))
+	records, err := r.Read()
+	if err != nil {
+		return nil, err
 	}
-	// add last column
-	records = append(records, innerStr)
 
-	// incomplete record
 	if len(records) != 15 {
 		return nil, ErrCSVIncomplete
 	}
@@ -852,30 +816,6 @@ func csvToBook(line string) (*Book, error) {
 	}
 
 	return book, nil
-}
-
-// copied from strings.explode
-// explode splits s into a slice of UTF-8 strings,
-// one string per Unicode character up to a maximum of n (n < 0 means no limit).
-// Invalid UTF-8 sequences become correct encodings of U+FFFD.
-func explode(s string, n int) []string {
-	l := utf8.RuneCountInString(s)
-	if n < 0 || n > l {
-		n = l
-	}
-	a := make([]string, n)
-	for i := 0; i < n-1; i++ {
-		ch, size := utf8.DecodeRuneInString(s)
-		a[i] = s[:size]
-		s = s[size:]
-		if ch == utf8.RuneError {
-			a[i] = string(utf8.RuneError)
-		}
-	}
-	if n > 0 {
-		a[n-1] = s
-	}
-	return a
 }
 
 // bookToCSV convert Book to csv bytes
